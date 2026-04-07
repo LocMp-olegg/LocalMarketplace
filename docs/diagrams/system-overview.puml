@@ -1,0 +1,132 @@
+@startuml system-overview
+title LocalMarketplace — Архитектурный обзор системы
+
+' ─── Глобальные настройки ───
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam nodesep 60
+skinparam ranksep 80
+
+skinparam actor {
+    BackgroundColor #E8F5E9
+    BorderColor #2E7D32
+}
+skinparam component {
+    BackgroundColor White
+    BorderColor #455A64
+    FontName Arial
+}
+skinparam database {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+}
+skinparam queue {
+    BackgroundColor #F3E5F5
+    BorderColor #6A1B9A
+}
+skinparam rectangle {
+    BorderColor #B0BEC5
+    BorderStyle dashed
+    BackgroundColor transparent
+}
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #F9A825
+}
+
+' ─── СЛОЙ 1: Actors ──────────────────────────────────────────────────────────
+together {
+    actor "Покупатель" as Buyer
+    actor "Продавец" as Seller
+    actor "Курьер-сосед" as Courier
+}
+
+' ─── СЛОЙ 2: API Gateway ─────────────────────────────────────────────────────
+component "**API Gateway**\nOcelot  :5000" as Gateway #ECEFF1
+
+' ─── СЛОЙ 3: Microservices ───────────────────────────────────────────────────
+rectangle "Микросервисы" {
+    component "**IdentityService**\n:5001\n─────────────────\nПользователи, роли\nАутентификация\nDuende IdentityServer" as Identity   #EDE7F6
+    component "**CatalogService**\n:5002\n─────────────────\nТовары, категории\nОстатки, избранное\nГеофильтрация" as Catalog      #E8F5E9
+    component "**OrderService**\n:5003\n─────────────────\nКорзина, заказы\nСтатусы, курьер\nСпоры" as Orders      #E8EAF6
+    component "**ReviewService**\n:5004\n─────────────────\nОтзывы, рейтинги\nМодерация" as Reviews     #FBE9E7
+    component "**NotificationService**\n:5005\n─────────────────\nТолько Consumer\nНет REST API\nEmail / In-App" as Notifs      #E0F7FA
+
+    Identity -[hidden]right-> Catalog
+    Catalog -[hidden]right-> Orders
+    Orders -[hidden]right-> Reviews
+    Reviews -[hidden]right-> Notifs
+}
+
+' ─── Инфраструктура (сбоку и снизу) ──────────────────────────────────────────
+queue "**RabbitMQ**\n:15672\nMassTransit" as MQ
+database "**Redis**\n:6379" as Redis
+
+' ─── СЛОЙ 4: Databases ───────────────────────────────────────────────────────
+rectangle "**PostgreSQL  :5432**\n(один инстанс, разные схемы)" #E3F2FD {
+    database "schema:\npublic + media" as DBIdentity
+    database "schema:\ncatalog" as DBCatalog
+    database "schema:\norders" as DBOrders
+    database "schema:\nreviews" as DBReviews
+    database "schema:\nnotifs" as DBNotifs
+
+    DBIdentity -[hidden]right-> DBCatalog
+    DBCatalog -[hidden]right-> DBOrders
+    DBOrders -[hidden]right-> DBReviews
+    DBReviews -[hidden]right-> DBNotifs
+}
+
+' ═════════════════════════════════════════════════════════════════════════════
+' СТРЕЛКИ
+' ═════════════════════════════════════════════════════════════════════════════
+
+' ── Клиенты → Gateway (синий) ──
+Buyer   -[#1565C0,bold]down->  Gateway : <color:#1565C0>HTTPS</color>
+Seller  -[#1565C0,bold]down->  Gateway : <color:#1565C0>HTTPS</color>
+Courier -[#1565C0,bold]down->  Gateway : <color:#1565C0>HTTPS</color>
+
+' ── Gateway → Services (зелёный) ──
+Gateway -[#2E7D32,bold]down-> Identity : <color:#2E7D32>/api/identity/**</color>\n<color:#2E7D32>/connect/**</color>
+Gateway -[#2E7D32,bold]down-> Catalog  : <color:#2E7D32>/api/catalog/**</color>
+Gateway -[#2E7D32,bold]down-> Orders   : <color:#2E7D32>/api/orders/**</color>
+Gateway -[#2E7D32,bold]down-> Reviews  : <color:#2E7D32>/api/reviews/**</color>
+
+' ── Синхронный HTTP между сервисами (оранжевый, пунктир) ──
+Orders -[#E65100,dashed]left-> Catalog  : <color:#E65100>GET /products/{id}/stock</color>\n<color:#E65100>POST /products/{id}/reserve</color>
+Orders -[#E65100,dashed]left-> Identity : <color:#E65100>GET /users/{id}</color>\n<color:#E65100>(снепшот имени)</color>
+
+' ── Redis cache (бирюзовый, пунктир) ──
+Catalog -[#00838F,dashed]up-> Redis : <color:#00838F>products, categories</color>\n<color:#00838F>profiles</color>
+Orders  -[#00838F,dashed]up-> Redis : <color:#00838F>cart:{userId}</color>
+
+' ── Публикация событий в MQ (фиолетовый) ──
+Identity -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>UserRegisteredEvent</color>\n<color:#6A1B9A>UserBlockedEvent</color>\n<color:#6A1B9A>UserProfileUpdatedEvent</color>
+Catalog  -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>StockReservedEvent</color>\n<color:#6A1B9A>StockReleasedEvent</color>\n<color:#6A1B9A>StockDepletedEvent</color>
+Orders   -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>OrderPlacedEvent</color>\n<color:#6A1B9A>OrderStatusChangedEvent</color>\n<color:#6A1B9A>OrderCompletedEvent</color>
+Reviews  -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>RatingAggregateUpdatedEvent</color>
+
+' ── Потребление событий из MQ (красный, пунктир) ──
+MQ -[#B71C1C,dashed]up-> Notifs   : <color:#B71C1C>все события выше</color>
+MQ -[#B71C1C,dashed]up-> Catalog  : <color:#B71C1C>RatingAggregateUpdatedEvent</color>\n<color:#B71C1C>→ обновить SellerReadModel</color>
+MQ -[#B71C1C,dashed]up-> Orders   : <color:#B71C1C>StockReservedEvent → подтвердить</color>\n<color:#B71C1C>UserBlockedEvent → отменить</color>
+
+' ── Запись / чтение БД (коричневый) ──
+Identity -[#795548]down-> DBIdentity
+Catalog  -[#795548]down-> DBCatalog
+Orders   -[#795548]down-> DBOrders
+Reviews  -[#795548]down-> DBReviews
+Notifs   -[#795548]down-> DBNotifs
+
+' ─── Легенда ─────────────────────────────────────────────────────────────────
+legend bottom
+  **Условные обозначения:**
+  <color:#1565C0>■</color> HTTPS от клиента → Gateway
+  <color:#2E7D32>■</color> Роутинг Gateway → Сервис
+  <color:#E65100>■</color> Синхронный HTTP между сервисами (пунктир)
+  <color:#6A1B9A>■</color> Публикация события в RabbitMQ
+  <color:#B71C1C>■</color> Потребление события из RabbitMQ (пунктир)
+  <color:#795548>■</color> Чтение / запись в БД
+  <color:#00838F>■</color> Redis cache (пунктир)
+endlegend
+
+@enduml

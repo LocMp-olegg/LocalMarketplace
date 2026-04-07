@@ -1,0 +1,177 @@
+@startuml identity-service
+title <size:16><b>IdentityService</b></size>\n<color:#555>Диаграмма классов (schema: public, media)</color>
+
+' ─── Глобальные настройки стиля ──────────────────────────────────────────────
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 13
+skinparam roundcorner 10
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam nodesep 60
+skinparam ranksep 70
+
+' ─── Стили для классов ───────────────────────────────────────────────────────
+skinparam class {
+    BackgroundColor White
+    HeaderBackgroundColor #EBF5FB
+    BorderColor #2980B9
+    BorderThickness 1.2
+    ArrowColor #2980B9
+    ArrowThickness 1.2
+    AttributeFontColor #2C3E50
+}
+
+' ─── Стили для перечислений (Enums) ──────────────────────────────────────────
+skinparam enum {
+    BackgroundColor White
+    HeaderBackgroundColor #EAFAF1
+    BorderColor #27AE60
+    BorderThickness 1.2
+}
+
+' ─── Стили для заметок ───────────────────────────────────────────────────────
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #FBC02D
+    FontColor #4E342E
+    BorderThickness 1.2
+    roundcorner 6
+}
+
+' Кастомные цвета для дефолтных иконок стереотипов (C, A, E, I)
+skinparam stereotypeCBackgroundColor #D6EAF8
+skinparam stereotypeABackgroundColor #FDEBD0
+skinparam stereotypeEBackgroundColor #D5F5E3
+
+' ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Gender {
+    Male
+    Female
+}
+
+enum UserRole {
+    Admin
+    Seller
+    Buyer
+    Courier
+}
+
+' ─── Core Entities ───────────────────────────────────────────────────────────
+
+class ApplicationUser <<IdentityUser<Guid>>> {
+    + Id : Guid <<PK>>
+    ..основные поля..
+    + UserName : string
+    + Email : string <<unique>>
+    + PhoneNumber : string <<unique, nullable>>
+    + FirstName : string
+    + LastName : string
+    + Gender : Gender
+    + BirthDate : DateOnly?
+    + RegisteredAt : DateTimeOffset
+    + Active : bool
+    ..унаследовано от IdentityUser..
+    + PasswordHash : string
+    + LockoutEnabled : bool
+    + LockoutEnd : DateTimeOffset?
+    + AccessFailedCount : int
+}
+
+class ApplicationRole <<IdentityRole<Guid>>> {
+    + Id : Guid <<PK>>
+    + Name : string
+    + NormalizedName : string
+    + Active : bool
+}
+
+class AspNetUserRoles <<junction>> {
+    + UserId : Guid <<FK, PK>>
+    + RoleId : Guid <<FK, PK>>
+}
+
+class UserAddress {
+    + Id : Guid <<PK>>
+    + UserId : Guid <<FK>>
+    ..адресные поля..
+    + Title : string
+    + City : string
+    + Street : string
+    + HouseNumber : string
+    + Apartment : string?
+    + Entrance : string?
+    + Floor : int?
+    ..геолокация..
+    + Location : Point <<geometry(Point,4326)>>
+    + IsDefault : bool
+    + CreatedAt : DateTimeOffset
+}
+
+class UserPhoto <<schema: media>> {
+    + Id : Guid <<PK>>
+    + UserId : Guid <<FK, unique>>
+    + StorageUrl : string <<MinIO bucket: identity-media>>
+    + MimeType : string
+    + FileSize : long
+    + UploadedAt : DateTimeOffset
+}
+
+' ─── Read Models ──────────────────────────────────────────────────────────────
+
+class SellerReadModel <<read model>> {
+    + SellerId : Guid <<PK>>
+    + DisplayName : string
+    + AvatarUrl : string?
+    + AverageRating : decimal
+    + ReviewCount : int
+    + LastSyncedAt : DateTimeOffset
+}
+
+' ─── Relationships ────────────────────────────────────────────────────────────
+
+ApplicationUser "1" *-down- "0..*" UserAddress : имеет >
+ApplicationUser "1" *-down- "0..1" UserPhoto : имеет фото >
+ApplicationUser "1" -right- "0..*" AspNetUserRoles
+ApplicationRole "1" -left- "0..*" AspNetUserRoles
+
+ApplicationUser .up.> Gender : использует
+ApplicationUser ..> UserRole : роли через AspNetUserRoles
+
+' ─── Notes ───────────────────────────────────────────────────────────────────
+
+note bottom of SellerReadModel
+  Обновляется реактивно через
+  <<RatingAggregateUpdatedEvent>>
+  из ReviewService (MassTransit).
+  Нет FK на ApplicationUser —
+  принадлежит другому сервису.
+end note
+
+note right of UserAddress
+  Location хранится как
+  PostGIS geometry(Point, 4326).
+  Используется для геофенсинга:
+  ST_Contains(complex.boundary, location)
+end note
+
+note bottom of AspNetUserRoles
+  Встроенная связующая таблица
+  ASP.NET Core Identity.
+  Реализует M:M User ↔ Role.
+end note
+
+
+' ─── Сводная таблица сущностей ───────────────────────────────────────────────
+
+legend bottom
+  <b>Таблицы сервиса (schema: public, media)</b>
+  |= Класс C# |= Таблица в БД |= Описание |
+  | ApplicationUser | AspNetUsers | Учётные записи пользователей |
+  | ApplicationRole | AspNetRoles | Роли системы (Admin, Seller, Buyer, Courier) |
+  | AspNetUserRoles | AspNetUserRoles | Связующая M:M пользователь ↔ роль |
+  | UserAddress | UserAddresses | Адреса пользователя с геолокацией (PostGIS) |
+  | UserPhoto | media.UserPhotos | Аватар пользователя (StorageUrl → MinIO bucket: identity-media, 1:1) |
+  | SellerReadModel | SellerReadModels | Денормализованный профиль продавца для каталога |
+endlegend
+
+@enduml

@@ -1,0 +1,247 @@
+@startuml order-service
+title <size:16><b>OrderService</b></size>\n<color:#555>Диаграмма классов (schema: orders)</color>
+
+' ─── Глобальные настройки стиля ──────────────────────────────────────────────
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 13
+skinparam roundcorner 10
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam nodesep 60
+skinparam ranksep 70
+
+skinparam class {
+    BackgroundColor White
+    HeaderBackgroundColor #EDE7F6
+    BorderColor #7B1FA2
+    BorderThickness 1.2
+    ArrowColor #7B1FA2
+    ArrowThickness 1.2
+    AttributeFontColor #2C3E50
+}
+
+skinparam enum {
+    BackgroundColor White
+    HeaderBackgroundColor #F3E5F5
+    BorderColor #6A1B9A
+    BorderThickness 1.2
+}
+
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #FBC02D
+    FontColor #4E342E
+    BorderThickness 1.2
+    roundcorner 6
+}
+
+skinparam stereotypeCBackgroundColor #EDE7F6
+skinparam stereotypeABackgroundColor #FDEBD0
+skinparam stereotypeEBackgroundColor #D5F5E3
+
+' ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum OrderStatus {
+    Pending
+    Confirmed
+    ReadyForPickup
+    InDelivery
+    Completed
+    Cancelled
+    Disputed
+}
+
+enum DeliveryType {
+    Pickup
+    NeighborCourier
+}
+
+enum PaymentStatus {
+    Pending
+    Paid
+    Refunded
+}
+
+enum DisputeStatus {
+    Open
+    Resolved
+    Closed
+}
+
+' ─── Cart ────────────────────────────────────────────────────────────────────
+
+class Cart {
+    + Id : Guid <<PK>>
+    + UserId : Guid <<logical ref: Identity>>
+    + CreatedAt : DateTimeOffset
+    + UpdatedAt : DateTimeOffset?
+    + ExpiresAt : DateTimeOffset
+}
+
+class CartItem {
+    + Id : Guid <<PK>>
+    + CartId : Guid <<FK>>
+    ..snapshot на момент добавления..
+    + ProductId : Guid <<logical ref: Catalog>>
+    + ProductName : string <<snapshot>>
+    + Price : decimal <<snapshot>>
+    + Quantity : int
+    + UpdatedAt : DateTimeOffset?
+}
+
+' ─── Order Aggregate ─────────────────────────────────────────────────────────
+
+class Order <<aggregate root>> {
+    + Id : Guid <<PK>>
+    ..участники — только Guid, нет FK..
+    + BuyerId : Guid <<logical ref: Identity>>
+    + SellerId : Guid <<logical ref: Identity>>
+    ..статус и тип..
+    + Status : OrderStatus
+    + DeliveryType : DeliveryType
+    + PaymentStatus : PaymentStatus
+    ..финансы..
+    + TotalAmount : decimal
+    + BuyerComment : string?
+    ..временные метки..
+    + CreatedAt : DateTimeOffset
+    + UpdatedAt : DateTimeOffset?
+    + CompletedAt : DateTimeOffset?
+}
+
+class OrderItem {
+    + Id : Guid <<PK>>
+    + OrderId : Guid <<FK>>
+    ..snapshot товара на момент заказа..
+    + ProductId : Guid <<logical ref: Catalog>>
+    + ProductName : string <<snapshot>>
+    + ProductDescription : string? <<snapshot>>
+    + UnitPrice : decimal <<snapshot>>
+    + Quantity : int
+    + Subtotal : decimal
+}
+
+class OrderStatusHistory {
+    + Id : Guid <<PK>>
+    + OrderId : Guid <<FK>>
+    + FromStatus : OrderStatus?
+    + ToStatus : OrderStatus
+    + Comment : string?
+    + ChangedById : Guid <<logical ref: Identity>>
+    + ChangedAt : DateTimeOffset
+}
+
+class DeliveryAddress {
+    + Id : Guid <<PK>>
+    + OrderId : Guid <<FK, unique>>
+    ..адрес доставки..
+    + City : string
+    + Street : string
+    + HouseNumber : string
+    + Apartment : string?
+    + Entrance : string?
+    + Floor : int?
+    + Location : Point? <<geometry(Point,4326)>>
+    ..контакты..
+    + RecipientName : string <<snapshot>>
+    + RecipientPhone : string <<snapshot>>
+}
+
+class CourierAssignment {
+    + Id : Guid <<PK>>
+    + OrderId : Guid <<FK, unique>>
+    + CourierId : Guid <<logical ref: Identity>>
+    + CourierName : string <<snapshot>>
+    + CourierPhone : string <<snapshot>>
+    + AssignedAt : DateTimeOffset
+    + PickedUpAt : DateTimeOffset?
+    + DeliveredAt : DateTimeOffset?
+}
+
+class Dispute {
+    + Id : Guid <<PK>>
+    + OrderId : Guid <<FK, unique>>
+    + InitiatorId : Guid <<logical ref: Identity>>
+    + Reason : string
+    + Status : DisputeStatus
+    + Resolution : string?
+    + CreatedAt : DateTimeOffset
+    + ResolvedAt : DateTimeOffset?
+}
+
+' ─── Relationships ────────────────────────────────────────────────────────────
+
+Cart "1" *-down- "0..*" CartItem : содержит >
+
+Order "1" *-down- "1..*" OrderItem : состоит из >
+Order "1" *-right- "1..*" OrderStatusHistory : история >
+Order "1" *-down- "0..1" DeliveryAddress : адрес >
+Order "1" *-left- "0..1" CourierAssignment : курьер >
+Order "1" *-right- "0..1" Dispute : спор >
+
+Order ..> OrderStatus
+Order ..> DeliveryType
+Order ..> PaymentStatus
+Dispute ..> DisputeStatus
+
+' ─── Notes ───────────────────────────────────────────────────────────────────
+
+note right of OrderItem
+  SNAPSHOT PATTERN:
+  Цена и название товара копируются
+  в момент оформления и не меняются
+  при изменении каталога.
+
+  ProductId хранится только
+  для аналитики — FK в catalog БД нет.
+end note
+
+note right of Order
+  Конечный автомат статусов:
+
+  Pending ──► Confirmed
+           ──► Cancelled (продавец отклонил)
+  Confirmed ──► ReadyForPickup  (Pickup)
+            ──► InDelivery      (NeighborCourier)
+            ──► Cancelled
+  ReadyForPickup ──► Completed
+  InDelivery ──► Completed
+  Confirmed+ ──► Disputed
+
+  FromStatus = null в первой записи
+  OrderStatusHistory (создание заказа).
+end note
+
+note right of DeliveryAddress
+  Создаётся только при
+  DeliveryType = NeighborCourier.
+  Location (PostGIS): для поиска
+  ближайшего свободного курьера.
+  RecipientName/Phone — снепшот,
+  т.к. пользователь может сменить данные.
+end note
+
+note bottom of CourierAssignment
+  Курьер — пользователь
+  с ролью Courier в IdentityService.
+  Ищется по геолокации относительно
+  DeliveryAddress.Location.
+end note
+
+
+' ─── Сводная таблица сущностей ───────────────────────────────────────────────
+
+legend bottom
+  <b>Таблицы сервиса (schema: orders)</b>
+  |= Класс C# |= Таблица в БД |= Описание |
+  | Cart | Carts | Корзина покупателя (TTL 24ч, чистится фоновым сервисом) |
+  | CartItem | CartItems | Позиция корзины — снепшот цены и названия товара |
+  | Order | Orders | Агрегат заказа — конечный автомат статусов |
+  | OrderItem | OrderItems | Позиция заказа — неизменяемый снепшот товара на момент покупки |
+  | OrderStatusHistory | OrderStatusHistory | Полный аудит переходов статусов заказа |
+  | DeliveryAddress | DeliveryAddresses | Снепшот адреса и контактов получателя (только для курьерской доставки) |
+  | CourierAssignment | CourierAssignments | Назначение курьера-соседа на заказ (1:1) |
+  | Dispute | Disputes | Спор по заказу с историей разрешения (1:1) |
+endlegend
+
+@enduml

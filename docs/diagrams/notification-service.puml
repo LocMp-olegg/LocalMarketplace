@@ -1,0 +1,152 @@
+@startuml notification-service
+title <size:16><b>NotificationService</b></size>\n<color:#555>Диаграмма классов (schema: notifs)</color>
+
+' ─── Глобальные настройки стиля ──────────────────────────────────────────────
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 13
+skinparam roundcorner 10
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam nodesep 60
+skinparam ranksep 70
+
+skinparam class {
+    BackgroundColor White
+    HeaderBackgroundColor #E0F7FA
+    BorderColor #00838F
+    BorderThickness 1.2
+    ArrowColor #00838F
+    ArrowThickness 1.2
+    AttributeFontColor #2C3E50
+}
+
+skinparam enum {
+    BackgroundColor White
+    HeaderBackgroundColor #E0F2F1
+    BorderColor #00695C
+    BorderThickness 1.2
+}
+
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #FBC02D
+    FontColor #4E342E
+    BorderThickness 1.2
+    roundcorner 6
+}
+
+skinparam stereotypeCBackgroundColor #B2EBF2
+skinparam stereotypeABackgroundColor #FDEBD0
+skinparam stereotypeEBackgroundColor #D5F5E3
+
+' ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum NotificationType {
+    OrderPlaced
+    OrderConfirmed
+    OrderReadyForPickup
+    OrderInDelivery
+    OrderCompleted
+    OrderCancelled
+    OrderDisputed
+    StockDepleted
+    ReviewReceived
+    ReviewReplied
+    SystemAlert
+}
+
+enum DeliveryChannel {
+    InApp
+    Email
+    Push
+}
+
+enum DeliveryStatus {
+    Pending
+    Sent
+    Failed
+}
+
+' ─── Entities ────────────────────────────────────────────────────────────────
+
+class Notification {
+    + Id : Guid <<PK>>
+    + UserId : Guid <<logical ref: Identity>>
+    ..тип и содержимое..
+    + Type : NotificationType
+    + Title : string
+    + Body : string
+    ..доставка..
+    + DeliveryChannel : DeliveryChannel
+    + DeliveryStatus : DeliveryStatus
+    + SentAt : DateTimeOffset?
+    ..статус прочтения..
+    + IsRead : bool
+    + ReadAt : DateTimeOffset?
+    ..контекст для диплинков в UI..
+    + Payload : JsonDocument? <<jsonb>>
+    + CreatedAt : DateTimeOffset
+}
+
+class UserNotificationPreference {
+    + UserId : Guid <<PK, logical ref: Identity>>
+    + OrderUpdates : bool
+    + ReviewReplies : bool
+    + SystemAlerts : bool
+    + UpdatedAt : DateTimeOffset?
+}
+
+' ─── Relationships ────────────────────────────────────────────────────────────
+
+Notification ..> NotificationType
+Notification ..> DeliveryChannel
+Notification ..> DeliveryStatus
+
+' ─── Notes ───────────────────────────────────────────────────────────────────
+
+note right of Notification
+  Сервис полностью реактивный:
+  только потребляет события из MQ,
+  REST API только для чтения (GET /notifications).
+  Нет HTTP-вызовов от других сервисов.
+
+  Payload (jsonb) — контекст для UI:
+  {"orderId":"...", "orderNumber":"LM-2026-001"}
+  {"productName":"...", "shopName":"..."}
+
+  DeliveryChannel определяет
+  способ отправки:
+  InApp → запись в таблицу (polling/SSE)
+  Email → SMTP-клиент
+  Push  → FCM / APNs (future)
+end note
+
+note right of UserNotificationPreference
+  1:1 с UserId из Identity.
+  Создаётся автоматически при
+  <<UserRegisteredEvent>>.
+  Нет FK в БД — другой сервис.
+
+  Позволяет пользователю отключить
+  отдельные типы уведомлений в ЛК.
+end note
+
+note bottom of NotificationType
+  Каждый тип соответствует
+  интеграционному событию
+  из других сервисов.
+  NotificationService подписан
+  на все события через MassTransit.
+end note
+
+
+' ─── Сводная таблица сущностей ───────────────────────────────────────────────
+
+legend bottom
+  <b>Таблицы сервиса (schema: notifs)</b>
+  |= Класс C# |= Таблица в БД |= Описание |
+  | Notification | Notifications | Уведомление пользователю с Payload (jsonb) для диплинков |
+  | UserNotificationPreference | UserNotificationPreferences | Настройки типов уведомлений (1:1 с пользователем) |
+endlegend
+
+@enduml
