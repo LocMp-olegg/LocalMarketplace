@@ -132,6 +132,30 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
             + OccurredAt : DateTimeOffset
         }
     }
+
+    package "Catalog Events" #E9F7EF {
+        class ProductViewedEvent {
+            + ProductId : Guid
+            + SellerId : Guid
+            + ViewerId : Guid?
+            + OccurredAt : DateTimeOffset
+        }
+    }
+
+    package "Dispute Events" #FFF3E0 {
+        class DisputeOpenedEvent {
+            + DisputeId : Guid
+            + OrderId : Guid
+            + InitiatorId : Guid
+            + OccurredAt : DateTimeOffset
+        }
+        class DisputeResolvedEvent {
+            + DisputeId : Guid
+            + OrderId : Guid
+            + ResolutionMinutes : int
+            + OccurredAt : DateTimeOffset
+        }
+    }
 }
 
 ' ─── Notes ───────────────────────────────────────────────────────────────────
@@ -147,11 +171,14 @@ note as PublisherNote
                      StockReservationFailedEvent
                      StockReleasedEvent
                      StockDepletedEvent
+                     ProductViewedEvent
   ─────────────────────────────────────────
   OrderService     → OrderPlacedEvent
                      OrderStatusChangedEvent
                      OrderCompletedEvent
                      StockReserveRequestEvent
+                     DisputeOpenedEvent
+                     DisputeResolvedEvent
   ─────────────────────────────────────────
   ReviewService    → RatingAggregateUpdatedEvent
 end note
@@ -159,8 +186,8 @@ end note
 note as ConsumerNote
   <b>Кто потребляет:</b>
   CatalogService:
-    • StockReserveRequestEvent → резервирует StockQuantity
-    • StockReleasedEvent       → освобождает резерв
+    • StockReserveRequestEvent    → резервирует StockQuantity
+    • StockReleasedEvent          → освобождает резерв
     • RatingAggregateUpdatedEvent → обновляет SellerReadModel
   ─────────────────────────────────────────
   OrderService:
@@ -171,12 +198,24 @@ note as ConsumerNote
   ReviewService:
     • OrderCompletedEvent → разблокирует отзыв для покупателя
   ─────────────────────────────────────────
-  NotificationService (потребляет все):
-    • UserRegisteredEvent      → создаёт Preference
-    • OrderPlacedEvent         → уведомление продавцу
-    • OrderStatusChangedEvent  → уведомление покупателю
-    • OrderCompletedEvent      → предложение написать отзыв
-    • StockDepletedEvent       → уведомление продавцу
+  AnalyticsService (потребляет всё):
+    • OrderPlacedEvent            → PlatformDailySummary, GeographicActivity
+    • OrderStatusChangedEvent     → SellerSalesSummary (cancelled/disputed)
+    • OrderCompletedEvent         → SellerSalesSummary, TopProduct, SellerLeaderboard
+    • StockDepletedEvent          → StockAlert
+    • RatingAggregateUpdatedEvent → SellerRatingHistory
+    • UserRegisteredEvent         → PlatformDailySummary.NewRegistrations
+    • UserBlockedEvent            → PlatformDailySummary.BlockedUsers
+    • ProductViewedEvent          → ProductViewCounter
+    • DisputeOpenedEvent          → DisputeSummary.OpenedCount
+    • DisputeResolvedEvent        → DisputeSummary (resolved + время решения)
+  ─────────────────────────────────────────
+  NotificationService:
+    • UserRegisteredEvent         → создаёт Preference
+    • OrderPlacedEvent            → уведомление продавцу
+    • OrderStatusChangedEvent     → уведомление покупателю
+    • OrderCompletedEvent         → предложение написать отзыв
+    • StockDepletedEvent          → уведомление продавцу
     • RatingAggregateUpdatedEvent → уведомление о новом отзыве
 end note
 
