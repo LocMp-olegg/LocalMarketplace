@@ -1,9 +1,10 @@
 ﻿using LocMp.BuildingBlocks.Application.Interfaces;
-using LocMp.BuildingBlocks.Infrastructure.Events;
 using LocMp.Identity.Infrastructure.BackgroundServices;
+using LocMp.Identity.Infrastructure.Events;
 using LocMp.Identity.Infrastructure.Options;
 using LocMp.Identity.Infrastructure.Persistence;
 using LocMp.Identity.Infrastructure.Storage;
+using MassTransit;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -39,8 +40,21 @@ public static class InfrastructureExtension
 
         services.AddHostedService<UserUnblockingBackgroundService>();
 
-        // Заглушка до подключения RabbitMQ — заменить на MassTransitEventBus
-        services.AddSingleton<IEventBus, NullEventBus>();
+        var rabbitMqHost = configuration.GetConnectionString("RabbitMq")
+                           ?? "amqp://guest:guest@localhost:5672";
+
+        services.AddMassTransit(x =>
+        {
+            x.SetKebabCaseEndpointNameFormatter();
+
+            x.UsingRabbitMq((ctx, cfg) =>
+            {
+                cfg.Host(new Uri(rabbitMqHost));
+                cfg.ConfigureEndpoints(ctx);
+            });
+        });
+
+        services.AddScoped<IEventBus, MassTransitEventBus>();
 
         // MinIO
         services.Configure<MinioOptions>(configuration.GetSection("Minio"));

@@ -1,4 +1,6 @@
-﻿using LocMp.Identity.Infrastructure.Persistence;
+﻿using LocMp.Contracts.Identity;
+using LocMp.Identity.Infrastructure.Persistence;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -6,13 +8,11 @@ using Microsoft.Extensions.Logging;
 
 namespace LocMp.Identity.Infrastructure.BackgroundServices;
 
-// TODO: подтребуются доработки после добавления MQ
 public class UserUnblockingBackgroundService(
     IServiceScopeFactory scopeFactory,
     ILogger<UserUnblockingBackgroundService> logger) : BackgroundService
 {
-    private readonly TimeSpan
-        _checkInterval = TimeSpan.FromMinutes(1);
+    private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(1);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -41,18 +41,27 @@ public class UserUnblockingBackgroundService(
     {
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var publishEndpoint = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
 
-        var affectedRows = await context.Users
+        var expiredUsers = await context.Users
             .Where(u => u.LockoutEnd != null && u.LockoutEnd <= DateTimeOffset.UtcNow)
-            .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(u => u.LockoutEnd, (DateTimeOffset?)null)
-                    .SetProperty(u => u.Active, true)
-                    .SetProperty(u => u.AccessFailedCount, 0),
-                ct);
+            .Select(u => u.Id)
+            .ToListAsync(ct);
 
-        if (affectedRows > 0)
-        {
-            logger.LogInformation("Batch unblock completed. {UserCount} users were reactivated", affectedRows);
-        }
+        if (expiredUsers.Count == 0)
+            return;
+
+        await context.Users
+            .Where(u => expiredUsers.Contains(u.Id))
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(u => u.LockoutEnd, (DateTimeOffset?)null)
+                .SetProperty(u => u.Active, true)
+                .SetProperty(u => u.AccessFailedCount, 0), ct);
+
+        var now = DateTimeOffset.UtcNow;
+        foreach (var userId in expiredUsers)
+            await publishEndpoint.Publish(new UserUnblockedEvent(userId, now), ct);
+
+        logger.LogInformation("Batch unblock completed. {UserCount} users were reactivated", expiredUsers.Count);
     }
 }
