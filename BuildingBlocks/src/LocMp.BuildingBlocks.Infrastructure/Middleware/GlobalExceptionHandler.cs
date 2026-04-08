@@ -3,7 +3,7 @@ using FluentValidation;
 using LocMp.BuildingBlocks.Application.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -11,7 +11,7 @@ namespace LocMp.BuildingBlocks.Infrastructure.Middleware;
 
 public sealed class GlobalExceptionHandler(
     ILogger<GlobalExceptionHandler> logger,
-    IProblemDetailsService problemDetailsService,
+    ProblemDetailsFactory problemDetailsFactory,
     IHostEnvironment env) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(
@@ -21,21 +21,18 @@ public sealed class GlobalExceptionHandler(
     {
         var (statusCode, title) = MapException(exception);
 
-        var problemDetails = new ProblemDetails
-        {
-            Status = statusCode,
-            Title = title,
-            Instance = httpContext.Request.Path,
-            Extensions =
-            {
-                ["traceId"] = httpContext.TraceIdentifier
-            }
-        };
+        var problemDetails = problemDetailsFactory.CreateProblemDetails(
+            httpContext,
+            statusCode: statusCode,
+            title: title,
+            instance: httpContext.Request.Path
+        );
 
+        problemDetails.Extensions["traceId"] = System.Diagnostics.Activity.Current?.Id
+                                               ?? httpContext.TraceIdentifier;
         if (exception is ValidationException valEx)
         {
             problemDetails.Detail = "One or more validation errors occurred.";
-
             problemDetails.Extensions["errors"] = valEx.Errors
                 .GroupBy(e => e.PropertyName)
                 .ToDictionary(g => g.Key, g => g.Select(x => x.ErrorMessage).ToArray());
@@ -53,12 +50,9 @@ public sealed class GlobalExceptionHandler(
         LogException(exception, statusCode);
 
         httpContext.Response.StatusCode = statusCode;
+        await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken: ct);
 
-        return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
-        {
-            HttpContext = httpContext,
-            ProblemDetails = problemDetails
-        });
+        return true;
     }
 
     private static (int StatusCode, string Title) MapException(Exception exception) => exception switch
