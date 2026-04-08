@@ -4,6 +4,7 @@ using LocMp.Identity.Infrastructure.Extensions;
 using LocMp.Identity.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using Serilog.Context;
 
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
@@ -35,13 +36,22 @@ try
         using (var scope = app.Services.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            await dbContext.Database.MigrateAsync(); 
+            await dbContext.Database.MigrateAsync();
         }
+
         app.UseSwaggerUi(configuration);
         await IdentityDataSeeder.SeedAsync(app.Services);
     }
 
     app.UseHttpsRedirection();
+
+    app.Use(async (ctx, next) =>
+    {
+        using (LogContext.PushProperty("TraceId", ctx.TraceIdentifier))
+            await next();
+    });
+
+    app.UseSerilogRequestLogging();
 
     app.UseIdentityServer();
 
