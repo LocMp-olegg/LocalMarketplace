@@ -1,4 +1,5 @@
 using AutoMapper;
+using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.BuildingBlocks.Application.Interfaces;
 using LocMp.Contracts.Identity;
 using LocMp.Identity.Application.DTOs.User;
@@ -21,15 +22,15 @@ public sealed class RegisterUserCommandHandler(
 
         var user = new ApplicationUser
         {
-            UserName       = request.UserName,
-            Email          = request.Email,
-            FirstName      = request.FirstName,
-            LastName       = request.LastName,
-            PhoneNumber    = request.PhoneNumber,
-            Gender         = (int?)request.Gender,
-            BirthDate      = request.BirthDate,
-            Active         = true,
-            RegisteredAt   = DateTimeOffset.UtcNow,
+            UserName = request.UserName,
+            Email = request.Email,
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+            PhoneNumber = request.PhoneNumber,
+            Gender = (int?)request.Gender,
+            BirthDate = request.BirthDate,
+            Active = true,
+            RegisteredAt = DateTimeOffset.UtcNow,
             EmailConfirmed = false
         };
 
@@ -37,7 +38,7 @@ public sealed class RegisterUserCommandHandler(
         if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            throw new InvalidOperationException($"Failed to register user '{request.Email}': {errors}");
+            throw new ConflictException($"Failed to register user '{request.Email}': {errors}");
         }
 
         var roleResult = await userManager.AddToRoleAsync(user, defaultRole).ConfigureAwait(false);
@@ -49,7 +50,7 @@ public sealed class RegisterUserCommandHandler(
         }
 
         await eventBus.PublishAsync(
-            new UserRegisteredEvent(user.Id, user.Email!, $"{user.FirstName} {user.LastName}".Trim(),
+            new UserRegisteredEvent(user.Id, user.Email, $"{user.FirstName} {user.LastName}".Trim(),
                 user.RegisteredAt), ct);
 
         return mapper.Map<UserDto>(user);
