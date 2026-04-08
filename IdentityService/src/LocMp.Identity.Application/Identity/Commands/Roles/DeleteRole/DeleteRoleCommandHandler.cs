@@ -1,3 +1,4 @@
+using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Identity.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -9,17 +10,16 @@ public sealed class DeleteRoleCommandHandler(
     UserManager<ApplicationUser> userManager
 ) : IRequestHandler<DeleteRoleCommand, Unit>
 {
-    public async Task<Unit> Handle(DeleteRoleCommand request, CancellationToken cancellationToken)
+    public async Task<Unit> Handle(DeleteRoleCommand request, CancellationToken ct)
     {
-        var role = await roleManager.FindByIdAsync(request.Id.ToString()).ConfigureAwait(false);
-
-        if (role is null)
-            throw new KeyNotFoundException($"Role with id '{request.Id}' was not found.");
+        var role = await roleManager.FindByIdAsync(request.Id.ToString()).ConfigureAwait(false)
+            ?? throw new NotFoundException($"Role with id '{request.Id}' was not found.");
 
         var usersInRole = await userManager.GetUsersInRoleAsync(role.Name!);
         if (usersInRole.Any())
-            throw new InvalidOperationException($"Cannot delete role '{role.Name}' because it is currently assigned to {usersInRole.Count} user(s).");
-        
+            throw new ConflictException(
+                $"Cannot delete role '{role.Name}' — assigned to {usersInRole.Count} user(s).");
+
         var result = await roleManager.DeleteAsync(role).ConfigureAwait(false);
         if (!result.Succeeded)
         {

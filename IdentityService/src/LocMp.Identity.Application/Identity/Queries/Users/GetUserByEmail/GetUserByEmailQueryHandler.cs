@@ -1,3 +1,4 @@
+using LocMp.BuildingBlocks.Application.Exceptions;
 using AutoMapper;
 using LocMp.Identity.Application.DTOs.User;
 using LocMp.Identity.Domain.Entities;
@@ -19,7 +20,7 @@ public sealed class GetUserByEmailQueryHandler(UserManager<ApplicationUser> user
         var user = await userManager.FindByEmailAsync(email).ConfigureAwait(false);
 
         if (user is null)
-            throw new KeyNotFoundException($"User with email '{request.Email}' was not found.");
+            throw new NotFoundException($"User with email '{request.Email}' was not found.");
 
         return mapper.Map<UserDto>(user);
     }

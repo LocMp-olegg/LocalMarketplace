@@ -1,3 +1,4 @@
+using LocMp.BuildingBlocks.Application.Exceptions;
 using AutoMapper;
 using LocMp.Identity.Application.DTOs.User;
 using LocMp.Identity.Domain.Entities;
@@ -14,7 +15,7 @@ public sealed class GetUserByIdQueryHandler(UserManager<ApplicationUser> userMan
         var user = await userManager.FindByIdAsync(request.Id.ToString()).ConfigureAwait(false);
 
         if (user is null)
-            throw new KeyNotFoundException($"User with id '{request.Id}' was not found.");
+            throw new NotFoundException($"User with id '{request.Id}' was not found.");
 
         return mapper.Map<UserDto>(user);
     }

@@ -1,4 +1,5 @@
 using AutoMapper;
+using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Identity.Application.DTOs.Role;
 using LocMp.Identity.Domain.Entities;
 using MediatR;
@@ -11,11 +12,10 @@ public sealed class CreateRoleCommandHandler(
     IMapper mapper
 ) : IRequestHandler<CreateRoleCommand, RoleDto>
 {
-    public async Task<RoleDto> Handle(CreateRoleCommand request, CancellationToken cancellationToken)
+    public async Task<RoleDto> Handle(CreateRoleCommand request, CancellationToken ct)
     {
-        var roleExists = await roleManager.RoleExistsAsync(request.Name).ConfigureAwait(false);
-        if (roleExists)
-            throw new InvalidOperationException($"Role '{request.Name}' already exists.");
+        if (await roleManager.RoleExistsAsync(request.Name).ConfigureAwait(false))
+            throw new ConflictException($"Role '{request.Name}' already exists.");
 
         var role = new ApplicationRole
         {

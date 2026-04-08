@@ -1,21 +1,29 @@
-﻿using LocMp.Identity.Domain.Entities;
+using LocMp.BuildingBlocks.Application.Exceptions;
+using LocMp.BuildingBlocks.Application.Interfaces;
+using LocMp.Contracts.Identity;
+using LocMp.Identity.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 
 namespace LocMp.Identity.Application.Identity.Commands.Users.UnblockUser;
 
 public sealed class UnblockUserCommandHandler(
-    UserManager<ApplicationUser> userManager) : IRequestHandler<UnblockUserCommand, Unit>
+    UserManager<ApplicationUser> userManager,
+    IEventBus eventBus
+) : IRequestHandler<UnblockUserCommand, Unit>
 {
     public async Task<Unit> Handle(UnblockUserCommand request, CancellationToken ct)
     {
         var user = await userManager.FindByIdAsync(request.UserId.ToString())
-                   ?? throw new KeyNotFoundException($"User {request.UserId} not found");
+            ?? throw new NotFoundException($"User {request.UserId} not found");
 
         await userManager.SetLockoutEndDateAsync(user, null);
 
         user.Active = true;
         await userManager.UpdateAsync(user);
+
+        await eventBus.PublishAsync(
+            new UserUnblockedEvent(user.Id, DateTimeOffset.UtcNow), ct);
 
         return Unit.Value;
     }

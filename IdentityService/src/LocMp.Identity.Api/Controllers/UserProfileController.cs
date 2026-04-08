@@ -1,4 +1,3 @@
-using LocMp.Identity.Api.Requests;
 using LocMp.Identity.Api.Requests.UserProfile;
 using LocMp.Identity.Application.DTOs.UserProfile;
 using LocMp.Identity.Application.Identity.Commands.UserProfile.DeleteUserPhoto;
@@ -17,12 +16,12 @@ namespace LocMp.Identity.Api.Controllers;
 [ApiController]
 [Route("api/profile")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class UserProfileController(IMediator mediator) : ControllerBase
+public class UserProfileController(ISender sender) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<UserProfileDto>> GetProfile(CancellationToken ct)
     {
-        var result = await mediator.Send(new GetUserProfileQuery(HttpContext.GetUserId()), ct);
+        var result = await sender.Send(new GetUserProfileQuery(HttpContext.GetUserId()), ct);
         return Ok(result);
     }
 
@@ -39,34 +38,29 @@ public class UserProfileController(IMediator mediator) : ControllerBase
             PhoneNumber: request.PhoneNumber
         );
 
-        var result = await mediator.Send(command, ct);
+        var result = await sender.Send(command, ct);
         return Ok(result);
     }
 
-    // TODO: Вероятно потребуется доработка с кэшированием
     [HttpGet("photo")]
-    [ResponseCache(Location = ResponseCacheLocation.Any, Duration = 3600)]
     public async Task<IActionResult> GetPhoto(CancellationToken ct)
     {
-        var result = await mediator.Send(new GetUserPhotoQuery(HttpContext.GetUserId()), ct);
-        var etag = $"\"{result.UploadedAt.Ticks}\"";
-        return File(result.PhotoData, result.MimeType,
-            lastModified: result.UploadedAt,
-            entityTag: new Microsoft.Net.Http.Headers.EntityTagHeaderValue(etag));
+        var result = await sender.Send(new GetUserPhotoQuery(HttpContext.GetUserId()), ct);
+        return Redirect(result.StorageUrl);
     }
 
     [HttpPost("photo")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadPhoto(IFormFile photo, CancellationToken ct)
     {
-        await mediator.Send(new UploadUserPhotoCommand(HttpContext.GetUserId(), photo), ct);
+        await sender.Send(new UploadUserPhotoCommand(HttpContext.GetUserId(), photo), ct);
         return NoContent();
     }
 
     [HttpDelete("photo")]
     public async Task<IActionResult> DeletePhoto(CancellationToken ct)
     {
-        await mediator.Send(new DeleteUserPhotoCommand(HttpContext.GetUserId()), ct);
+        await sender.Send(new DeleteUserPhotoCommand(HttpContext.GetUserId()), ct);
         return NoContent();
     }
 }

@@ -12,7 +12,6 @@ public sealed record UpdateUserCommand(
     string LastName,
     string? PhoneNumber,
     Gender? Gender,
-    DateTime? DateOfBirth,
+    DateOnly? BirthDate,
     bool Active = true
 ) : IRequest<UserDto>;
-

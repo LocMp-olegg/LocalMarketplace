@@ -1,7 +1,7 @@
 namespace LocMp.Identity.Application.DTOs.UserProfile;
 
 public sealed record UserPhotoDto(
-    byte[] PhotoData,
+    string StorageUrl,
     string MimeType,
-    DateTime UploadedAt
+    DateTimeOffset UploadedAt
 );

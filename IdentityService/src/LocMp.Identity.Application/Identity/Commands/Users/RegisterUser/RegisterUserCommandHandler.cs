@@ -1,4 +1,7 @@
 using AutoMapper;
+using LocMp.BuildingBlocks.Application.Exceptions;
+using LocMp.BuildingBlocks.Application.Interfaces;
+using LocMp.Contracts.Identity;
 using LocMp.Identity.Application.DTOs.User;
 using LocMp.Identity.Domain.Entities;
 using LocMp.Identity.Domain.Enums;
@@ -9,12 +12,13 @@ namespace LocMp.Identity.Application.Identity.Commands.Users.RegisterUser;
 
 public sealed class RegisterUserCommandHandler(
     UserManager<ApplicationUser> userManager,
+    IEventBus eventBus,
     IMapper mapper
 ) : IRequestHandler<RegisterUserCommand, UserDto>
 {
-    public async Task<UserDto> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
+    public async Task<UserDto> Handle(RegisterUserCommand request, CancellationToken ct)
     {
-        const string defaultRoleName = nameof(UserRole.User);
+        const string defaultRole = nameof(UserRole.User);
 
         var user = new ApplicationUser
         {
@@ -24,28 +28,30 @@ public sealed class RegisterUserCommandHandler(
             LastName = request.LastName,
             PhoneNumber = request.PhoneNumber,
             Gender = (int?)request.Gender,
-            BirthDate = request.DateOfBirth,
+            BirthDate = request.BirthDate,
             Active = true,
-            RegisteredAt = DateTime.UtcNow,
+            RegisteredAt = DateTimeOffset.UtcNow,
             EmailConfirmed = false
         };
 
         var result = await userManager.CreateAsync(user, request.Password).ConfigureAwait(false);
-
         if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            throw new InvalidOperationException($"Failed to register user '{request.Email}': {errors}");
+            throw new ConflictException($"Failed to register user '{request.Email}': {errors}");
         }
 
-        var roleResult = await userManager.AddToRoleAsync(user, defaultRoleName).ConfigureAwait(false);
-
+        var roleResult = await userManager.AddToRoleAsync(user, defaultRole).ConfigureAwait(false);
         if (!roleResult.Succeeded)
         {
             var errors = string.Join(", ", roleResult.Errors.Select(e => e.Description));
             throw new InvalidOperationException(
-                $"User was created but failed to assign role '{defaultRoleName}': {errors}");
+                $"User created but role '{defaultRole}' assignment failed: {errors}");
         }
+
+        await eventBus.PublishAsync(
+            new UserRegisteredEvent(user.Id, user.Email, $"{user.FirstName} {user.LastName}".Trim(),
+                user.RegisteredAt), ct);
 
         return mapper.Map<UserDto>(user);
     }
