@@ -12,46 +12,41 @@ namespace LocMp.Identity.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class RolesController(IMediator mediator) : ControllerBase
+public class RolesController(ISender sender) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<RoleDto>>> GetRoles()
+    public async Task<ActionResult<IReadOnlyList<RoleDto>>> GetRoles(CancellationToken ct)
     {
-        var result = await mediator.Send(new GetRolesQuery());
+        var result = await sender.Send(new GetRolesQuery(), ct);
         return Ok(result);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<RoleDto>> GetById(Guid id)
+    public async Task<ActionResult<RoleDto>> GetById(Guid id, CancellationToken ct)
     {
-        var result = await mediator.Send(new GetRoleByIdQuery(id));
+        var result = await sender.Send(new GetRoleByIdQuery(id), ct);
         return Ok(result);
     }
 
     [HttpPost]
-    public async Task<ActionResult<RoleDto>> Create([FromBody] CreateRoleCommand command)
+    public async Task<ActionResult<RoleDto>> Create([FromBody] CreateRoleCommand command, CancellationToken ct)
     {
-        var result = await mediator.Send(command);
+        var result = await sender.Send(command, ct);
         return Ok(result);
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult<RoleDto>> Update(Guid id, [FromBody] UpdateRoleRequest request)
+    public async Task<ActionResult<RoleDto>> Update(Guid id, [FromBody] UpdateRoleRequest request, CancellationToken ct)
     {
-        var command = new UpdateRoleCommand(
-            id,
-            request.Name,
-            request.Active
-        );
-
-        var result = await mediator.Send(command);
+        var command = new UpdateRoleCommand(id, request.Name, request.Active);
+        var result = await sender.Send(command, ct);
         return Ok(result);
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<ActionResult> Delete(Guid id)
+    public async Task<ActionResult> Delete(Guid id, CancellationToken ct)
     {
-        await mediator.Send(new DeleteRoleCommand(id));
+        await sender.Send(new DeleteRoleCommand(id), ct);
         return NoContent();
     }
 }

@@ -26,21 +26,28 @@ public sealed class GlobalExceptionHandler(
             Status = statusCode,
             Title = title,
             Instance = httpContext.Request.Path,
-            Detail = env.IsDevelopment() ? exception.ToString() : exception.Message,
             Extensions =
             {
                 ["traceId"] = httpContext.TraceIdentifier
             }
         };
 
-        if (exception is AppException appEx)
-            problemDetails.Extensions["errorCode"] = appEx.ErrorCode;
-
         if (exception is ValidationException valEx)
         {
+            problemDetails.Detail = "One or more validation errors occurred.";
+
             problemDetails.Extensions["errors"] = valEx.Errors
                 .GroupBy(e => e.PropertyName)
                 .ToDictionary(g => g.Key, g => g.Select(x => x.ErrorMessage).ToArray());
+        }
+        else if (exception is AppException appEx)
+        {
+            problemDetails.Detail = appEx.Message;
+            problemDetails.Extensions["errorCode"] = appEx.ErrorCode;
+        }
+        else
+        {
+            problemDetails.Detail = env.IsDevelopment() ? exception.ToString() : "An unexpected error occurred.";
         }
 
         LogException(exception, statusCode);

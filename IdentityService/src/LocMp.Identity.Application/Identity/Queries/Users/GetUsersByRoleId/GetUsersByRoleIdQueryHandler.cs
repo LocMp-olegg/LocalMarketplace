@@ -1,3 +1,4 @@
+using LocMp.BuildingBlocks.Application.Exceptions;
 using AutoMapper;
 using LocMp.Identity.Application.DTOs.User;
 using LocMp.Identity.Domain.Entities;
@@ -17,7 +18,7 @@ public sealed class GetUsersByRoleIdQueryHandler(
         var role = await roleManager.FindByIdAsync(request.RoleId.ToString()).ConfigureAwait(false);
 
         if (role is null)
-            throw new KeyNotFoundException($"Role with id '{request.RoleId}' was not found.");
+            throw new NotFoundException($"Role with id '{request.RoleId}' was not found.");
 
         var usersInRole = await userManager.GetUsersInRoleAsync(role.Name!)
             .ConfigureAwait(false);

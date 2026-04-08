@@ -1,3 +1,4 @@
+using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Identity.Application.DTOs.UserProfile;
 using LocMp.Identity.Infrastructure.Persistence;
 using MediatR;
@@ -20,6 +21,6 @@ public sealed class GetUserPhotoQueryHandler(ApplicationDbContext dbContext)
             ))
             .FirstOrDefaultAsync(ct);
 
-        return photoDto ?? throw new KeyNotFoundException($"Photo for user '{request.UserId}' not found.");
+        return photoDto ?? throw new NotFoundException($"Photo for user '{request.UserId}' not found.");
     }
 }

@@ -1,4 +1,6 @@
-﻿using LocMp.Identity.Infrastructure.BackgroundServices;
+﻿using LocMp.BuildingBlocks.Application.Interfaces;
+using LocMp.BuildingBlocks.Infrastructure.Events;
+using LocMp.Identity.Infrastructure.BackgroundServices;
 using LocMp.Identity.Infrastructure.Options;
 using LocMp.Identity.Infrastructure.Persistence;
 using Microsoft.AspNetCore.DataProtection;
@@ -34,5 +36,8 @@ public static class InfrastructureExtension
         services.Configure<IdentityServerSettings>(configuration.GetSection("IdentityServer"));
 
         services.AddHostedService<UserUnblockingBackgroundService>();
+
+        // Заглушка до подключения RabbitMQ — заменить на MassTransitEventBus
+        services.AddSingleton<IEventBus, NullEventBus>();
     }
 }

@@ -1,3 +1,4 @@
+using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Identity.Domain.Entities;
 using LocMp.Identity.Infrastructure.Persistence;
 using MediatR;
@@ -18,7 +19,7 @@ public sealed class DeleteUserPhotoCommandHandler(
             .FirstOrDefaultAsync(u => u.Id == (request.UserId), cancellationToken);
 
         if (user is null)
-            throw new KeyNotFoundException($"User with id '{request.UserId}' was not found");
+            throw new NotFoundException($"User with id '{request.UserId}' was not found");
 
         if (user.Photo is null)
             throw new InvalidOperationException("User does not have a photo");

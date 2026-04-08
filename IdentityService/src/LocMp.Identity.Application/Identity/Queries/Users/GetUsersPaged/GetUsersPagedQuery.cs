@@ -1,4 +1,4 @@
-using LocMp.Identity.Application.DTOs.Common;
+using LocMp.BuildingBlocks.Application.Common;
 using LocMp.Identity.Application.DTOs.User;
 using MediatR;
 

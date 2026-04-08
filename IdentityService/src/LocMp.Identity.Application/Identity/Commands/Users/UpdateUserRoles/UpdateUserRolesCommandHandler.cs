@@ -1,3 +1,4 @@
+using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Identity.Domain.Entities;
 using LocMp.Identity.Domain.Enums;
 using MediatR;
@@ -30,7 +31,7 @@ public sealed class UpdateUserRolesCommandHandler(
     private async Task<ApplicationUser> GetUserAsync(Guid userId)
     {
         return await userManager.FindByIdAsync(userId.ToString()) 
-               ?? throw new KeyNotFoundException($"User with id '{userId}' was not found.");
+               ?? throw new NotFoundException($"User with id '{userId}' was not found.");
     }
 
     private static string[] PrepareTargetRoles(IEnumerable<UserRole> roles)
@@ -49,7 +50,7 @@ public sealed class UpdateUserRolesCommandHandler(
             .CountAsync(r => roleNames.Contains(r.Name!), ct);
 
         if (existingCount != roleNames.Length)
-            throw new KeyNotFoundException("One or more roles do not exist in the system.");
+            throw new NotFoundException("One or more roles do not exist in the system.");
     }
 
     private async Task ApplyRoleChangesAsync(ApplicationUser user, string[] toAdd, string[] toRemove)

@@ -9,6 +9,6 @@ public sealed record UpdateUserRequest(
     string LastName,
     string? PhoneNumber,
     Gender? Gender,
-    DateTime? DateOfBirth,
+    DateOnly? BirthDate,
     bool Active
 );

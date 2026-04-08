@@ -19,7 +19,7 @@ public class UserAddress
     public Point Location { get; set; } = null!;
 
     public bool IsDefault { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     public virtual ApplicationUser User { get; set; } = null!;
 }

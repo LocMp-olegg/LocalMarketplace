@@ -25,6 +25,8 @@
 
     <ItemGroup>
       <ProjectReference Include="..\LocMp.Identity.Domain\LocMp.Identity.Domain.csproj" />
+      <ProjectReference Include="..\..\..\BuildingBlocks\src\LocMp.BuildingBlocks.Infrastructure\LocMp.BuildingBlocks.Infrastructure.csproj" />
+      <ProjectReference Include="..\..\..\Contracts\LocMp.Contracts\LocMp.Contracts.csproj" />
     </ItemGroup>
 
 </Project>

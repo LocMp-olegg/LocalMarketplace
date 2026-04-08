@@ -9,7 +9,7 @@ public class UserPhoto
     public string MimeType { get; set; } = null!;
     public long FileSize { get; set; }
 
-    public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+    public DateTimeOffset UploadedAt { get; set; } = DateTimeOffset.UtcNow;
 
     public virtual ApplicationUser User { get; set; } = null!;
 }

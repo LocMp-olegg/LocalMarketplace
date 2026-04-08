@@ -23,6 +23,7 @@
       <ProjectReference Include="..\LocMp.Identity.Application\LocMp.Identity.Application.csproj" />
       <ProjectReference Include="..\LocMp.Identity.Domain\LocMp.Identity.Domain.csproj" />
       <ProjectReference Include="..\LocMp.Identity.Infrastructure\LocMp.Identity.Infrastructure.csproj" />
+      <ProjectReference Include="..\..\..\BuildingBlocks\src\LocMp.BuildingBlocks.Infrastructure\LocMp.BuildingBlocks.Infrastructure.csproj" />
     </ItemGroup>
 
 </Project>
