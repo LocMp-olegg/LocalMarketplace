@@ -17,7 +17,7 @@ public sealed class UpdateUserProfileCommandValidator : AbstractValidator<Update
             .When(x => x.LastName != null);
 
         RuleFor(x => x.BirthDate)
-            .Must(d => !d.HasValue || d.Value < DateOnly.FromDateTime(DateTime.UtcNow))
+            .LessThan(DateTime.UtcNow)
             .When(x => x.BirthDate.HasValue)
             .WithMessage("Date of birth must be in the past");
 

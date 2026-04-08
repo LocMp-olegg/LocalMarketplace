@@ -15,8 +15,6 @@
         </PackageReference>
         <PackageReference Include="Scalar.AspNetCore" Version="2.12.18" />
         <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
-        <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
-        <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
         <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="10.1.0" />
     </ItemGroup>
@@ -25,7 +23,6 @@
       <ProjectReference Include="..\LocMp.Identity.Application\LocMp.Identity.Application.csproj" />
       <ProjectReference Include="..\LocMp.Identity.Domain\LocMp.Identity.Domain.csproj" />
       <ProjectReference Include="..\LocMp.Identity.Infrastructure\LocMp.Identity.Infrastructure.csproj" />
-      <ProjectReference Include="..\..\..\BuildingBlocks\src\LocMp.BuildingBlocks.Infrastructure\LocMp.BuildingBlocks.Infrastructure.csproj" />
     </ItemGroup>
 
 </Project>

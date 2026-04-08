@@ -1,4 +1,3 @@
-using LocMp.BuildingBlocks.Application.Exceptions;
 using AutoMapper;
 using LocMp.Identity.Application.DTOs.User;
 using LocMp.Identity.Domain.Entities;
@@ -17,7 +16,7 @@ public sealed class UpdateUserCommandHandler(
         var user = await userManager.FindByIdAsync(request.Id.ToString()).ConfigureAwait(false);
 
         if (user is null)
-            throw new NotFoundException($"User with id '{request.Id}' was not found.");
+            throw new KeyNotFoundException($"User with id '{request.Id}' was not found.");
 
         user.UserName = request.UserName;
         user.Email = request.Email;
@@ -25,7 +24,7 @@ public sealed class UpdateUserCommandHandler(
         user.LastName = request.LastName;
         user.PhoneNumber = request.PhoneNumber;
         user.Gender = (int?)request.Gender;
-        user.BirthDate = request.BirthDate;
+        user.BirthDate = request.DateOfBirth;
         user.Active = request.Active;
 
         var result = await userManager.UpdateAsync(user).ConfigureAwait(false);

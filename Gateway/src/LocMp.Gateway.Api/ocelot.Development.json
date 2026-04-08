@@ -1,11 +1,6 @@
 {
   "GlobalConfiguration": {
-    "BaseUrl": "http://localhost:5000",
-    "RateLimitOptions": {
-      "ClientIdHeader": "X-User-IP",
-      "DisableRateLimitHeaders": false,
-      "HttpStatusCode": 429
-    }
+    "BaseUrl": "http://localhost:5000"
   },
   "Routes": [
     {
@@ -40,14 +35,7 @@
           "Port": 5001
         }
       ],
-      "SwaggerKey": "identity-service",
-      "RateLimitOptions": {
-        "ClientWhitelist": [],
-        "EnableRateLimiting": true,
-        "Period": "10s",
-        "PeriodTimespan": 10,
-        "Limit": 5
-      }
+      "SwaggerKey": "identity-service"
     }
   ],
   "SwaggerEndPoints": [

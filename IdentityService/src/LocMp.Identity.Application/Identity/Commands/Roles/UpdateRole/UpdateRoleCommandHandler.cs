@@ -1,5 +1,4 @@
 using AutoMapper;
-using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Identity.Application.DTOs.Role;
 using LocMp.Identity.Domain.Entities;
 using MediatR;
@@ -12,10 +11,12 @@ public sealed class UpdateRoleCommandHandler(
     IMapper mapper
 ) : IRequestHandler<UpdateRoleCommand, RoleDto>
 {
-    public async Task<RoleDto> Handle(UpdateRoleCommand request, CancellationToken ct)
+    public async Task<RoleDto> Handle(UpdateRoleCommand request, CancellationToken cancellationToken)
     {
-        var role = await roleManager.FindByIdAsync(request.Id.ToString()).ConfigureAwait(false)
-            ?? throw new NotFoundException($"Role with id '{request.Id}' was not found.");
+        var role = await roleManager.FindByIdAsync(request.Id.ToString()).ConfigureAwait(false);
+
+        if (role is null)
+            throw new KeyNotFoundException($"Role with id '{request.Id}' was not found.");
 
         role.Name = request.Name;
         role.NormalizedName = request.Name.ToUpperInvariant();

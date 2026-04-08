@@ -1,6 +1,3 @@
-using LocMp.BuildingBlocks.Application.Exceptions;
-using LocMp.BuildingBlocks.Application.Interfaces;
-using LocMp.Contracts.Identity;
 using LocMp.Identity.Application.DTOs.UserProfile;
 using LocMp.Identity.Domain.Entities;
 using LocMp.Identity.Domain.Enums;
@@ -11,16 +8,17 @@ using Microsoft.EntityFrameworkCore;
 namespace LocMp.Identity.Application.Identity.Commands.UserProfile.UpdateUserProfile;
 
 public sealed class UpdateUserProfileCommandHandler(
-    UserManager<ApplicationUser> userManager,
-    IEventBus eventBus
+    UserManager<ApplicationUser> userManager
 ) : IRequestHandler<UpdateUserProfileCommand, UserProfileDto>
 {
-    public async Task<UserProfileDto> Handle(UpdateUserProfileCommand request, CancellationToken ct)
+    public async Task<UserProfileDto> Handle(UpdateUserProfileCommand request, CancellationToken cancellationToken)
     {
         var user = await userManager.Users
-                       .Include(u => u.Photo)
-                       .FirstOrDefaultAsync(u => u.Id == request.UserId, ct)
-                   ?? throw new NotFoundException($"User with id '{request.UserId}' was not found");
+            .Include(u => u.Photo)
+            .FirstOrDefaultAsync(u => u.Id == (request.UserId), cancellationToken);
+
+        if (user is null)
+            throw new KeyNotFoundException($"User with id '{request.UserId}' was not found");
 
         if (request.FirstName is not null) user.FirstName = request.FirstName;
         if (request.LastName is not null) user.LastName = request.LastName;
@@ -29,18 +27,12 @@ public sealed class UpdateUserProfileCommandHandler(
         if (request.PhoneNumber is not null) user.PhoneNumber = request.PhoneNumber;
 
         var result = await userManager.UpdateAsync(user);
+
         if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
             throw new InvalidOperationException($"Failed to update user profile: {errors}");
         }
-
-        await eventBus.PublishAsync(
-            new UserProfileUpdatedEvent(
-                user.Id,
-                $"{user.FirstName} {user.LastName}".Trim(),
-                AvatarUrl: null,
-                DateTimeOffset.UtcNow), ct);
 
         return new UserProfileDto(
             user.Id,

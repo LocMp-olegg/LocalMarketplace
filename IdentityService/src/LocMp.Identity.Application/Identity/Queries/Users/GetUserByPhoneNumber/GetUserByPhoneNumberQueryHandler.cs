@@ -1,4 +1,3 @@
-using LocMp.BuildingBlocks.Application.Exceptions;
 ﻿using AutoMapper;
 using LocMp.Identity.Application.DTOs.User;
 using LocMp.Identity.Domain.Entities;
@@ -22,7 +21,7 @@ public sealed class GetUserByPhoneNumberQueryHandler(UserManager<ApplicationUser
             .ConfigureAwait(false);
 
         if (user is null)
-            throw new NotFoundException($"User with phone '{request.PhoneNumber}' was not found.");
+            throw new KeyNotFoundException($"User with phone '{request.PhoneNumber}' was not found.");
 
         return mapper.Map<UserDto>(user);
     }

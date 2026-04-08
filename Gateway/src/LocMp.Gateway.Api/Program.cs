@@ -35,13 +35,6 @@ if (app.Environment.IsDevelopment())
 
 app.MapControllers();
 
-app.Use(async (context, next) =>
-{
-    var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-    context.Request.Headers.TryAdd("X-User-IP", ip);
-    await next();
-});
-
 await app.UseOcelot();
 
 await app.RunAsync();

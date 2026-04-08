@@ -1,4 +1,3 @@
-using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Identity.Application.DTOs.UserProfile;
 using LocMp.Identity.Domain.Entities;
 using LocMp.Identity.Domain.Enums;
@@ -33,6 +32,6 @@ public sealed class GetUserProfileQueryHandler(
             ))
             .FirstOrDefaultAsync(ct);
 
-        return profile ?? throw new NotFoundException($"User with id '{request.UserId}' was not found");
+        return profile ?? throw new KeyNotFoundException($"User with id '{request.UserId}' was not found");
     }
 }

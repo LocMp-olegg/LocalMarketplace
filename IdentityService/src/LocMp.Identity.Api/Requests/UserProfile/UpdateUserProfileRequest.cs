@@ -1,4 +1,4 @@
-using LocMp.Identity.Domain.Enums;
+﻿using LocMp.Identity.Domain.Enums;
 
 namespace LocMp.Identity.Api.Requests.UserProfile;
 
@@ -6,6 +6,6 @@ public sealed record UpdateUserProfileRequest(
     string? FirstName,
     string? LastName,
     Gender? Gender,
-    DateOnly? BirthDate,
+    DateTime? BirthDate,
     string? PhoneNumber
 );

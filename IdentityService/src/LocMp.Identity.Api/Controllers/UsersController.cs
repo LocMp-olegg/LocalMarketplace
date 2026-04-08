@@ -1,5 +1,5 @@
-using LocMp.BuildingBlocks.Application.Common;
 using LocMp.Identity.Api.Requests.Users;
+using LocMp.Identity.Application.DTOs.Common;
 using LocMp.Identity.Application.DTOs.User;
 using LocMp.Identity.Application.Identity.Commands.Users.BlockUser;
 using LocMp.Identity.Application.Identity.Commands.Users.RegisterUser;
@@ -20,62 +20,60 @@ namespace LocMp.Identity.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UsersController(ISender sender) : ControllerBase
+public class UsersController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<PagedResult<UserDto>>> GetUsers(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10,
-        CancellationToken ct = default)
+    public async Task<ActionResult<PagedResult<UserDto>>> GetUsers([FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
-        var result = await sender.Send(new GetUsersPagedQuery(page, pageSize), ct);
+        var result = await mediator.Send(new GetUsersPagedQuery(page, pageSize));
         return Ok(result);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<UserDto>> GetById(Guid id, CancellationToken ct)
+    public async Task<ActionResult<UserDto>> GetById(Guid id)
     {
-        var result = await sender.Send(new GetUserByIdQuery(id), ct);
+        var result = await mediator.Send(new GetUserByIdQuery(id));
         return Ok(result);
     }
 
     [HttpGet("by-email")]
-    public async Task<ActionResult<UserDto>> GetByEmail([FromQuery] string email, CancellationToken ct)
+    public async Task<ActionResult<UserDto>> GetByEmail([FromQuery] string email)
     {
-        var result = await sender.Send(new GetUserByEmailQuery(email), ct);
+        var result = await mediator.Send(new GetUserByEmailQuery(email));
         return Ok(result);
     }
 
     [HttpGet("by-role/{roleId:guid}")]
-    public async Task<ActionResult<IReadOnlyList<UserDto>>> GetByRoleId(Guid roleId, CancellationToken ct)
+    public async Task<ActionResult<IReadOnlyList<UserDto>>> GetByRoleId(Guid roleId)
     {
-        var result = await sender.Send(new GetUsersByRoleIdQuery(roleId), ct);
+        var result = await mediator.Send(new GetUsersByRoleIdQuery(roleId));
         return Ok(result);
     }
 
     [HttpGet("by-username")]
-    public async Task<ActionResult<UserDto>> GetByUsername([FromQuery] string username, CancellationToken ct)
+    public async Task<ActionResult<UserDto>> GetByUsername([FromQuery] string username)
     {
-        var result = await sender.Send(new GetUserByUsernameQuery(username), ct);
+        var result = await mediator.Send(new GetUserByUsernameQuery(username));
         return Ok(result);
     }
 
     [HttpGet("by-phone")]
-    public async Task<ActionResult<UserDto>> GetByPhone([FromQuery] string phone, CancellationToken ct)
+    public async Task<ActionResult<UserDto>> GetByPhone([FromQuery] string phone)
     {
-        var result = await sender.Send(new GetUserByPhoneNumberQuery(phone), ct);
+        var result = await mediator.Send(new GetUserByPhoneNumberQuery(phone));
         return Ok(result);
     }
 
     [HttpPost]
-    public async Task<ActionResult<UserDto>> Register([FromBody] RegisterUserCommand command, CancellationToken ct)
+    public async Task<ActionResult<UserDto>> Register([FromBody] RegisterUserCommand command)
     {
-        var result = await sender.Send(command, ct);
+        var result = await mediator.Send(command);
         return Ok(result);
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult<UserDto>> Update(Guid id, [FromBody] UpdateUserRequest request, CancellationToken ct)
+    public async Task<ActionResult<UserDto>> Update(Guid id, [FromBody] UpdateUserRequest request)
     {
         var command = new UpdateUserCommand(
             id,
@@ -85,40 +83,39 @@ public class UsersController(ISender sender) : ControllerBase
             request.LastName,
             request.PhoneNumber,
             request.Gender,
-            request.BirthDate,
+            request.DateOfBirth,
             request.Active
         );
 
-        var result = await sender.Send(command, ct);
+        var result = await mediator.Send(command);
         return Ok(result);
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<ActionResult> Delete(Guid id, CancellationToken ct)
+    public async Task<ActionResult> Delete(Guid id)
     {
-        await sender.Send(new DeleteUserCommand(id), ct);
+        await mediator.Send(new DeleteUserCommand(id));
         return NoContent();
     }
 
     [HttpPut("{id:guid}/roles")]
-    public async Task<ActionResult> UpdateRoles(Guid id, [FromBody] UpdateUserRolesRequest request,
-        CancellationToken ct)
+    public async Task<ActionResult> UpdateRoles(Guid id, [FromBody] UpdateUserRolesRequest request)
     {
-        await sender.Send(new UpdateUserRolesCommand(id, request.Roles), ct);
+        await mediator.Send(new UpdateUserRolesCommand(id, request.Roles));
         return NoContent();
     }
 
     [HttpPost("{id:guid}/block")]
     public async Task<IActionResult> BlockUser(Guid id, [FromBody] BlockUserRequest request, CancellationToken ct)
     {
-        await sender.Send(new BlockUserCommand(id, request.DurationInMinutes), ct);
+        await mediator.Send(new BlockUserCommand(id, request.DurationInMinutes), ct);
         return NoContent();
     }
 
     [HttpPost("{id:guid}/unblock")]
     public async Task<IActionResult> UnblockUser(Guid id, CancellationToken ct)
     {
-        await sender.Send(new UnblockUserCommand(id), ct);
+        await mediator.Send(new UnblockUserCommand(id), ct);
         return NoContent();
     }
 }

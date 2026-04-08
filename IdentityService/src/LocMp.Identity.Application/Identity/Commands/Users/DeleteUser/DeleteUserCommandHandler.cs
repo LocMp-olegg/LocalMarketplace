@@ -1,4 +1,3 @@
-using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Identity.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -14,7 +13,7 @@ public sealed class DeleteUserCommandHandler(
         var user = await userManager.FindByIdAsync(request.Id.ToString()).ConfigureAwait(false);
 
         if (user is null)
-            throw new NotFoundException($"User with id '{request.Id}' was not found.");
+            throw new KeyNotFoundException($"User with id '{request.Id}' was not found.");
 
         var result = await userManager.DeleteAsync(user).ConfigureAwait(false);
         if (!result.Succeeded)

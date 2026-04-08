@@ -12,41 +12,46 @@ namespace LocMp.Identity.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class RolesController(ISender sender) : ControllerBase
+public class RolesController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<RoleDto>>> GetRoles(CancellationToken ct)
+    public async Task<ActionResult<IReadOnlyList<RoleDto>>> GetRoles()
     {
-        var result = await sender.Send(new GetRolesQuery(), ct);
+        var result = await mediator.Send(new GetRolesQuery());
         return Ok(result);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<RoleDto>> GetById(Guid id, CancellationToken ct)
+    public async Task<ActionResult<RoleDto>> GetById(Guid id)
     {
-        var result = await sender.Send(new GetRoleByIdQuery(id), ct);
+        var result = await mediator.Send(new GetRoleByIdQuery(id));
         return Ok(result);
     }
 
     [HttpPost]
-    public async Task<ActionResult<RoleDto>> Create([FromBody] CreateRoleCommand command, CancellationToken ct)
+    public async Task<ActionResult<RoleDto>> Create([FromBody] CreateRoleCommand command)
     {
-        var result = await sender.Send(command, ct);
+        var result = await mediator.Send(command);
         return Ok(result);
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult<RoleDto>> Update(Guid id, [FromBody] UpdateRoleRequest request, CancellationToken ct)
+    public async Task<ActionResult<RoleDto>> Update(Guid id, [FromBody] UpdateRoleRequest request)
     {
-        var command = new UpdateRoleCommand(id, request.Name, request.Active);
-        var result = await sender.Send(command, ct);
+        var command = new UpdateRoleCommand(
+            id,
+            request.Name,
+            request.Active
+        );
+
+        var result = await mediator.Send(command);
         return Ok(result);
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<ActionResult> Delete(Guid id, CancellationToken ct)
+    public async Task<ActionResult> Delete(Guid id)
     {
-        await sender.Send(new DeleteRoleCommand(id), ct);
+        await mediator.Send(new DeleteRoleCommand(id));
         return NoContent();
     }
 }

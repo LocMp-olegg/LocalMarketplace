@@ -9,6 +9,6 @@ public sealed record UpdateUserProfileCommand(
     string? FirstName,
     string? LastName,
     Gender? Gender,
-    DateOnly? BirthDate,
+    DateTime? BirthDate,
     string? PhoneNumber
 ) : IRequest<UserProfileDto>;

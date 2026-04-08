@@ -1,5 +1,9 @@
-﻿using System.Text.Json.Serialization;
-using LocMp.BuildingBlocks.Infrastructure.Middleware;
+﻿using System.Text;
+using System.Text.Json.Serialization;
+using Duende.IdentityServer;
+using LocMp.Identity.Api.Handlers;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 namespace LocMp.Identity.Api.Extensions;
 

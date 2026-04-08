@@ -9,9 +9,9 @@ public sealed record UserProfileDto(
     string FirstName,
     string LastName,
     Gender? Gender,
-    DateOnly? BirthDate,
+    DateTime? BirthDate,
     string? PhoneNumber,
-    DateTimeOffset RegisteredAt,
+    DateTime RegisteredAt,
     bool HasPhoto,
     string? PhotoMimeType,
     long? PhotoVersion

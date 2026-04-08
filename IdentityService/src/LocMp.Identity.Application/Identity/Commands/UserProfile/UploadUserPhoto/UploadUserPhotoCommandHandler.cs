@@ -1,4 +1,3 @@
-using LocMp.BuildingBlocks.Application.Interfaces;
 using LocMp.Identity.Domain.Entities;
 using LocMp.Identity.Infrastructure.Persistence;
 using MediatR;
@@ -9,9 +8,7 @@ using SixLabors.ImageSharp.Processing;
 
 namespace LocMp.Identity.Application.Identity.Commands.UserProfile.UploadUserPhoto;
 
-public sealed class UploadUserPhotoCommandHandler(
-    ApplicationDbContext dbContext,
-    IStorageService storageService)
+public sealed class UploadUserPhotoCommandHandler(ApplicationDbContext dbContext)
     : IRequestHandler<UploadUserPhotoCommand>
 {
     private const int TargetSize = 400;
@@ -24,10 +21,13 @@ public sealed class UploadUserPhotoCommandHandler(
         if (request.Photo.Length > MaxFileSizeBytes)
             throw new ArgumentException("File is too large");
 
+        var photo = await dbContext.UserPhotos
+            .FirstOrDefaultAsync(p => p.UserId == request.UserId, ct);
+
         byte[] processedData;
         try
         {
-            processedData = await ProcessImageAsync(request.Photo.OpenReadStream(), ct);
+            (processedData, _) = await ProcessImageAsync(request.Photo.OpenReadStream(), ct);
         }
         catch (UnknownImageFormatException)
         {
@@ -38,32 +38,31 @@ public sealed class UploadUserPhotoCommandHandler(
             throw new InvalidOperationException("Uploaded file is corrupted or has invalid content.");
         }
 
-        var objectKey = $"photos/users/{request.UserId}.webp";
-
-        using var stream = new MemoryStream(processedData);
-        var storageUrl = await storageService.UploadAsync(stream, objectKey, MimeType, ct);
-
-        var photo = await dbContext.UserPhotos
-            .FirstOrDefaultAsync(p => p.UserId == request.UserId, ct);
-
         if (photo is null)
         {
-            photo = new UserPhoto { Id = Guid.NewGuid(), UserId = request.UserId };
+            photo = new UserPhoto { UserId = request.UserId, Id = Guid.NewGuid() };
             dbContext.UserPhotos.Add(photo);
         }
 
-        photo.StorageUrl = storageUrl;
-        photo.ObjectKey = objectKey;
+        photo.PhotoData = processedData;
         photo.MimeType = MimeType;
         photo.FileSize = processedData.Length;
-        photo.UploadedAt = DateTimeOffset.UtcNow;
+        photo.UploadedAt = DateTime.UtcNow;
 
-        await dbContext.SaveChangesAsync(ct);
+        try
+        {
+            await dbContext.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new InvalidOperationException("Update conflict. Please try again.");
+        }
     }
 
-    private static async Task<byte[]> ProcessImageAsync(Stream stream, CancellationToken ct)
+    private static async Task<(byte[] Data, string MimeType)> ProcessImageAsync(Stream stream, CancellationToken ct)
     {
         await using var inputStream = stream;
+
         using var image = await Image.LoadAsync(inputStream, ct);
 
         image.Mutate(x => x.Resize(new ResizeOptions
@@ -75,6 +74,7 @@ public sealed class UploadUserPhotoCommandHandler(
 
         using var outputStream = new MemoryStream();
         await image.SaveAsync(outputStream, Encoder, ct);
-        return outputStream.ToArray();
+
+        return (outputStream.ToArray(), MimeType);
     }
 }

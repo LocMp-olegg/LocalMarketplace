@@ -1,6 +1,6 @@
-using System.Reflection;
+﻿using System.Reflection;
 using FluentValidation;
-using LocMp.BuildingBlocks.Application.Behaviors;
+using LocMp.Identity.Application.Behaviors;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,19 +10,13 @@ public static class ApplicationExtension
 {
     public static void AddApplication(this IServiceCollection services)
     {
-        services.AddMediatR(cfg =>
+        services.AddMediatR(configuration =>
         {
-            cfg.Lifetime = ServiceLifetime.Scoped;
-            cfg.RegisterServicesFromAssembly(typeof(ApplicationExtension).GetTypeInfo().Assembly);
+            configuration.Lifetime = ServiceLifetime.Scoped;
+            configuration.RegisterServicesFromAssembly(typeof(ApplicationExtension).GetTypeInfo().Assembly);
         });
-
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
-
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotentBehavior<,>));
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
-
-        services.AddAutoMapper(_ => { }, typeof(ApplicationExtension).Assembly);
+        services.AddAutoMapper(typeof(ApplicationExtension).Assembly);
     }
 }
