@@ -1,4 +1,3 @@
-using LocMp.Identity.Api.Requests;
 using LocMp.Identity.Api.Requests.UserProfile;
 using LocMp.Identity.Application.DTOs.UserProfile;
 using LocMp.Identity.Application.Identity.Commands.UserProfile.DeleteUserPhoto;
@@ -43,16 +42,11 @@ public class UserProfileController(ISender sender) : ControllerBase
         return Ok(result);
     }
 
-    // TODO: Вероятно потребуется доработка с кэшированием
     [HttpGet("photo")]
-    [ResponseCache(Location = ResponseCacheLocation.Any, Duration = 3600)]
     public async Task<IActionResult> GetPhoto(CancellationToken ct)
     {
         var result = await sender.Send(new GetUserPhotoQuery(HttpContext.GetUserId()), ct);
-        var etag = $"\"{result.UploadedAt.Ticks}\"";
-        return File(result.PhotoData, result.MimeType,
-            lastModified: result.UploadedAt,
-            entityTag: new Microsoft.Net.Http.Headers.EntityTagHeaderValue(etag));
+        return Redirect(result.StorageUrl);
     }
 
     [HttpPost("photo")]

@@ -12,7 +12,8 @@ public class UserPhotoConfiguration : IEntityTypeConfiguration<UserPhoto>
 
         builder.HasKey(p => p.Id);
 
-        builder.Property(p => p.PhotoData).IsRequired();
+        builder.Property(p => p.StorageUrl).HasMaxLength(1024).IsRequired();
+        builder.Property(p => p.ObjectKey).HasMaxLength(512).IsRequired();
         builder.Property(p => p.MimeType).HasMaxLength(50).IsRequired();
         builder.Property(p => p.FileSize).IsRequired();
         builder.Property(p => p.UploadedAt).IsRequired();

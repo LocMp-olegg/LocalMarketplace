@@ -2,6 +2,7 @@ using LocMp.Identity.Api.Extensions;
 using LocMp.Identity.Application.Extensions;
 using LocMp.Identity.Infrastructure.Extensions;
 using LocMp.Identity.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -31,6 +32,11 @@ try
 
     if (app.Environment.IsDevelopment())
     {
+        using (var scope = app.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            await dbContext.Database.MigrateAsync(); 
+        }
         app.UseSwaggerUi(configuration);
         await IdentityDataSeeder.SeedAsync(app.Services);
     }

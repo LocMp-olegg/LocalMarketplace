@@ -14,11 +14,7 @@ public sealed class GetUserPhotoQueryHandler(ApplicationDbContext dbContext)
         var photoDto = await dbContext.UserPhotos
             .AsNoTracking()
             .Where(p => p.UserId == request.UserId)
-            .Select(p => new UserPhotoDto(
-                p.PhotoData,
-                p.MimeType,
-                p.UploadedAt
-            ))
+            .Select(p => new UserPhotoDto(p.StorageUrl, p.MimeType, p.UploadedAt))
             .FirstOrDefaultAsync(ct);
 
         return photoDto ?? throw new NotFoundException($"Photo for user '{request.UserId}' not found.");

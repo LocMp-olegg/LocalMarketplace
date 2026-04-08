@@ -1,4 +1,5 @@
 using LocMp.BuildingBlocks.Application.Exceptions;
+using LocMp.BuildingBlocks.Application.Interfaces;
 using LocMp.Identity.Domain.Entities;
 using LocMp.Identity.Infrastructure.Persistence;
 using MediatR;
@@ -9,20 +10,23 @@ namespace LocMp.Identity.Application.Identity.Commands.UserProfile.DeleteUserPho
 
 public sealed class DeleteUserPhotoCommandHandler(
     UserManager<ApplicationUser> userManager,
-    ApplicationDbContext dbContext
+    ApplicationDbContext dbContext,
+    IStorageService storageService
 ) : IRequestHandler<DeleteUserPhotoCommand>
 {
     public async Task Handle(DeleteUserPhotoCommand request, CancellationToken cancellationToken)
     {
         var user = await userManager.Users
             .Include(u => u.Photo)
-            .FirstOrDefaultAsync(u => u.Id == (request.UserId), cancellationToken);
+            .FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
 
         if (user is null)
             throw new NotFoundException($"User with id '{request.UserId}' was not found");
 
         if (user.Photo is null)
             throw new InvalidOperationException("User does not have a photo");
+
+        await storageService.DeleteAsync(user.Photo.ObjectKey, cancellationToken);
 
         dbContext.UserPhotos.Remove(user.Photo);
         await dbContext.SaveChangesAsync(cancellationToken);
