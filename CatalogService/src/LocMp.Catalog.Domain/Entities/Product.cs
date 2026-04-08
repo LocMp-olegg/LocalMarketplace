@@ -1,0 +1,36 @@
+using System.Text.Json;
+using LocMp.BuildingBlocks;
+using NetTopologySuite.Geometries;
+
+namespace LocMp.Catalog.Domain.Entities;
+
+public class Product(Guid id) : AggregateRoot<Guid>(id)
+{
+    public Guid SellerId { get; set; }
+    public Guid CategoryId { get; set; }
+
+    public string Name { get; set; } = null!;
+    public string? Description { get; set; }
+
+    public decimal Price { get; set; }
+    public string Unit { get; set; } = null!;
+
+    public int StockQuantity { get; set; }
+
+    public Point? Location { get; set; }
+
+    public JsonDocument? Attributes { get; set; }
+
+    public bool IsActive { get; set; } = true;
+    public bool IsDeleted { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
+
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? UpdatedAt { get; set; }
+
+    public virtual Category Category { get; set; } = null!;
+    public virtual ICollection<ProductPhoto> Photos { get; set; } = [];
+    public virtual ICollection<StockHistory> StockHistory { get; set; } = [];
+    public virtual ICollection<ProductTag> ProductTags { get; set; } = [];
+    public virtual ICollection<Favorite> Favorites { get; set; } = [];
+}
