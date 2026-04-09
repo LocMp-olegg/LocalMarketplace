@@ -21,6 +21,8 @@ public class StockHistoryConfiguration : IEntityTypeConfiguration<StockHistory>
             .HasForeignKey(s => s.ProductId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasQueryFilter(s => !s.Product.IsDeleted);
+
         builder.HasIndex(s => s.ProductId);
     }
 }

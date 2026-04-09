@@ -24,6 +24,7 @@ try
     builder.Services.AddInfrastructure(configuration);
     builder.Services.AddApplication();
     builder.Services.AddApi(configuration);
+    builder.Services.AddAuth(configuration);
     builder.Services.AddSwagger(configuration);
 
     builder.Services.AddOpenApi();
@@ -36,6 +37,7 @@ try
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
             await dbContext.Database.MigrateAsync();
+            await CatalogDbSeeder.SeedAsync(dbContext);
         }
 
         app.UseSwaggerUi(configuration);

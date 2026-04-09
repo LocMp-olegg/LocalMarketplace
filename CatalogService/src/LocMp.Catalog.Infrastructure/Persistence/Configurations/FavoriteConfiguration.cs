@@ -19,6 +19,8 @@ public class FavoriteConfiguration : IEntityTypeConfiguration<Favorite>
             .HasForeignKey(f => f.ProductId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasQueryFilter(f => !f.Product.IsDeleted);
+
         builder.HasIndex(f => new { f.UserId, f.ProductId }).IsUnique();
     }
 }

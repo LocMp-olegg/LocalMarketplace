@@ -7,13 +7,19 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
       <PackageReference Include="AutoMapper" Version="16.1.1" />
       <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
       <PackageReference Include="MediatR" Version="14.1.0" />
+      <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\LocMp.Catalog.Domain\LocMp.Catalog.Domain.csproj" />
+      <ProjectReference Include="..\LocMp.Catalog.Infrastructure\LocMp.Catalog.Infrastructure.csproj" />
       <ProjectReference Include="..\..\..\BuildingBlocks\src\LocMp.BuildingBlocks.Application\LocMp.BuildingBlocks.Application.csproj" />
       <ProjectReference Include="..\..\..\Contracts\LocMp.Contracts\LocMp.Contracts.csproj" />
     </ItemGroup>

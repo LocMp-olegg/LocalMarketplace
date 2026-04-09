@@ -20,5 +20,7 @@ public class ProductTagConfiguration : IEntityTypeConfiguration<ProductTag>
             .WithMany(t => t.ProductTags)
             .HasForeignKey(pt => pt.TagId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasQueryFilter(pt => !pt.Product.IsDeleted);
     }
 }

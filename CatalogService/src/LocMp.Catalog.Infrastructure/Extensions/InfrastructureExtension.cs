@@ -49,5 +49,14 @@ public static class InfrastructureExtension
             .Build());
 
         services.AddScoped<IStorageService, MinioStorageService>();
+
+        // Redis
+        var redisConnection = configuration.GetConnectionString("Redis")
+                              ?? "localhost:6379";
+        services.AddStackExchangeRedisCache(opts =>
+        {
+            opts.Configuration = redisConnection;
+            opts.InstanceName = "locmp-catalog:";
+        });
     }
 }

@@ -24,6 +24,8 @@ public class ProductPhotoConfiguration : IEntityTypeConfiguration<ProductPhoto>
             .HasForeignKey(p => p.ProductId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasQueryFilter(p => !p.Product.IsDeleted);
+
         builder.HasIndex(p => new { p.ProductId, p.IsMain });
     }
 }
