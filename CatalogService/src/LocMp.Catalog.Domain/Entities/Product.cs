@@ -29,6 +29,7 @@ public class Product(Guid id) : AggregateRoot<Guid>(id)
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; set; }
 
+    public virtual Shop? Shop { get; set; }
     public virtual Category Category { get; set; } = null!;
     public virtual ICollection<ProductPhoto> Photos { get; set; } = [];
     public virtual ICollection<StockHistory> StockHistory { get; set; } = [];

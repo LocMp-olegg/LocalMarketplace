@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace LocMp.Identity.Application.Identity.Commands.Shop.CreateShop;
+namespace LocMp.Catalog.Application.Catalog.Commands.Shops.CreateShop;
 
 public sealed class CreateShopCommandValidator : AbstractValidator<CreateShopCommand>
 {

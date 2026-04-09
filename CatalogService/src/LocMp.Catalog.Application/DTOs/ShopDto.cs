@@ -1,14 +1,15 @@
-using LocMp.Identity.Domain.Enums;
+using LocMp.Catalog.Domain.Enums;
 
-namespace LocMp.Identity.Application.DTOs.Shop;
+namespace LocMp.Catalog.Application.DTOs;
 
-public sealed record ShopProfileDto(
+public sealed record ShopDto(
     Guid Id,
-    Guid UserId,
+    Guid SellerId,
     string BusinessName,
     string PhoneNumber,
     string Email,
     string? Description,
+    string? Inn,
     BusinessType BusinessType,
     string? WorkingHours,
     int? ServiceRadiusMeters,

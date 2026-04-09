@@ -1,11 +1,11 @@
-using LocMp.Identity.Application.DTOs.Shop;
-using LocMp.Identity.Domain.Enums;
+using LocMp.Catalog.Application.DTOs;
+using LocMp.Catalog.Domain.Enums;
 using MediatR;
 
-namespace LocMp.Identity.Application.Identity.Commands.Shop.CreateShop;
+namespace LocMp.Catalog.Application.Catalog.Commands.Shops.CreateShop;
 
 public sealed record CreateShopCommand(
-    Guid UserId,
+    Guid SellerId,
     string BusinessName,
     string PhoneNumber,
     string Email,
@@ -16,4 +16,4 @@ public sealed record CreateShopCommand(
     int? ServiceRadiusMeters,
     double? Latitude,
     double? Longitude
-) : IRequest<ShopProfileDto>;
+) : IRequest<ShopDto>;

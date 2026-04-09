@@ -13,6 +13,7 @@ public sealed record RegisterUserCommand(
     string? PhoneNumber,
     Gender? Gender,
     DateOnly? BirthDate,
+    bool IsSeller = false,
     double? Latitude = null,
     double? Longitude = null
 ) : IRequest<UserDto>;

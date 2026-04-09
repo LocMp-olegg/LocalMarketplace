@@ -35,6 +35,18 @@ public sealed class UpdateUserProfileCommandHandler(
             throw new InvalidOperationException($"Failed to update user profile: {errors}");
         }
 
+        if (request.IsSeller == true)
+        {
+            var isAlreadySeller = await userManager.IsInRoleAsync(user, nameof(UserRole.Seller));
+            if (!isAlreadySeller)
+            {
+                await userManager.AddToRoleAsync(user, nameof(UserRole.Seller));
+                var displayName = $"{user.FirstName} {user.LastName}".Trim();
+                await eventBus.PublishAsync(
+                    new UserBecameSellerEvent(user.Id, displayName, DateTimeOffset.UtcNow), ct);
+            }
+        }
+
         await eventBus.PublishAsync(
             new UserProfileUpdatedEvent(
                 user.Id,
