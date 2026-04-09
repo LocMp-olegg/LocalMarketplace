@@ -14,25 +14,28 @@ public sealed class GetUserProfileQueryHandler(
 {
     public async Task<UserProfileDto> Handle(GetUserProfileQuery request, CancellationToken ct)
     {
-        var profile = await userManager.Users
-            .AsNoTracking()
-            .Where(u => u.Id == request.UserId)
-            .Select(u => new UserProfileDto(
-                u.Id,
-                u.UserName!,
-                u.Email!,
-                u.FirstName,
-                u.LastName,
-                u.Gender.HasValue ? (Gender)u.Gender.Value : null,
-                u.BirthDate,
-                u.PhoneNumber,
-                u.RegisteredAt,
-                u.Photo != null,
-                u.Photo != null ? u.Photo.MimeType : null,
-                u.Photo != null ? u.Photo.UploadedAt.Ticks : null
-            ))
-            .FirstOrDefaultAsync(ct);
+        var user = await userManager.Users
+                       .AsNoTracking()
+                       .Include(u => u.Photo)
+                       .FirstOrDefaultAsync(u => u.Id == request.UserId, ct)
+                   ?? throw new NotFoundException($"User with id '{request.UserId}' was not found");
 
-        return profile ?? throw new NotFoundException($"User with id '{request.UserId}' was not found");
+        var roles = await userManager.GetRolesAsync(user);
+
+        return new UserProfileDto(
+            user.Id,
+            user.UserName!,
+            user.Email!,
+            user.FirstName,
+            user.LastName,
+            user.Gender.HasValue ? (Gender)user.Gender.Value : null,
+            user.BirthDate,
+            user.PhoneNumber,
+            user.RegisteredAt,
+            user.Photo != null,
+            user.Photo?.MimeType,
+            user.Photo?.UploadedAt.Ticks,
+            [.. roles]
+        );
     }
 }

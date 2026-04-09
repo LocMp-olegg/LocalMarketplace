@@ -14,5 +14,6 @@ public sealed record UserProfileDto(
     DateTimeOffset RegisteredAt,
     bool HasPhoto,
     string? PhotoMimeType,
-    long? PhotoVersion
+    long? PhotoVersion,
+    IReadOnlyList<string> Roles
 );

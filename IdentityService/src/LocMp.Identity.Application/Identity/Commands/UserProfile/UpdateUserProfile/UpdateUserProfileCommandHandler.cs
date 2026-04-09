@@ -54,6 +54,7 @@ public sealed class UpdateUserProfileCommandHandler(
                 AvatarUrl: null,
                 DateTimeOffset.UtcNow), ct);
 
+        var roles = await userManager.GetRolesAsync(user);
         return new UserProfileDto(
             user.Id,
             user.UserName!,
@@ -66,7 +67,8 @@ public sealed class UpdateUserProfileCommandHandler(
             user.RegisteredAt,
             user.Photo is not null,
             user.Photo?.MimeType,
-            user.Photo?.UploadedAt.Ticks
+            user.Photo?.UploadedAt.Ticks,
+            [.. roles]
         );
     }
 }

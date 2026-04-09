@@ -1,5 +1,4 @@
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using LocMp.BuildingBlocks.Application.Common;
 using LocMp.Identity.Application.DTOs.User;
 using LocMp.Identity.Domain.Entities;
@@ -20,12 +19,18 @@ public sealed class GetUsersPagedQueryHandler(UserManager<ApplicationUser> userM
 
         var totalCount = await query.CountAsync(ct).ConfigureAwait(false);
 
-        var items = await query
+        var users = await query
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
-            .ProjectTo<UserDto>(mapper.ConfigurationProvider)
             .ToListAsync(ct)
             .ConfigureAwait(false);
+
+        var items = new List<UserDto>(users.Count);
+        foreach (var user in users)
+        {
+            var roles = await userManager.GetRolesAsync(user);
+            items.Add(mapper.Map<UserDto>(user) with { Roles = [.. roles] });
+        }
 
         return PagedResult<UserDto>.Create(items, totalCount, request.Page, request.PageSize);
     }

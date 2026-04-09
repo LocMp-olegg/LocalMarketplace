@@ -15,11 +15,10 @@ public sealed class GetUserByUsernameQueryHandler(UserManager<ApplicationUser> u
         if (string.IsNullOrWhiteSpace(request.Username))
             throw new ArgumentException("Username must be provided.");
 
-        var user = await userManager.FindByNameAsync(request.Username).ConfigureAwait(false);
+        var user = await userManager.FindByNameAsync(request.Username).ConfigureAwait(false)
+                   ?? throw new NotFoundException($"User with username '{request.Username}' was not found.");
 
-        if (user is null)
-            throw new NotFoundException($"User with username '{request.Username}' was not found.");
-
-        return mapper.Map<UserDto>(user);
+        var roles = await userManager.GetRolesAsync(user);
+        return mapper.Map<UserDto>(user) with { Roles = [.. roles] };
     }
 }
