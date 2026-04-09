@@ -1,4 +1,5 @@
 using LocMp.BuildingBlocks.Application.Interfaces;
+using LocMp.Contracts.Identity;
 using LocMp.Identity.Domain.Entities;
 using LocMp.Identity.Infrastructure.Persistence;
 using MediatR;
@@ -11,7 +12,8 @@ namespace LocMp.Identity.Application.Identity.Commands.UserProfile.UploadUserPho
 
 public sealed class UploadUserPhotoCommandHandler(
     ApplicationDbContext dbContext,
-    IStorageService storageService)
+    IStorageService storageService,
+    IEventBus eventBus)
     : IRequestHandler<UploadUserPhotoCommand>
 {
     private const int TargetSize = 400;
@@ -59,6 +61,18 @@ public sealed class UploadUserPhotoCommandHandler(
         photo.UploadedAt = DateTimeOffset.UtcNow;
 
         await dbContext.SaveChangesAsync(ct);
+
+        var user = await dbContext.Users
+            .FirstOrDefaultAsync(u => u.Id == request.UserId, ct);
+        if (user is not null)
+        {
+            await eventBus.PublishAsync(
+                new UserProfileUpdatedEvent(
+                    user.Id,
+                    $"{user.FirstName} {user.LastName}".Trim(),
+                    storageUrl,
+                    DateTimeOffset.UtcNow), ct);
+        }
     }
 
     private static async Task<byte[]> ProcessImageAsync(Stream stream, CancellationToken ct)

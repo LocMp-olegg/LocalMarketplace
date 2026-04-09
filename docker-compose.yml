@@ -41,7 +41,17 @@ services:
     volumes:
       - minio-data:/data
 
+  redis:
+    image: redis:7-alpine
+    container_name: locmp-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
 volumes:
   postgres-data:
   rabbitmq-data:
   minio-data:
+  redis-data:
