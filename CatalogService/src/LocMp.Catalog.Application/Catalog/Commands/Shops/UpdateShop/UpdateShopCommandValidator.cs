@@ -1,10 +1,10 @@
 using FluentValidation;
 
-namespace LocMp.Catalog.Application.Catalog.Commands.Shops.CreateShop;
+namespace LocMp.Catalog.Application.Catalog.Commands.Shops.UpdateShop;
 
-public sealed class CreateShopCommandValidator : AbstractValidator<CreateShopCommand>
+public sealed class UpdateShopCommandValidator : AbstractValidator<UpdateShopCommand>
 {
-    public CreateShopCommandValidator()
+    public UpdateShopCommandValidator()
     {
         RuleFor(x => x.BusinessName).NotEmpty().MaximumLength(200);
         RuleFor(x => x.PhoneNumber)
