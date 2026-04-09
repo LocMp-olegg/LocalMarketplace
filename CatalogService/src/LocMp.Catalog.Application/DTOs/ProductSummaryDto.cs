@@ -3,6 +3,7 @@ namespace LocMp.Catalog.Application.DTOs;
 public sealed record ProductSummaryDto(
     Guid Id,
     Guid SellerId,
+    Guid? ShopId,
     Guid CategoryId,
     string Name,
     decimal Price,

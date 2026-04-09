@@ -7,6 +7,7 @@ namespace LocMp.Catalog.Domain.Entities;
 public class Product(Guid id) : AggregateRoot<Guid>(id)
 {
     public Guid SellerId { get; set; }
+    public Guid? ShopId { get; set; }
     public Guid CategoryId { get; set; }
 
     public string Name { get; set; } = null!;

@@ -5,6 +5,7 @@ namespace LocMp.Catalog.Application.Catalog.Commands.Products.CreateProduct;
 
 public sealed record CreateProductCommand(
     Guid SellerId,
+    Guid? ShopId,
     Guid CategoryId,
     string Name,
     string? Description,

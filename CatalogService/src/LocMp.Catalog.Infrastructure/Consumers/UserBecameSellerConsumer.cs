@@ -5,13 +5,13 @@ using MassTransit;
 
 namespace LocMp.Catalog.Infrastructure.Consumers;
 
-public sealed class UserRegisteredConsumer(CatalogDbContext db) : IConsumer<UserRegisteredEvent>
+public sealed class UserBecameSellerConsumer(CatalogDbContext db) : IConsumer<UserBecameSellerEvent>
 {
-    public async Task Consume(ConsumeContext<UserRegisteredEvent> context)
+    public async Task Consume(ConsumeContext<UserBecameSellerEvent> context)
     {
         var msg = context.Message;
 
-        var exists = await db.SellerReadModels.FindAsync([msg.UserId]);
+        var exists = await db.SellerReadModels.FindAsync([msg.UserId], context.CancellationToken);
         if (exists is not null)
             return;
 

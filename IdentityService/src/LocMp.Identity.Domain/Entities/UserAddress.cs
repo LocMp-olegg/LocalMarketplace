@@ -16,7 +16,7 @@ public class UserAddress
     public string? Entrance { get; set; }
     public string? Floor { get; set; }   
     
-    public Point Location { get; set; } = null!;
+    public Point? Location { get; set; }
 
     public bool IsDefault { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;

@@ -14,7 +14,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LocMp.Catalog.Infrastructure.Migrations
 {
     [DbContext(typeof(CatalogDbContext))]
-    [Migration("20260408224509_Initial")]
+    [Migration("20260409174005_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -146,6 +146,9 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                     b.Property<Guid>("SellerId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ShopId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("StockQuantity")
                         .HasColumnType("integer");
 
@@ -164,6 +167,8 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                     b.HasIndex("IsDeleted");
 
                     b.HasIndex("SellerId");
+
+                    b.HasIndex("ShopId");
 
                     b.ToTable("Products", "catalog");
                 });
@@ -266,6 +271,47 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("SellerReadModels", "catalog");
+                });
+
+            modelBuilder.Entity("LocMp.Catalog.Domain.Entities.ShopReadModel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("ShopId");
+
+                    b.Property<string>("BusinessName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<DateTimeOffset>("LastSyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SellerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("ServiceRadiusMeters")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("WorkingHours")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SellerId");
+
+                    b.ToTable("ShopReadModels", "catalog");
                 });
 
             modelBuilder.Entity("LocMp.Catalog.Domain.Entities.StockHistory", b =>

@@ -30,6 +30,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.HasQueryFilter(p => !p.IsDeleted);
 
         builder.HasIndex(p => p.SellerId);
+        builder.HasIndex(p => p.ShopId);
         builder.HasIndex(p => p.CategoryId);
         builder.HasIndex(p => p.IsDeleted);
     }

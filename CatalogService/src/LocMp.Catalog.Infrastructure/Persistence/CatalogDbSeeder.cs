@@ -33,6 +33,13 @@ public static class CatalogDbSeeder
         public static readonly Guid Olga   = new("33333333-0000-0000-0000-000000000003");
     }
 
+    private static class ShopIds
+    {
+        public static readonly Guid AnnaBakery   = new("55555555-0000-0000-0000-000000000001");
+        public static readonly Guid MikhailFarm  = new("55555555-0000-0000-0000-000000000002");
+        public static readonly Guid OlgaHandmade = new("55555555-0000-0000-0000-000000000003");
+    }
+
     private static class ProductIds
     {
         public static readonly Guid Bread       = new("44444444-0000-0000-0000-000000000001");
@@ -120,13 +127,39 @@ public static class CatalogDbSeeder
 
         db.SellerReadModels.AddRange(sellers);
 
+        // ── Магазины (Read Models) ─────────────────────────────────────────────
+
+        var shops = new List<ShopReadModel>
+        {
+            new(ShopIds.AnnaBakery)
+            {
+                SellerId = SellerIds.Anna, BusinessName = "Домашняя выпечка Анны",
+                Description = "Домашняя выпечка и торты на заказ", WorkingHours = "Пн-Пт 7:00-12:00",
+                ServiceRadiusMeters = 2000, IsActive = true, LastSyncedAt = now
+            },
+            new(ShopIds.MikhailFarm)
+            {
+                SellerId = SellerIds.Mikhail, BusinessName = "Фермерские овощи Михаила",
+                Description = "Свежие овощи с грядки", WorkingHours = "Сб-Вс 9:00-14:00",
+                ServiceRadiusMeters = 3000, IsActive = true, LastSyncedAt = now
+            },
+            new(ShopIds.OlgaHandmade)
+            {
+                SellerId = SellerIds.Olga, BusinessName = "Украшения ручной работы Ольги",
+                Description = "Украшения из смолы и полимерной глины", WorkingHours = "Ежедневно 10:00-20:00",
+                ServiceRadiusMeters = 5000, IsActive = true, LastSyncedAt = now
+            },
+        };
+
+        db.ShopReadModels.AddRange(shops);
+
         // ── Товары ───────────────────────────────────────────────────────────
 
         var products = new List<Product>
         {
             new(ProductIds.Bread)
             {
-                SellerId = SellerIds.Anna, CategoryId = CategoryIds.Bakery,
+                SellerId = SellerIds.Anna, ShopId = ShopIds.AnnaBakery, CategoryId = CategoryIds.Bakery,
                 Name = "Ржаной хлеб на закваске",
                 Description = "Домашний хлеб, выпекаю каждое утро. Без дрожжей и консервантов.",
                 Price = 180, Unit = "шт", StockQuantity = 10,
@@ -135,7 +168,7 @@ public static class CatalogDbSeeder
             },
             new(ProductIds.Cake)
             {
-                SellerId = SellerIds.Anna, CategoryId = CategoryIds.Bakery,
+                SellerId = SellerIds.Anna, ShopId = ShopIds.AnnaBakery, CategoryId = CategoryIds.Bakery,
                 Name = "Медовик домашний",
                 Description = "Торт по бабушкиному рецепту. Вес 1.2 кг. Под заказ за сутки.",
                 Price = 950, Unit = "шт", StockQuantity = 3,
@@ -144,7 +177,7 @@ public static class CatalogDbSeeder
             },
             new(ProductIds.Tomatoes)
             {
-                SellerId = SellerIds.Mikhail, CategoryId = CategoryIds.Vegetables,
+                SellerId = SellerIds.Mikhail, ShopId = ShopIds.MikhailFarm, CategoryId = CategoryIds.Vegetables,
                 Name = "Томаты черри с грядки",
                 Description = "Выращены без химии на даче. Сезонные, только с куста.",
                 Price = 120, Unit = "кг", StockQuantity = 15,
@@ -153,7 +186,7 @@ public static class CatalogDbSeeder
             },
             new(ProductIds.Potatoes)
             {
-                SellerId = SellerIds.Mikhail, CategoryId = CategoryIds.Vegetables,
+                SellerId = SellerIds.Mikhail, ShopId = ShopIds.MikhailFarm, CategoryId = CategoryIds.Vegetables,
                 Name = "Картофель молодой",
                 Description = "Сорт Беллароза. Мешок 5 кг.",
                 Price = 350, Unit = "шт", StockQuantity = 20,
@@ -162,7 +195,7 @@ public static class CatalogDbSeeder
             },
             new(ProductIds.EarRings)
             {
-                SellerId = SellerIds.Olga, CategoryId = CategoryIds.Jewelry,
+                SellerId = SellerIds.Olga, ShopId = ShopIds.OlgaHandmade, CategoryId = CategoryIds.Jewelry,
                 Name = "Серьги из эпоксидной смолы",
                 Description = "Ручная работа. Внутри — сухоцветы. Диаметр 3 см.",
                 Price = 650, Unit = "пара", StockQuantity = 5,
@@ -171,7 +204,7 @@ public static class CatalogDbSeeder
             },
             new(ProductIds.Necklace)
             {
-                SellerId = SellerIds.Olga, CategoryId = CategoryIds.Jewelry,
+                SellerId = SellerIds.Olga, ShopId = ShopIds.OlgaHandmade, CategoryId = CategoryIds.Jewelry,
                 Name = "Кулон «Лесная фея»",
                 Description = "Из полимерной глины. Цепочка в комплекте. Длина 45 см.",
                 Price = 890, Unit = "шт", StockQuantity = 2,

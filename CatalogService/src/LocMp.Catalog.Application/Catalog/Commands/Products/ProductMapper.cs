@@ -7,6 +7,7 @@ internal static class ProductMapper
     internal static ProductDto ToDto(Domain.Entities.Product p) => new(
         p.Id,
         p.SellerId,
+        p.ShopId,
         p.CategoryId,
         p.Name,
         p.Description,

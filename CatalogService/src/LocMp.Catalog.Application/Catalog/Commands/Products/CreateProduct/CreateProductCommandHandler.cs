@@ -26,6 +26,7 @@ public sealed class CreateProductCommandHandler(CatalogDbContext db)
         var product = new Product(productId)
         {
             SellerId = request.SellerId,
+            ShopId = request.ShopId,
             CategoryId = request.CategoryId,
             Name = request.Name,
             Description = request.Description,

@@ -12,5 +12,6 @@ public class ApplicationUser : IdentityUser<Guid>
     public bool Active { get; set; } = true;
     
     public virtual ICollection<UserAddress> Addresses { get; set; } = new List<UserAddress>();
+    public virtual ICollection<ShopProfile> ShopProfiles { get; set; } = new List<ShopProfile>();
     public virtual UserPhoto? Photo { get; set; }
 }

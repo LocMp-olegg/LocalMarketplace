@@ -5,13 +5,16 @@ using LocMp.Contracts.Identity;
 using LocMp.Identity.Application.DTOs.User;
 using LocMp.Identity.Domain.Entities;
 using LocMp.Identity.Domain.Enums;
+using LocMp.Identity.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using NetTopologySuite.Geometries;
 
 namespace LocMp.Identity.Application.Identity.Commands.Users.RegisterUser;
 
 public sealed class RegisterUserCommandHandler(
     UserManager<ApplicationUser> userManager,
+    ApplicationDbContext db,
     IEventBus eventBus,
     IMapper mapper
 ) : IRequestHandler<RegisterUserCommand, UserDto>
@@ -49,8 +52,22 @@ public sealed class RegisterUserCommandHandler(
                 $"User created but role '{defaultRole}' assignment failed: {errors}");
         }
 
+        if (request.Latitude.HasValue && request.Longitude.HasValue)
+        {
+            db.UserAddresses.Add(new UserAddress
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                Title = "Основной",
+                Location = new Point(request.Longitude.Value, request.Latitude.Value) { SRID = 4326 },
+                IsDefault = true,
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+            await db.SaveChangesAsync(ct);
+        }
+
         await eventBus.PublishAsync(
-            new UserRegisteredEvent(user.Id, user.Email, $"{user.FirstName} {user.LastName}".Trim(),
+            new UserRegisteredEvent(user.Id, user.Email!, $"{user.FirstName} {user.LastName}".Trim(),
                 user.RegisteredAt), ct);
 
         return mapper.Map<UserDto>(user);

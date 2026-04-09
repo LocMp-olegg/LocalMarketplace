@@ -65,6 +65,25 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ShopReadModels",
+                schema: "catalog",
+                columns: table => new
+                {
+                    ShopId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SellerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    BusinessName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    WorkingHours = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    ServiceRadiusMeters = table.Column<int>(type: "integer", nullable: true),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    LastSyncedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ShopReadModels", x => x.ShopId);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Tags",
                 schema: "catalog",
                 columns: table => new
@@ -85,6 +104,7 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     SellerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ShopId = table.Column<Guid>(type: "uuid", nullable: true),
                     CategoryId = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Description = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: true),
@@ -256,10 +276,22 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                 column: "SellerId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Products_ShopId",
+                schema: "catalog",
+                table: "Products",
+                column: "ShopId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ProductTags_TagId",
                 schema: "catalog",
                 table: "ProductTags",
                 column: "TagId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ShopReadModels_SellerId",
+                schema: "catalog",
+                table: "ShopReadModels",
+                column: "SellerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_StockHistory_ProductId",
@@ -299,6 +331,10 @@ namespace LocMp.Catalog.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "SellerReadModels",
+                schema: "catalog");
+
+            migrationBuilder.DropTable(
+                name: "ShopReadModels",
                 schema: "catalog");
 
             migrationBuilder.DropTable(

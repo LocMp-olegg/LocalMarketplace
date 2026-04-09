@@ -9,6 +9,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 {
     public DbSet<UserAddress> UserAddresses { get; set; }
     public DbSet<UserPhoto> UserPhotos { get; set; }
+    public DbSet<ShopProfile> ShopProfiles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

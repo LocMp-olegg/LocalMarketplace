@@ -12,5 +12,7 @@ public sealed record RegisterUserCommand(
     string LastName,
     string? PhoneNumber,
     Gender? Gender,
-    DateOnly? BirthDate
+    DateOnly? BirthDate,
+    double? Latitude = null,
+    double? Longitude = null
 ) : IRequest<UserDto>;

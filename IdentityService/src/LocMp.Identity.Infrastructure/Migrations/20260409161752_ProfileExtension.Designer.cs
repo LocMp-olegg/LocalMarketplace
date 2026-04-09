@@ -3,6 +3,7 @@ using System;
 using LocMp.Identity.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LocMp.Identity.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260409161752_ProfileExtension")]
+    partial class ProfileExtension
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -145,19 +148,11 @@ namespace LocMp.Identity.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("LocMp.Identity.Domain.Entities.ShopProfile", b =>
+            modelBuilder.Entity("LocMp.Identity.Domain.Entities.SellerProfile", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<string>("AvatarObjectKey")
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
-
-                    b.Property<string>("AvatarUrl")
-                        .HasMaxLength(1024)
-                        .HasColumnType("character varying(1024)");
 
                     b.Property<string>("BusinessName")
                         .IsRequired()
@@ -220,7 +215,7 @@ namespace LocMp.Identity.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ShopProfiles", (string)null);
+                    b.ToTable("SellerProfiles", (string)null);
                 });
 
             modelBuilder.Entity("LocMp.Identity.Domain.Entities.UserAddress", b =>
@@ -421,10 +416,10 @@ namespace LocMp.Identity.Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("LocMp.Identity.Domain.Entities.ShopProfile", b =>
+            modelBuilder.Entity("LocMp.Identity.Domain.Entities.SellerProfile", b =>
                 {
                     b.HasOne("LocMp.Identity.Domain.Entities.ApplicationUser", "User")
-                        .WithMany("ShopProfiles")
+                        .WithMany("SellerProfiles")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -511,7 +506,7 @@ namespace LocMp.Identity.Infrastructure.Migrations
 
                     b.Navigation("Photo");
 
-                    b.Navigation("ShopProfiles");
+                    b.Navigation("SellerProfiles");
                 });
 #pragma warning restore 612, 618
         }
