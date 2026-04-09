@@ -65,22 +65,32 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ShopReadModels",
+                name: "Shops",
                 schema: "catalog",
                 columns: table => new
                 {
-                    ShopId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     SellerId = table.Column<Guid>(type: "uuid", nullable: false),
                     BusinessName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    PhoneNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    Inn = table.Column<string>(type: "character varying(12)", maxLength: 12, nullable: true),
+                    BusinessType = table.Column<int>(type: "integer", nullable: false),
                     WorkingHours = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     ServiceRadiusMeters = table.Column<int>(type: "integer", nullable: true),
+                    Location = table.Column<Point>(type: "geometry(Point, 4326)", nullable: true),
+                    AvatarUrl = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: true),
+                    AvatarObjectKey = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true),
+                    IsVerified = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    VerifiedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
-                    LastSyncedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ShopReadModels", x => x.ShopId);
+                    table.PrimaryKey("PK_Shops", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -117,7 +127,8 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     DeletedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    ShopId1 = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -129,6 +140,19 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                         principalTable: "Categories",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Products_Shops_ShopId",
+                        column: x => x.ShopId,
+                        principalSchema: "catalog",
+                        principalTable: "Shops",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_Products_Shops_ShopId1",
+                        column: x => x.ShopId1,
+                        principalSchema: "catalog",
+                        principalTable: "Shops",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -282,15 +306,21 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                 column: "ShopId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Products_ShopId1",
+                schema: "catalog",
+                table: "Products",
+                column: "ShopId1");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ProductTags_TagId",
                 schema: "catalog",
                 table: "ProductTags",
                 column: "TagId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ShopReadModels_SellerId",
+                name: "IX_Shops_SellerId",
                 schema: "catalog",
-                table: "ShopReadModels",
+                table: "Shops",
                 column: "SellerId");
 
             migrationBuilder.CreateIndex(
@@ -334,10 +364,6 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                 schema: "catalog");
 
             migrationBuilder.DropTable(
-                name: "ShopReadModels",
-                schema: "catalog");
-
-            migrationBuilder.DropTable(
                 name: "StockHistory",
                 schema: "catalog");
 
@@ -351,6 +377,10 @@ namespace LocMp.Catalog.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Categories",
+                schema: "catalog");
+
+            migrationBuilder.DropTable(
+                name: "Shops",
                 schema: "catalog");
         }
     }

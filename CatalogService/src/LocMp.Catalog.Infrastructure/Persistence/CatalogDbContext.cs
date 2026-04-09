@@ -12,7 +12,7 @@ public class CatalogDbContext(DbContextOptions<CatalogDbContext> options) : DbCo
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<ProductTag> ProductTags => Set<ProductTag>();
     public DbSet<SellerReadModel> SellerReadModels => Set<SellerReadModel>();
-    public DbSet<ShopReadModel> ShopReadModels => Set<ShopReadModel>();
+    public DbSet<Shop> Shops => Set<Shop>();
     public DbSet<Favorite> Favorites => Set<Favorite>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

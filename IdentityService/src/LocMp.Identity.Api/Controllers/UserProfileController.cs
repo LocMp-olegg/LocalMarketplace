@@ -35,7 +35,8 @@ public class UserProfileController(ISender sender) : ControllerBase
             LastName: request.LastName,
             Gender: request.Gender,
             BirthDate: request.BirthDate,
-            PhoneNumber: request.PhoneNumber
+            PhoneNumber: request.PhoneNumber,
+            IsSeller: request.IsSeller
         );
 
         var result = await sender.Send(command, ct);

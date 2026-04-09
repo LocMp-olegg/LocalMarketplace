@@ -1,6 +1,6 @@
+using AutoMapper;
 using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.BuildingBlocks.Application.Interfaces;
-using LocMp.Catalog.Application.Catalog.Commands.Categories.CreateCategory;
 using LocMp.Catalog.Application.DTOs;
 using LocMp.Catalog.Infrastructure.Persistence;
 using MediatR;
@@ -13,6 +13,7 @@ namespace LocMp.Catalog.Application.Catalog.Commands.Categories.UpdateCategory;
 
 public sealed class UpdateCategoryCommandHandler(
     CatalogDbContext db,
+    IMapper mapper,
     IStorageService storageService,
     IDistributedCache cache)
     : IRequestHandler<UpdateCategoryCommand, CategoryDto>
@@ -61,7 +62,7 @@ public sealed class UpdateCategoryCommandHandler(
         await cache.RemoveAsync("categories:all", ct);
         await cache.RemoveAsync($"category:{request.Id}", ct);
 
-        return CreateCategoryCommandHandler.ToDto(category);
+        return mapper.Map<CategoryDto>(category);
     }
 
     private static async Task<byte[]> ProcessImageAsync(Stream stream, CancellationToken ct)

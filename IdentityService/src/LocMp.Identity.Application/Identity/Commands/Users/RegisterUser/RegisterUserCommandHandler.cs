@@ -52,6 +52,9 @@ public sealed class RegisterUserCommandHandler(
                 $"User created but role '{defaultRole}' assignment failed: {errors}");
         }
 
+        if (request.IsSeller)
+            await userManager.AddToRoleAsync(user, nameof(UserRole.Seller));
+
         if (request.Latitude.HasValue && request.Longitude.HasValue)
         {
             db.UserAddresses.Add(new UserAddress
@@ -69,6 +72,13 @@ public sealed class RegisterUserCommandHandler(
         await eventBus.PublishAsync(
             new UserRegisteredEvent(user.Id, user.Email!, $"{user.FirstName} {user.LastName}".Trim(),
                 user.RegisteredAt), ct);
+
+        if (request.IsSeller)
+        {
+            var displayName = $"{user.FirstName} {user.LastName}".Trim();
+            await eventBus.PublishAsync(
+                new UserBecameSellerEvent(user.Id, displayName, DateTimeOffset.UtcNow), ct);
+        }
 
         return mapper.Map<UserDto>(user);
     }

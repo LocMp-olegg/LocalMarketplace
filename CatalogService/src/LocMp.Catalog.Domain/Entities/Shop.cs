@@ -1,13 +1,12 @@
-using LocMp.Identity.Domain.Enums;
+using LocMp.Catalog.Domain.Enums;
 using NetTopologySuite.Geometries;
 
-namespace LocMp.Identity.Domain.Entities;
+namespace LocMp.Catalog.Domain.Entities;
 
-//TODO: перенести в другой сервис
-public class ShopProfile
+public class Shop(Guid id)
 {
-    public Guid Id { get; set; }
-    public Guid UserId { get; set; }
+    public Guid Id { get; set; } = id;
+    public Guid SellerId { get; set; }  // НЕТ FK — ссылка на Identity
 
     public string BusinessName { get; set; } = null!;
     public string PhoneNumber { get; set; } = null!;
@@ -26,11 +25,10 @@ public class ShopProfile
 
     public bool IsVerified { get; set; } = true;
     public DateTimeOffset? VerifiedAt { get; set; }
-    public Guid? VerifiedByAdminId { get; set; }
 
     public bool IsActive { get; set; } = true;
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; set; }
 
-    public virtual ApplicationUser User { get; set; } = null!;
+    public virtual ICollection<Product> Products { get; set; } = [];
 }
