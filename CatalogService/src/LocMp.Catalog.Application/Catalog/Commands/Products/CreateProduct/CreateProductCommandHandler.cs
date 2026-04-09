@@ -1,3 +1,4 @@
+using AutoMapper;
 using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Catalog.Application.DTOs;
 using LocMp.Catalog.Domain.Entities;
@@ -9,7 +10,7 @@ using NetTopologySuite.Geometries;
 
 namespace LocMp.Catalog.Application.Catalog.Commands.Products.CreateProduct;
 
-public sealed class CreateProductCommandHandler(CatalogDbContext db)
+public sealed class CreateProductCommandHandler(CatalogDbContext db, IMapper mapper)
     : IRequestHandler<CreateProductCommand, ProductDto>
 {
     public async Task<ProductDto> Handle(CreateProductCommand request, CancellationToken ct)
@@ -26,6 +27,7 @@ public sealed class CreateProductCommandHandler(CatalogDbContext db)
         var product = new Product(productId)
         {
             SellerId = request.SellerId,
+            ShopId = request.ShopId,
             CategoryId = request.CategoryId,
             Name = request.Name,
             Description = request.Description,
@@ -53,6 +55,6 @@ public sealed class CreateProductCommandHandler(CatalogDbContext db)
 
         await db.SaveChangesAsync(ct);
 
-        return ProductMapper.ToDto(product);
+        return mapper.Map<ProductDto>(product);
     }
 }

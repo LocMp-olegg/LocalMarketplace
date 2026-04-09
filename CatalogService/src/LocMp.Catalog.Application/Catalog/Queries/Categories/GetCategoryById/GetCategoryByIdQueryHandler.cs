@@ -1,12 +1,12 @@
+using AutoMapper;
 using LocMp.BuildingBlocks.Application.Exceptions;
-using LocMp.Catalog.Application.Catalog.Commands.Categories.CreateCategory;
 using LocMp.Catalog.Application.DTOs;
 using LocMp.Catalog.Infrastructure.Persistence;
 using MediatR;
 
 namespace LocMp.Catalog.Application.Catalog.Queries.Categories.GetCategoryById;
 
-public sealed class GetCategoryByIdQueryHandler(CatalogDbContext db)
+public sealed class GetCategoryByIdQueryHandler(CatalogDbContext db, IMapper mapper)
     : IRequestHandler<GetCategoryByIdQuery, CategoryDto>
 {
     public async Task<CategoryDto> Handle(GetCategoryByIdQuery request, CancellationToken ct)
@@ -14,6 +14,6 @@ public sealed class GetCategoryByIdQueryHandler(CatalogDbContext db)
         var category = await db.Categories.FindAsync([request.Id], ct)
                        ?? throw new NotFoundException($"Category '{request.Id}' not found.");
 
-        return CreateCategoryCommandHandler.ToDto(category);
+        return mapper.Map<CategoryDto>(category);
     }
 }

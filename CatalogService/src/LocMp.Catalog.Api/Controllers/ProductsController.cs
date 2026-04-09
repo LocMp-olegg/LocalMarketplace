@@ -110,6 +110,7 @@ public sealed class ProductsController(ISender sender) : ControllerBase
     {
         var command = new CreateProductCommand(
             HttpContext.GetUserId(),
+            request.ShopId,
             request.CategoryId,
             request.Name,
             request.Description,

@@ -32,5 +32,8 @@ public sealed class RegisterUserCommandValidator : AbstractValidator<RegisterUse
             .Must(d => !d.HasValue || d.Value < DateOnly.FromDateTime(DateTime.UtcNow))
             .When(x => x.BirthDate.HasValue)
             .WithMessage("Date of birth must be in the past");
+
+        RuleFor(x => x.Latitude).InclusiveBetween(-90, 90).When(x => x.Latitude.HasValue);
+        RuleFor(x => x.Longitude).InclusiveBetween(-180, 180).When(x => x.Longitude.HasValue);
     }
 }

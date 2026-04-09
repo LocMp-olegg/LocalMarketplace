@@ -143,6 +143,12 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                     b.Property<Guid>("SellerId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ShopId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ShopId1")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("StockQuantity")
                         .HasColumnType("integer");
 
@@ -161,6 +167,10 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                     b.HasIndex("IsDeleted");
 
                     b.HasIndex("SellerId");
+
+                    b.HasIndex("ShopId");
+
+                    b.HasIndex("ShopId1");
 
                     b.ToTable("Products", "catalog");
                 });
@@ -265,6 +275,85 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                     b.ToTable("SellerReadModels", "catalog");
                 });
 
+            modelBuilder.Entity("LocMp.Catalog.Domain.Entities.Shop", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AvatarObjectKey")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("AvatarUrl")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<string>("BusinessName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("BusinessType")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("Inn")
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsVerified")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<Point>("Location")
+                        .HasColumnType("geometry(Point, 4326)");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("SellerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("ServiceRadiusMeters")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("VerifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("WorkingHours")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SellerId");
+
+                    b.ToTable("Shops", "catalog");
+                });
+
             modelBuilder.Entity("LocMp.Catalog.Domain.Entities.StockHistory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -352,7 +441,18 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("LocMp.Catalog.Domain.Entities.Shop", null)
+                        .WithMany("Products")
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("LocMp.Catalog.Domain.Entities.Shop", "Shop")
+                        .WithMany()
+                        .HasForeignKey("ShopId1");
+
                     b.Navigation("Category");
+
+                    b.Navigation("Shop");
                 });
 
             modelBuilder.Entity("LocMp.Catalog.Domain.Entities.ProductPhoto", b =>
@@ -412,6 +512,11 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                     b.Navigation("ProductTags");
 
                     b.Navigation("StockHistory");
+                });
+
+            modelBuilder.Entity("LocMp.Catalog.Domain.Entities.Shop", b =>
+                {
+                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("LocMp.Catalog.Domain.Entities.Tag", b =>

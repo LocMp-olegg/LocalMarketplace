@@ -7,5 +7,6 @@ public sealed record UpdateUserProfileRequest(
     string? LastName,
     Gender? Gender,
     DateOnly? BirthDate,
-    string? PhoneNumber
+    string? PhoneNumber,
+    bool? IsSeller = null
 );

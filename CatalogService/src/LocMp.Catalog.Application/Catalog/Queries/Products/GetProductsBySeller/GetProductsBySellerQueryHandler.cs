@@ -27,6 +27,7 @@ public sealed class GetProductsBySellerQueryHandler(CatalogDbContext db)
             .Select(p => new ProductSummaryDto(
                 p.Id,
                 p.SellerId,
+                p.ShopId,
                 p.CategoryId,
                 p.Name,
                 p.Price,

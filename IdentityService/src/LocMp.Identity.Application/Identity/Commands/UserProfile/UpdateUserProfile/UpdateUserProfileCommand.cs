@@ -10,5 +10,6 @@ public sealed record UpdateUserProfileCommand(
     string? LastName,
     Gender? Gender,
     DateOnly? BirthDate,
-    string? PhoneNumber
+    string? PhoneNumber,
+    bool? IsSeller = null
 ) : IRequest<UserProfileDto>;

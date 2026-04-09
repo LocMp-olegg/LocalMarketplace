@@ -50,6 +50,7 @@ public static class InfrastructureExtension
             x.UsingRabbitMq((ctx, cfg) =>
             {
                 cfg.Host(new Uri(rabbitMqHost));
+                cfg.UseMessageRetry(r => { r.Interval(3, TimeSpan.FromSeconds(2)); });
                 cfg.ConfigureEndpoints(ctx);
             });
         });

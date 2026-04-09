@@ -16,7 +16,7 @@ public static class IdentityDataSeeder
         var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
             .CreateLogger("IdentitySeeder");
 
-        var roles = new[] { "Admin", "User" };
+        var roles = new[] { "Admin", "User", "Seller", "Courier" };
 
         foreach (var roleName in roles)
         {

@@ -26,7 +26,6 @@ public class UserAddressConfiguration : IEntityTypeConfiguration<UserAddress>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Property(x => x.Location)
-            .HasColumnType("geometry(Point, 4326)") 
-            .IsRequired();
+            .HasColumnType("geometry(Point, 4326)");
     }
 }

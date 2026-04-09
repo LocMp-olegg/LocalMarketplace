@@ -180,7 +180,6 @@ namespace LocMp.Identity.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<Point>("Location")
-                        .IsRequired()
                         .HasColumnType("geometry(Point, 4326)");
 
                     b.Property<string>("Street")
