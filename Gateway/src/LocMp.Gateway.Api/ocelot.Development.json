@@ -48,6 +48,32 @@
         "PeriodTimespan": 10,
         "Limit": 5
       }
+    },
+    {
+      "UpstreamPathTemplate": "/api/catalog/{everything}",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Patch",
+        "Delete"
+      ],
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5002
+        }
+      ],
+      "SwaggerKey": "catalog-service",
+      "RateLimitOptions": {
+        "ClientWhitelist": [],
+        "EnableRateLimiting": true,
+        "Period": "10s",
+        "PeriodTimespan": 10,
+        "Limit": 5
+      }
     }
   ],
   "SwaggerEndPoints": [
@@ -58,6 +84,16 @@
           "Name": "IdentityService API",
           "Version": "v1",
           "Url": "http://localhost:5001/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "catalog-service",
+      "Config": [
+        {
+          "Name": "CatalogService API",
+          "Version": "v1",
+          "Url": "http://localhost:5002/swagger/v1/swagger.json"
         }
       ]
     }
