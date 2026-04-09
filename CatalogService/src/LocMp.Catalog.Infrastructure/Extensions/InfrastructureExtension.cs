@@ -28,6 +28,9 @@ public static class InfrastructureExtension
         services.AddMassTransit(x =>
         {
             x.SetKebabCaseEndpointNameFormatter();
+
+            x.AddConsumers(typeof(InfrastructureExtension).Assembly);
+
             x.UsingRabbitMq((ctx, cfg) =>
             {
                 cfg.Host(new Uri(rabbitMqHost));
