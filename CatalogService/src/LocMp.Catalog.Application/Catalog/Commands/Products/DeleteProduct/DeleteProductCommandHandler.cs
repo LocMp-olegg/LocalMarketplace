@@ -1,10 +1,11 @@
 using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Catalog.Infrastructure.Persistence;
 using MediatR;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace LocMp.Catalog.Application.Catalog.Commands.Products.DeleteProduct;
 
-public sealed class DeleteProductCommandHandler(CatalogDbContext db)
+public sealed class DeleteProductCommandHandler(CatalogDbContext db, IDistributedCache cache)
     : IRequestHandler<DeleteProductCommand>
 {
     public async Task Handle(DeleteProductCommand request, CancellationToken ct)
@@ -21,5 +22,6 @@ public sealed class DeleteProductCommandHandler(CatalogDbContext db)
         product.UpdatedAt = DateTimeOffset.UtcNow;
 
         await db.SaveChangesAsync(ct);
+        await cache.RemoveAsync($"product:{product.Id}", ct);
     }
 }

@@ -2,6 +2,7 @@ using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.BuildingBlocks.Application.Interfaces;
 using LocMp.Catalog.Infrastructure.Persistence;
 using MediatR;
+using Microsoft.Extensions.Caching.Distributed;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
@@ -10,7 +11,8 @@ namespace LocMp.Catalog.Application.Catalog.Commands.Categories.UploadCategoryIm
 
 public sealed class UploadCategoryImageCommandHandler(
     CatalogDbContext db,
-    IStorageService storageService)
+    IStorageService storageService,
+    IDistributedCache cache)
     : IRequestHandler<UploadCategoryImageCommand, string>
 {
     private const int MaxSize = 800;
@@ -50,6 +52,8 @@ public sealed class UploadCategoryImageCommandHandler(
         category.UpdatedAt = DateTimeOffset.UtcNow;
 
         await db.SaveChangesAsync(ct);
+        await cache.RemoveAsync("categories:all", ct);
+        await cache.RemoveAsync($"category:{request.CategoryId}", ct);
 
         return storageUrl;
     }

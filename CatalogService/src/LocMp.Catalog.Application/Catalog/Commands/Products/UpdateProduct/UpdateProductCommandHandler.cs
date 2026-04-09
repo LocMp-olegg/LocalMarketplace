@@ -3,17 +3,19 @@ using LocMp.Catalog.Application.DTOs;
 using LocMp.Catalog.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using NetTopologySuite.Geometries;
 
 namespace LocMp.Catalog.Application.Catalog.Commands.Products.UpdateProduct;
 
-public sealed class UpdateProductCommandHandler(CatalogDbContext db)
+public sealed class UpdateProductCommandHandler(CatalogDbContext db, IDistributedCache cache)
     : IRequestHandler<UpdateProductCommand, ProductDto>
 {
     public async Task<ProductDto> Handle(UpdateProductCommand request, CancellationToken ct)
     {
         var product = await db.Products
                           .Include(p => p.Photos)
+                          .Include(p => p.ProductTags).ThenInclude(pt => pt.Tag)
                           .FirstOrDefaultAsync(p => p.Id == request.Id, ct)
                       ?? throw new NotFoundException($"Product '{request.Id}' not found.");
 
@@ -38,6 +40,7 @@ public sealed class UpdateProductCommandHandler(CatalogDbContext db)
             product.Location = null;
 
         await db.SaveChangesAsync(ct);
+        await cache.RemoveAsync($"product:{product.Id}", ct);
 
         return ProductMapper.ToDto(product);
     }

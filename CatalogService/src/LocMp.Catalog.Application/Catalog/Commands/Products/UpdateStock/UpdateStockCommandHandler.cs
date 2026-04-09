@@ -4,10 +4,11 @@ using LocMp.Catalog.Domain.Entities;
 using LocMp.Catalog.Infrastructure.Persistence;
 using LocMp.Contracts.Catalog;
 using MediatR;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace LocMp.Catalog.Application.Catalog.Commands.Products.UpdateStock;
 
-public sealed class UpdateStockCommandHandler(CatalogDbContext db, IEventBus eventBus)
+public sealed class UpdateStockCommandHandler(CatalogDbContext db, IEventBus eventBus, IDistributedCache cache)
     : IRequestHandler<UpdateStockCommand, int>
 {
     public async Task<int> Handle(UpdateStockCommand request, CancellationToken ct)
@@ -36,6 +37,7 @@ public sealed class UpdateStockCommandHandler(CatalogDbContext db, IEventBus eve
         });
 
         await db.SaveChangesAsync(ct);
+        await cache.RemoveAsync($"product:{product.Id}", ct);
 
         if (newQuantity == 0)
             await eventBus.PublishAsync(new StockDepletedEvent(product.Id, product.SellerId, product.Name, DateTimeOffset.UtcNow), ct);

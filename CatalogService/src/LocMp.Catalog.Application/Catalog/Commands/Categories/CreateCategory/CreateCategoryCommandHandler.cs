@@ -5,13 +5,14 @@ using LocMp.Catalog.Domain.Entities;
 using LocMp.Catalog.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
 
 namespace LocMp.Catalog.Application.Catalog.Commands.Categories.CreateCategory;
 
-public sealed class CreateCategoryCommandHandler(CatalogDbContext db, IStorageService storageService)
+public sealed class CreateCategoryCommandHandler(CatalogDbContext db, IStorageService storageService, IDistributedCache cache)
     : IRequestHandler<CreateCategoryCommand, CategoryDto>
 {
     private const int MaxSize = 800;
@@ -68,6 +69,7 @@ public sealed class CreateCategoryCommandHandler(CatalogDbContext db, IStorageSe
 
         db.Categories.Add(category);
         await db.SaveChangesAsync(ct);
+        await cache.RemoveAsync("categories:all", ct);
 
         return ToDto(category);
     }

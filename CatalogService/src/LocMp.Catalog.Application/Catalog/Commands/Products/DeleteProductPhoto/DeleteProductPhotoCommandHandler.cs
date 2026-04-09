@@ -3,12 +3,14 @@ using LocMp.BuildingBlocks.Application.Interfaces;
 using LocMp.Catalog.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace LocMp.Catalog.Application.Catalog.Commands.Products.DeleteProductPhoto;
 
 public sealed class DeleteProductPhotoCommandHandler(
     CatalogDbContext db,
-    IStorageService storageService)
+    IStorageService storageService,
+    IDistributedCache cache)
     : IRequestHandler<DeleteProductPhotoCommand>
 {
     public async Task Handle(DeleteProductPhotoCommand request, CancellationToken ct)
@@ -24,5 +26,6 @@ public sealed class DeleteProductPhotoCommandHandler(
         await storageService.DeleteAsync(photo.ObjectKey, ct);
         db.ProductPhotos.Remove(photo);
         await db.SaveChangesAsync(ct);
+        await cache.RemoveAsync($"product:{photo.ProductId}", ct);
     }
 }

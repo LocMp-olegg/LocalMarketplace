@@ -1,8 +1,12 @@
 using LocMp.BuildingBlocks.Application.Common;
 using LocMp.Catalog.Api.Requests.Products;
+using LocMp.Catalog.Application.Catalog.Commands.Products.AddProductTag;
 using LocMp.Catalog.Application.Catalog.Commands.Products.CreateProduct;
 using LocMp.Catalog.Application.Catalog.Commands.Products.DeleteProduct;
 using LocMp.Catalog.Application.Catalog.Commands.Products.DeleteProductPhoto;
+using LocMp.Catalog.Application.Catalog.Commands.Products.ReleaseStock;
+using LocMp.Catalog.Application.Catalog.Commands.Products.RemoveProductTag;
+using LocMp.Catalog.Application.Catalog.Commands.Products.ReserveStock;
 using LocMp.Catalog.Application.Catalog.Commands.Products.UpdateProduct;
 using LocMp.Catalog.Application.Catalog.Commands.Products.UpdateStock;
 using LocMp.Catalog.Application.Catalog.Commands.Products.UploadProductPhoto;
@@ -11,6 +15,8 @@ using LocMp.Catalog.Application.Catalog.Queries.Products.GetProductsByLocation;
 using LocMp.Catalog.Application.Catalog.Queries.Products.GetProductsBySeller;
 using LocMp.Catalog.Application.Catalog.Queries.Products.GetProductsByTags;
 using LocMp.Catalog.Application.Catalog.Queries.Products.GetProductStock;
+using LocMp.Catalog.Application.Catalog.Queries.Products.GetStockHistory;
+using LocMp.Catalog.Application.Catalog.Queries.Products.SearchProducts;
 using LocMp.Catalog.Application.DTOs;
 using LocMp.Catalog.Infrastructure.Extensions;
 using MediatR;
@@ -24,8 +30,6 @@ namespace LocMp.Catalog.Api.Controllers;
 [Route("api/products")]
 public sealed class ProductsController(ISender sender) : ControllerBase
 {
-    // ── Public queries ──────────────────────────────────────────────────────
-
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ProductDto>> GetById(Guid id, CancellationToken ct)
     {
@@ -47,6 +51,24 @@ public sealed class ProductsController(ISender sender) : ControllerBase
         CancellationToken ct = default)
         => Ok(await sender.Send(
             new GetProductsByLocationQuery(lat, lon, radiusKm, categoryId, search, page, pageSize), ct));
+
+    [HttpGet("search")]
+    public async Task<ActionResult<PagedResult<ProductSummaryDto>>> Search(
+        [FromQuery] string? q = null,
+        [FromQuery] Guid? categoryId = null,
+        [FromQuery] string? tags = null,
+        [FromQuery] decimal? minPrice = null,
+        [FromQuery] decimal? maxPrice = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
+    {
+        var tagList = string.IsNullOrWhiteSpace(tags)
+            ? null
+            : tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return Ok(await sender.Send(
+            new SearchProductsQuery(q, categoryId, tagList, minPrice, maxPrice, page, pageSize), ct));
+    }
 
     [HttpGet("by-seller/{sellerId:guid}")]
     public async Task<ActionResult<PagedResult<ProductSummaryDto>>> GetBySeller(
@@ -72,7 +94,15 @@ public sealed class ProductsController(ISender sender) : ControllerBase
     public async Task<ActionResult<int>> GetStock(Guid id, CancellationToken ct)
         => Ok(await sender.Send(new GetProductStockQuery(id), ct));
 
-    // ── Seller-only commands ────────────────────────────────────────────────
+    [HttpGet("{id:guid}/stock/history")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Seller,Admin")]
+    public async Task<ActionResult<PagedResult<StockHistoryDto>>> GetStockHistory(
+        Guid id,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
+        => Ok(await sender.Send(new GetStockHistoryQuery(
+            id, HttpContext.GetUserId(), HttpContext.User.IsInRole("Admin"), page, pageSize), ct));
 
     [HttpPost]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Seller,Admin")]
@@ -95,7 +125,8 @@ public sealed class ProductsController(ISender sender) : ControllerBase
 
     [HttpPut("{id:guid}")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Seller,Admin")]
-    public async Task<ActionResult<ProductDto>> Update(Guid id, [FromBody] UpdateProductRequest request, CancellationToken ct)
+    public async Task<ActionResult<ProductDto>> Update(Guid id, [FromBody] UpdateProductRequest request,
+        CancellationToken ct)
     {
         var command = new UpdateProductCommand(
             id,
@@ -135,6 +166,22 @@ public sealed class ProductsController(ISender sender) : ControllerBase
         return Ok(await sender.Send(command, ct));
     }
 
+    [HttpPost("{id:guid}/reserve")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    public async Task<ActionResult> Reserve(Guid id, [FromBody] ReserveStockRequest request, CancellationToken ct)
+    {
+        await sender.Send(new ReserveStockCommand(id, request.Quantity, request.OrderId), ct);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/release")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    public async Task<ActionResult> Release(Guid id, [FromBody] ReleaseStockRequest request, CancellationToken ct)
+    {
+        await sender.Send(new ReleaseStockCommand(id, request.Quantity, request.OrderId), ct);
+        return NoContent();
+    }
+
     [HttpPost("{id:guid}/photos")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Seller,Admin")]
     [Consumes("multipart/form-data")]
@@ -157,6 +204,22 @@ public sealed class ProductsController(ISender sender) : ControllerBase
     {
         await sender.Send(new DeleteProductPhotoCommand(photoId, HttpContext.GetUserId(),
             IsAdmin: HttpContext.User.IsInRole("Admin")), ct);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/tags")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Seller,Admin")]
+    public async Task<ActionResult<TagDto>> AddTag(
+        Guid id, [FromBody] AddProductTagRequest request, CancellationToken ct)
+        => Ok(await sender.Send(new AddProductTagCommand(
+            id, request.TagName, HttpContext.GetUserId(), HttpContext.User.IsInRole("Admin")), ct));
+
+    [HttpDelete("{id:guid}/tags/{tagId:guid}")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Seller,Admin")]
+    public async Task<ActionResult> RemoveTag(Guid id, Guid tagId, CancellationToken ct)
+    {
+        await sender.Send(new RemoveProductTagCommand(
+            id, tagId, HttpContext.GetUserId(), HttpContext.User.IsInRole("Admin")), ct);
         return NoContent();
     }
 }

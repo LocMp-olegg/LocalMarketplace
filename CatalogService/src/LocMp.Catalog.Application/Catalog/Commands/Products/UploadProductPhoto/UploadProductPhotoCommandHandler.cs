@@ -4,6 +4,7 @@ using LocMp.Catalog.Domain.Entities;
 using LocMp.Catalog.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
@@ -12,7 +13,8 @@ namespace LocMp.Catalog.Application.Catalog.Commands.Products.UploadProductPhoto
 
 public sealed class UploadProductPhotoCommandHandler(
     CatalogDbContext db,
-    IStorageService storageService)
+    IStorageService storageService,
+    IDistributedCache cache)
     : IRequestHandler<UploadProductPhotoCommand, Guid>
 {
     private const int MaxWidth = 1200;
@@ -74,6 +76,7 @@ public sealed class UploadProductPhotoCommandHandler(
 
         db.ProductPhotos.Add(photo);
         await db.SaveChangesAsync(ct);
+        await cache.RemoveAsync($"product:{request.ProductId}", ct);
 
         return photoId;
     }
