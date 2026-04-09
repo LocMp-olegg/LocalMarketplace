@@ -1,5 +1,5 @@
-using LocMp.BuildingBlocks.Application.Exceptions;
 using AutoMapper;
+using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Identity.Application.DTOs.User;
 using LocMp.Identity.Domain.Entities;
 using MediatR;
@@ -15,15 +15,17 @@ public sealed class GetUsersByRoleIdQueryHandler(
 {
     public async Task<IReadOnlyList<UserDto>> Handle(GetUsersByRoleIdQuery request, CancellationToken cancellationToken)
     {
-        var role = await roleManager.FindByIdAsync(request.RoleId.ToString()).ConfigureAwait(false);
+        var role = await roleManager.FindByIdAsync(request.RoleId.ToString()).ConfigureAwait(false)
+                   ?? throw new NotFoundException($"Role with id '{request.RoleId}' was not found.");
 
-        if (role is null)
-            throw new NotFoundException($"Role with id '{request.RoleId}' was not found.");
+        var usersInRole = await userManager.GetUsersInRoleAsync(role.Name!).ConfigureAwait(false);
 
-        var usersInRole = await userManager.GetUsersInRoleAsync(role.Name!)
-            .ConfigureAwait(false);
-
-        var result = mapper.Map<IReadOnlyList<UserDto>>(usersInRole);
+        var result = new List<UserDto>(usersInRole.Count);
+        foreach (var user in usersInRole)
+        {
+            var roles = await userManager.GetRolesAsync(user);
+            result.Add(mapper.Map<UserDto>(user) with { Roles = [.. roles] });
+        }
 
         return result;
     }

@@ -80,6 +80,7 @@ public sealed class RegisterUserCommandHandler(
                 new UserBecameSellerEvent(user.Id, displayName, DateTimeOffset.UtcNow), ct);
         }
 
-        return mapper.Map<UserDto>(user);
+        var roles = await userManager.GetRolesAsync(user);
+        return mapper.Map<UserDto>(user) with { Roles = [.. roles] };
     }
 }

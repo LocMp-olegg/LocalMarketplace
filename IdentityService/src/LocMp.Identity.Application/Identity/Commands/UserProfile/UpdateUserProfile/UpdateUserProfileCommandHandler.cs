@@ -1,3 +1,4 @@
+using AutoMapper;
 using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.BuildingBlocks.Application.Interfaces;
 using LocMp.Contracts.Identity;
@@ -12,6 +13,7 @@ namespace LocMp.Identity.Application.Identity.Commands.UserProfile.UpdateUserPro
 
 public sealed class UpdateUserProfileCommandHandler(
     UserManager<ApplicationUser> userManager,
+    IMapper mapper,
     IEventBus eventBus
 ) : IRequestHandler<UpdateUserProfileCommand, UserProfileDto>
 {
@@ -55,20 +57,6 @@ public sealed class UpdateUserProfileCommandHandler(
                 DateTimeOffset.UtcNow), ct);
 
         var roles = await userManager.GetRolesAsync(user);
-        return new UserProfileDto(
-            user.Id,
-            user.UserName!,
-            user.Email!,
-            user.FirstName,
-            user.LastName,
-            user.Gender.HasValue ? (Gender)user.Gender.Value : null,
-            user.BirthDate,
-            user.PhoneNumber,
-            user.RegisteredAt,
-            user.Photo is not null,
-            user.Photo?.MimeType,
-            user.Photo?.UploadedAt.Ticks,
-            [.. roles]
-        );
+        return mapper.Map<UserProfileDto>(user) with { Roles = [.. roles] };
     }
 }
