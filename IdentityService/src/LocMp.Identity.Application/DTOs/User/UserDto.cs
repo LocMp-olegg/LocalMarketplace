@@ -12,4 +12,5 @@ public sealed record UserDto
     public string PhoneNumber { get; init; } = null!;
     public DateTimeOffset RegisteredAt { get; init; }
     public bool Active { get; init; }
+    public IReadOnlyList<string> Roles { get; init; } = [];
 }

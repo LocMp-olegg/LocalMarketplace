@@ -17,13 +17,12 @@ public sealed class GetUserByPhoneNumberQueryHandler(UserManager<ApplicationUser
             throw new ArgumentException("Phone number must be provided.");
 
         var user = await userManager.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.PhoneNumber == request.PhoneNumber, cancellationToken)
-            .ConfigureAwait(false);
+                       .AsNoTracking()
+                       .FirstOrDefaultAsync(u => u.PhoneNumber == request.PhoneNumber, cancellationToken)
+                       .ConfigureAwait(false)
+                   ?? throw new NotFoundException($"User with phone '{request.PhoneNumber}' was not found.");
 
-        if (user is null)
-            throw new NotFoundException($"User with phone '{request.PhoneNumber}' was not found.");
-
-        return mapper.Map<UserDto>(user);
+        var roles = await userManager.GetRolesAsync(user);
+        return mapper.Map<UserDto>(user) with { Roles = [.. roles] };
     }
 }

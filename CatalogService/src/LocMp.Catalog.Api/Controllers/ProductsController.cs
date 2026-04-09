@@ -54,7 +54,7 @@ public sealed class ProductsController(ISender sender) : ControllerBase
 
     [HttpGet("search")]
     public async Task<ActionResult<PagedResult<ProductSummaryDto>>> Search(
-        [FromQuery] string? q = null,
+        [FromQuery(Name = "search")] string? q = null,
         [FromQuery] Guid? categoryId = null,
         [FromQuery] string? tags = null,
         [FromQuery] decimal? minPrice = null,

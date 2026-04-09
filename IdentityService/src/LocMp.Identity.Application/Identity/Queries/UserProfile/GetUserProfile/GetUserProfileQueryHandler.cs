@@ -1,7 +1,7 @@
+using AutoMapper;
 using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Identity.Application.DTOs.UserProfile;
 using LocMp.Identity.Domain.Entities;
-using LocMp.Identity.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -9,30 +9,19 @@ using Microsoft.EntityFrameworkCore;
 namespace LocMp.Identity.Application.Identity.Queries.UserProfile.GetUserProfile;
 
 public sealed class GetUserProfileQueryHandler(
-    UserManager<ApplicationUser> userManager
+    UserManager<ApplicationUser> userManager,
+    IMapper mapper
 ) : IRequestHandler<GetUserProfileQuery, UserProfileDto>
 {
     public async Task<UserProfileDto> Handle(GetUserProfileQuery request, CancellationToken ct)
     {
-        var profile = await userManager.Users
-            .AsNoTracking()
-            .Where(u => u.Id == request.UserId)
-            .Select(u => new UserProfileDto(
-                u.Id,
-                u.UserName!,
-                u.Email!,
-                u.FirstName,
-                u.LastName,
-                u.Gender.HasValue ? (Gender)u.Gender.Value : null,
-                u.BirthDate,
-                u.PhoneNumber,
-                u.RegisteredAt,
-                u.Photo != null,
-                u.Photo != null ? u.Photo.MimeType : null,
-                u.Photo != null ? u.Photo.UploadedAt.Ticks : null
-            ))
-            .FirstOrDefaultAsync(ct);
+        var user = await userManager.Users
+                       .AsNoTracking()
+                       .Include(u => u.Photo)
+                       .FirstOrDefaultAsync(u => u.Id == request.UserId, ct)
+                   ?? throw new NotFoundException($"User with id '{request.UserId}' was not found");
 
-        return profile ?? throw new NotFoundException($"User with id '{request.UserId}' was not found");
+        var roles = await userManager.GetRolesAsync(user);
+        return mapper.Map<UserProfileDto>(user) with { Roles = [.. roles] };
     }
 }

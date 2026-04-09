@@ -35,6 +35,7 @@ public sealed class UpdateUserCommandHandler(
             throw new InvalidOperationException($"Failed to update user '{request.Email}': {errors}");
         }
 
-        return mapper.Map<UserDto>(user);
+        var roles = await userManager.GetRolesAsync(user);
+        return mapper.Map<UserDto>(user) with { Roles = [.. roles] };
     }
 }

@@ -17,11 +17,10 @@ public sealed class GetUserByEmailQueryHandler(UserManager<ApplicationUser> user
 
         var email = request.Email.Trim();
 
-        var user = await userManager.FindByEmailAsync(email).ConfigureAwait(false);
+        var user = await userManager.FindByEmailAsync(email).ConfigureAwait(false)
+                   ?? throw new NotFoundException($"User with email '{request.Email}' was not found.");
 
-        if (user is null)
-            throw new NotFoundException($"User with email '{request.Email}' was not found.");
-
-        return mapper.Map<UserDto>(user);
+        var roles = await userManager.GetRolesAsync(user);
+        return mapper.Map<UserDto>(user) with { Roles = [.. roles] };
     }
 }

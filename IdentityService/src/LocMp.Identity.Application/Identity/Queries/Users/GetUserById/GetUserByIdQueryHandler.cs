@@ -12,12 +12,10 @@ public sealed class GetUserByIdQueryHandler(UserManager<ApplicationUser> userMan
 {
     public async Task<UserDto> Handle(GetUserByIdQuery request, CancellationToken cancellationToken)
     {
-        var user = await userManager.FindByIdAsync(request.Id.ToString()).ConfigureAwait(false);
+        var user = await userManager.FindByIdAsync(request.Id.ToString()).ConfigureAwait(false)
+                   ?? throw new NotFoundException($"User with id '{request.Id}' was not found.");
 
-        if (user is null)
-            throw new NotFoundException($"User with id '{request.Id}' was not found.");
-
-        return mapper.Map<UserDto>(user);
+        var roles = await userManager.GetRolesAsync(user);
+        return mapper.Map<UserDto>(user) with { Roles = [.. roles] };
     }
 }
-
