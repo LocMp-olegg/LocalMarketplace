@@ -8,25 +8,20 @@ public sealed class CatalogProfile : Profile
 {
     public CatalogProfile()
     {
+        CreateMap<Category, CategoryDto>();
+        CreateMap<ProductPhoto, ProductPhotoDto>();
+
         CreateMap<Shop, ShopDto>()
-            .ConstructUsing((s, _) => new ShopDto(
-                s.Id,
-                s.SellerId,
-                s.BusinessName,
-                s.PhoneNumber,
-                s.Email,
-                s.Description,
-                s.Inn,
-                s.BusinessType,
-                s.WorkingHours,
-                s.ServiceRadiusMeters,
-                s.Location != null ? s.Location.Y : null,
-                s.Location != null ? s.Location.X : null,
-                s.AvatarUrl,
-                s.IsVerified,
-                s.IsActive,
-                s.CreatedAt,
-                s.UpdatedAt))
-            .ForAllMembers(o => o.Ignore());
+            .ForMember(d => d.Latitude, o => o.MapFrom(s => s.Location != null ? s.Location.Y : (double?)null))
+            .ForMember(d => d.Longitude, o => o.MapFrom(s => s.Location != null ? s.Location.X : (double?)null));
+
+        CreateMap<Product, ProductDto>()
+            .ForMember(d => d.Latitude, o => o.MapFrom(s => s.Location != null ? s.Location.Y : (double?)null))
+            .ForMember(d => d.Longitude, o => o.MapFrom(s => s.Location != null ? s.Location.X : (double?)null))
+            .ForMember(d => d.MainPhotoUrl, o => o.MapFrom(s =>
+                s.Photos.FirstOrDefault(ph => ph.IsMain)!.StorageUrl
+                ?? s.Photos.OrderBy(ph => ph.SortOrder).FirstOrDefault()!.StorageUrl))
+            .ForMember(d => d.Photos, o => o.MapFrom(s => s.Photos.OrderBy(ph => ph.SortOrder).ToList()))
+            .ForMember(d => d.Tags, o => o.MapFrom(s => s.ProductTags.Select(pt => pt.Tag.Name).ToList()));
     }
 }

@@ -1,3 +1,4 @@
+using AutoMapper;
 using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Catalog.Application.DTOs;
 using LocMp.Catalog.Infrastructure.Persistence;
@@ -8,7 +9,7 @@ using NetTopologySuite.Geometries;
 
 namespace LocMp.Catalog.Application.Catalog.Commands.Products.UpdateProduct;
 
-public sealed class UpdateProductCommandHandler(CatalogDbContext db, IDistributedCache cache)
+public sealed class UpdateProductCommandHandler(CatalogDbContext db, IMapper mapper, IDistributedCache cache)
     : IRequestHandler<UpdateProductCommand, ProductDto>
 {
     public async Task<ProductDto> Handle(UpdateProductCommand request, CancellationToken ct)
@@ -42,6 +43,6 @@ public sealed class UpdateProductCommandHandler(CatalogDbContext db, IDistribute
         await db.SaveChangesAsync(ct);
         await cache.RemoveAsync($"product:{product.Id}", ct);
 
-        return ProductMapper.ToDto(product);
+        return mapper.Map<ProductDto>(product);
     }
 }
