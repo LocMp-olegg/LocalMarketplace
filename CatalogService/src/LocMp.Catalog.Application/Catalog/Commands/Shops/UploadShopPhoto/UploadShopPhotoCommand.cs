@@ -8,6 +8,5 @@ public sealed record UploadShopPhotoCommand(
     Guid ShopId,
     Guid RequesterId,
     bool IsAdmin,
-    IFormFile Image,
-    int SortOrder = 0
-) : IRequest<ShopPhotoDto>;
+    IReadOnlyList<IFormFile> Images
+) : IRequest<IReadOnlyList<ShopPhotoDto>>;

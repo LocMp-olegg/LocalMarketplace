@@ -86,14 +86,13 @@ public sealed class ShopsController(ISender sender) : ControllerBase
     [HttpPost("{id:guid}/photos")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Seller,Admin")]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<ShopPhotoDto>> UploadPhoto(
+    public async Task<ActionResult<IReadOnlyList<ShopPhotoDto>>> UploadPhotos(
         Guid id,
-        IFormFile image,
-        [FromQuery] int sortOrder = 0,
+        IFormFileCollection images,
         CancellationToken ct = default)
     {
         var result = await sender.Send(new UploadShopPhotoCommand(
-            id, HttpContext.GetUserId(), HttpContext.User.IsInRole("Admin"), image, sortOrder), ct);
+            id, HttpContext.GetUserId(), HttpContext.User.IsInRole("Admin"), images.ToList()), ct);
         return CreatedAtAction(nameof(GetById), new { id }, result);
     }
 
