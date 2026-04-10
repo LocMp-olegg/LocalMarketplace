@@ -31,17 +31,14 @@ try
 
     var app = builder.Build();
 
-    if (app.Environment.IsDevelopment())
+    using (var scope = app.Services.CreateScope())
     {
-        using (var scope = app.Services.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
-            await dbContext.Database.MigrateAsync();
-            await CatalogDbSeeder.SeedAsync(dbContext);
-        }
-
-        app.UseSwaggerUi(configuration);
+        var dbContext = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
+        await dbContext.Database.MigrateAsync();
+        await CatalogDbSeeder.SeedAsync(dbContext);
     }
+
+    app.UseSwaggerUi(configuration);
 
     app.UseHttpsRedirection();
 

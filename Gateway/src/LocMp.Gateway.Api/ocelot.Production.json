@@ -1,0 +1,58 @@
+{
+  "GlobalConfiguration": {
+    "BaseUrl": "http://localhost:5000"
+  },
+  "Routes": [
+    {
+      "UpstreamPathTemplate": "/connect/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post" ],
+      "DownstreamPathTemplate": "/connect/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "locmp-identity", "Port": 8080 }
+      ]
+    },
+    {
+      "UpstreamPathTemplate": "/api/identity/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Patch", "Delete" ],
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "locmp-identity", "Port": 8080 }
+      ],
+      "SwaggerKey": "identity-service"
+    },
+    {
+      "UpstreamPathTemplate": "/api/catalog/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Patch", "Delete" ],
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "locmp-catalog", "Port": 8080 }
+      ],
+      "SwaggerKey": "catalog-service"
+    }
+  ],
+  "SwaggerEndPoints": [
+    {
+      "Key": "identity-service",
+      "Config": [
+        {
+          "Name": "IdentityService API",
+          "Version": "v1",
+          "Url": "http://locmp-identity:8080/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "catalog-service",
+      "Config": [
+        {
+          "Name": "CatalogService API",
+          "Version": "v1",
+          "Url": "http://locmp-catalog:8080/swagger/v1/swagger.json"
+        }
+      ]
+    }
+  ]
+}

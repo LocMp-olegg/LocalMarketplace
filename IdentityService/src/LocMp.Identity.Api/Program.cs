@@ -31,17 +31,15 @@ try
 
     var app = builder.Build();
 
-    if (app.Environment.IsDevelopment())
+    using (var scope = app.Services.CreateScope())
     {
-        using (var scope = app.Services.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            await dbContext.Database.MigrateAsync();
-        }
-
-        app.UseSwaggerUi(configuration);
-        await IdentityDataSeeder.SeedAsync(app.Services);
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await dbContext.Database.MigrateAsync();
     }
+
+    await IdentityDataSeeder.SeedAsync(app.Services);
+
+    app.UseSwaggerUi(configuration);
 
     app.UseHttpsRedirection();
 
