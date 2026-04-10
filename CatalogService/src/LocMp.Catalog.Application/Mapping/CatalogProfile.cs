@@ -10,10 +10,12 @@ public sealed class CatalogProfile : Profile
     {
         CreateMap<Category, CategoryDto>();
         CreateMap<ProductPhoto, ProductPhotoDto>();
+        CreateMap<ShopPhoto, ShopPhotoDto>();
 
         CreateMap<Shop, ShopDto>()
             .ForMember(d => d.Latitude, o => o.MapFrom(s => s.Location != null ? s.Location.Y : (double?)null))
-            .ForMember(d => d.Longitude, o => o.MapFrom(s => s.Location != null ? s.Location.X : (double?)null));
+            .ForMember(d => d.Longitude, o => o.MapFrom(s => s.Location != null ? s.Location.X : (double?)null))
+            .ForMember(d => d.Photos, o => o.MapFrom(s => s.Photos.OrderBy(p => p.SortOrder).ToList()));
 
         CreateMap<Product, ProductDto>()
             .ForMember(d => d.Latitude, o => o.MapFrom(s => s.Location != null ? s.Location.Y : (double?)null))

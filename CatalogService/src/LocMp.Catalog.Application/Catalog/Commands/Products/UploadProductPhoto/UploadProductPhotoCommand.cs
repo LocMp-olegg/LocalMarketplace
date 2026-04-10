@@ -6,8 +6,6 @@ namespace LocMp.Catalog.Application.Catalog.Commands.Products.UploadProductPhoto
 public sealed record UploadProductPhotoCommand(
     Guid ProductId,
     Guid SellerId,
-    IFormFile Photo,
-    bool IsMain = false,
-    int SortOrder = 0,
+    IReadOnlyList<IFormFile> Photos,
     bool IsAdmin = false
-) : IRequest<Guid>;
+) : IRequest<IReadOnlyList<Guid>>;

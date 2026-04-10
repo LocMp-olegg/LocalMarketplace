@@ -9,13 +9,15 @@ public sealed class UploadProductPhotoCommandValidator : AbstractValidator<Uploa
 
     public UploadProductPhotoCommandValidator()
     {
-        RuleFor(x => x.Photo).NotNull().WithMessage("Photo is required.");
-        RuleFor(x => x.Photo.Length)
-            .LessThanOrEqualTo(MaxFileSizeBytes)
-            .WithMessage("Photo must not exceed 10 MB.");
-        RuleFor(x => x.Photo.ContentType)
-            .Must(ct => AllowedMimeTypes.Contains(ct))
-            .WithMessage("Only JPEG, PNG, WebP, and GIF images are allowed.");
-        RuleFor(x => x.SortOrder).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.Photos).NotEmpty().WithMessage("At least one photo is required.");
+        RuleForEach(x => x.Photos).ChildRules(photo =>
+        {
+            photo.RuleFor(f => f.Length)
+                .LessThanOrEqualTo(MaxFileSizeBytes)
+                .WithMessage("Each photo must not exceed 10 MB.");
+            photo.RuleFor(f => f.ContentType)
+                .Must(ct => AllowedMimeTypes.Contains(ct))
+                .WithMessage("Only JPEG, PNG, WebP, and GIF images are allowed.");
+        });
     }
 }

@@ -6,7 +6,7 @@ namespace LocMp.Catalog.Domain.Entities;
 public class Shop(Guid id)
 {
     public Guid Id { get; set; } = id;
-    public Guid SellerId { get; set; }  // НЕТ FK — ссылка на Identity
+    public Guid SellerId { get; set; }
 
     public string BusinessName { get; set; } = null!;
     public string PhoneNumber { get; set; } = null!;
@@ -31,4 +31,5 @@ public class Shop(Guid id)
     public DateTimeOffset? UpdatedAt { get; set; }
 
     public virtual ICollection<Product> Products { get; set; } = [];
+    public virtual ICollection<ShopPhoto> Photos { get; set; } = [];
 }
