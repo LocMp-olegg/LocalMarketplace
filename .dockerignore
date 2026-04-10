@@ -1,0 +1,11 @@
+**/.vs
+**/.git
+**/.gitignore
+**/bin
+**/obj
+**/Logs
+**/*.user
+**/*.suo
+**/.idea
+**/*.md
+**/TestResults

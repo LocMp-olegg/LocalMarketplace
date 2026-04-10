@@ -1,5 +1,7 @@
 services:
 
+  # ─── Infrastructure ────────────────────────────────────────────────────────
+
   postgres:
     image: postgis/postgis:17-3.5
     container_name: locmp-postgres
@@ -13,6 +15,11 @@ services:
       - "5430:5430"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -p 5430"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
     image: rabbitmq:4-management
@@ -26,6 +33,11 @@ services:
       - "15672:15672" # Management UI
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
 
   minio:
     image: minio/minio:latest
@@ -40,6 +52,11 @@ services:
       - "9001:9001"   # Web Console
     volumes:
       - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -49,6 +66,93 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Application Services ─────────────────────────────────────────────────
+
+  identity:
+    build:
+      context: .
+      dockerfile: IdentityService/Dockerfile
+    image: locmp-identity:latest
+    container_name: locmp-identity
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__LocalMarketplaceDb: "Host=locmp-postgres;Port=5430;Database=LocalMarketplaceDb;Username=postgres;Password=123Qq123"
+      ConnectionStrings__RabbitMq: "amqp://guest:guest@locmp-rabbitmq:5672"
+      Minio__Endpoint: "locmp-minio:9000"
+      Minio__AccessKey: "minioadmin"
+      Minio__SecretKey: "minioadmin"
+      Minio__BucketName: "locmp-identity"
+      Minio__UseSSL: "false"
+      Minio__PublicEndpoint: "localhost:9000"
+      JwtAuthenticationOptions__Authority: "http://locmp-identity:8080"
+    ports:
+      - "5001:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  catalog:
+    build:
+      context: .
+      dockerfile: CatalogService/Dockerfile
+    image: locmp-catalog:latest
+    container_name: locmp-catalog
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__LocalMarketplaceDb: "Host=locmp-postgres;Port=5430;Database=LocalMarketplaceDb;Username=postgres;Password=123Qq123"
+      ConnectionStrings__RabbitMq: "amqp://guest:guest@locmp-rabbitmq:5672"
+      ConnectionStrings__Redis: "locmp-redis:6379"
+      Minio__Endpoint: "locmp-minio:9000"
+      Minio__AccessKey: "minioadmin"
+      Minio__SecretKey: "minioadmin"
+      Minio__BucketName: "locmp-catalog"
+      Minio__UseSSL: "false"
+      Minio__PublicEndpoint: "localhost:9000"
+      JwtAuthenticationOptions__Authority: "http://locmp-identity:8080"
+    ports:
+      - "5002:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      identity:
+        condition: service_started
+
+  gateway:
+    build:
+      context: .
+      dockerfile: Gateway/Dockerfile
+    image: locmp-gateway:latest
+    container_name: locmp-gateway
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      AuthenticationOptions__Authority: "http://locmp-identity:8080"
+      CorsPoliticsOptions__AllowedOrigins: "http://localhost:4200"
+    ports:
+      - "5000:8080"
+    depends_on:
+      identity:
+        condition: service_started
+      catalog:
+        condition: service_started
 
 volumes:
   postgres-data:
