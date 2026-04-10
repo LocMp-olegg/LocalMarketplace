@@ -21,4 +21,5 @@ public sealed record ShopDto
     public bool IsActive { get; init; }
     public DateTimeOffset CreatedAt { get; init; }
     public DateTimeOffset? UpdatedAt { get; init; }
+    public IReadOnlyList<ShopPhotoDto> Photos { get; init; } = [];
 }

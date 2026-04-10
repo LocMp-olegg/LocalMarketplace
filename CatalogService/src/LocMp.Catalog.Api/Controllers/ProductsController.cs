@@ -9,6 +9,7 @@ using LocMp.Catalog.Application.Catalog.Commands.Products.RemoveProductTag;
 using LocMp.Catalog.Application.Catalog.Commands.Products.ReserveStock;
 using LocMp.Catalog.Application.Catalog.Commands.Products.UpdateProduct;
 using LocMp.Catalog.Application.Catalog.Commands.Products.UpdateStock;
+using LocMp.Catalog.Application.Catalog.Commands.Products.SetMainProductPhoto;
 using LocMp.Catalog.Application.Catalog.Commands.Products.UploadProductPhoto;
 using LocMp.Catalog.Application.Catalog.Queries.Products.GetProductById;
 using LocMp.Catalog.Application.Catalog.Queries.Products.GetProductsByLocation;
@@ -186,17 +187,16 @@ public sealed class ProductsController(ISender sender) : ControllerBase
     [HttpPost("{id:guid}/photos")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Seller,Admin")]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<Guid>> UploadPhoto(
+    public async Task<ActionResult<IReadOnlyList<Guid>>> UploadPhotos(
         Guid id,
-        IFormFile photo,
-        [FromQuery] bool isMain = false,
-        [FromQuery] int sortOrder = 0,
+        IFormFileCollection photos,
         CancellationToken ct = default)
     {
-        var photoId = await sender.Send(
-            new UploadProductPhotoCommand(id, HttpContext.GetUserId(), photo, isMain, sortOrder,
+        var ids = await sender.Send(
+            new UploadProductPhotoCommand(id, HttpContext.GetUserId(), photos.ToList(),
                 IsAdmin: HttpContext.User.IsInRole("Admin")), ct);
-        return CreatedAtAction(nameof(GetById), new { id }, photoId);
+        return CreatedAtAction(nameof(GetById), new { id }, ids);
+        
     }
 
     [HttpDelete("{productId:guid}/photos/{photoId:guid}")]
@@ -205,6 +205,15 @@ public sealed class ProductsController(ISender sender) : ControllerBase
     {
         await sender.Send(new DeleteProductPhotoCommand(photoId, HttpContext.GetUserId(),
             IsAdmin: HttpContext.User.IsInRole("Admin")), ct);
+        return NoContent();
+    }
+
+    [HttpPatch("{productId:guid}/photos/{photoId:guid}/set-main")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Seller,Admin")]
+    public async Task<ActionResult> SetMainPhoto(Guid productId, Guid photoId, CancellationToken ct)
+    {
+        await sender.Send(new SetMainProductPhotoCommand(
+            photoId, productId, HttpContext.GetUserId(), HttpContext.User.IsInRole("Admin")), ct);
         return NoContent();
     }
 

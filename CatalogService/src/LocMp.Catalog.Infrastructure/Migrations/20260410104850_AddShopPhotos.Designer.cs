@@ -4,6 +4,7 @@ using System.Text.Json;
 using LocMp.Catalog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -13,9 +14,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LocMp.Catalog.Infrastructure.Migrations
 {
     [DbContext(typeof(CatalogDbContext))]
-    partial class CatalogDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260410104850_AddShopPhotos")]
+    partial class AddShopPhotos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -146,6 +149,9 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                     b.Property<Guid?>("ShopId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ShopId1")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("StockQuantity")
                         .HasColumnType("integer");
 
@@ -166,6 +172,8 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                     b.HasIndex("SellerId");
 
                     b.HasIndex("ShopId");
+
+                    b.HasIndex("ShopId1");
 
                     b.ToTable("Products", "catalog");
                 });
@@ -478,10 +486,14 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("LocMp.Catalog.Domain.Entities.Shop", "Shop")
+                    b.HasOne("LocMp.Catalog.Domain.Entities.Shop", null)
                         .WithMany("Products")
                         .HasForeignKey("ShopId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("LocMp.Catalog.Domain.Entities.Shop", "Shop")
+                        .WithMany()
+                        .HasForeignKey("ShopId1");
 
                     b.Navigation("Category");
 

@@ -1,16 +1,16 @@
 using FluentValidation;
 
-namespace LocMp.Catalog.Application.Catalog.Commands.Products.UploadProductPhoto;
+namespace LocMp.Catalog.Application.Catalog.Commands.Shops.UploadShopPhoto;
 
-public sealed class UploadProductPhotoCommandValidator : AbstractValidator<UploadProductPhotoCommand>
+public sealed class UploadShopPhotoCommandValidator : AbstractValidator<UploadShopPhotoCommand>
 {
     private static readonly string[] AllowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     private const long MaxFileSizeBytes = 10 * 1024 * 1024;
 
-    public UploadProductPhotoCommandValidator()
+    public UploadShopPhotoCommandValidator()
     {
-        RuleFor(x => x.Photos).NotEmpty().WithMessage("At least one photo is required.");
-        RuleForEach(x => x.Photos).ChildRules(photo =>
+        RuleFor(x => x.Images).NotEmpty().WithMessage("At least one photo is required.");
+        RuleForEach(x => x.Images).ChildRules(photo =>
         {
             photo.RuleFor(f => f.Length)
                 .LessThanOrEqualTo(MaxFileSizeBytes)

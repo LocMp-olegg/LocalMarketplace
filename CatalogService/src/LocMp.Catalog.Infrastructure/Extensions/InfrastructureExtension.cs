@@ -1,5 +1,6 @@
 using LocMp.BuildingBlocks.Application.Interfaces;
 using LocMp.Catalog.Infrastructure.Events;
+using LocMp.Catalog.Infrastructure.Images;
 using LocMp.Catalog.Infrastructure.Options;
 using LocMp.Catalog.Infrastructure.Persistence;
 using LocMp.Catalog.Infrastructure.Storage;
@@ -55,6 +56,7 @@ public static class InfrastructureExtension
             .Build());
 
         services.AddScoped<IStorageService, MinioStorageService>();
+        services.AddSingleton<IImageProcessor, ImageSharpProcessor>();
 
         // Redis
         var redisConnection = configuration.GetConnectionString("Redis")

@@ -8,8 +8,6 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Webp;
-using SixLabors.ImageSharp.Processing;
 
 namespace LocMp.Catalog.Application.Catalog.Commands.Categories.CreateCategory;
 
@@ -17,13 +15,12 @@ public sealed class CreateCategoryCommandHandler(
     CatalogDbContext db,
     IMapper mapper,
     IStorageService storageService,
+    IImageProcessor imageProcessor,
     IDistributedCache cache)
     : IRequestHandler<CreateCategoryCommand, CategoryDto>
 {
     private const int MaxSize = 800;
     private const long MaxFileSizeBytes = 5 * 1024 * 1024;
-    private static readonly WebpEncoder Encoder = new() { Quality = 85 };
-    private const string MimeType = "image/webp";
 
     public async Task<CategoryDto> Handle(CreateCategoryCommand request, CancellationToken ct)
     {
@@ -42,10 +39,10 @@ public sealed class CreateCategoryCommandHandler(
             if (request.Image.Length > MaxFileSizeBytes)
                 throw new ConflictException("File is too large. Maximum allowed size is 5 MB.");
 
-            byte[] processedData;
+            ProcessedImage processed;
             try
             {
-                processedData = await ProcessImageAsync(request.Image.OpenReadStream(), ct);
+                processed = await imageProcessor.ProcessAsync(request.Image.OpenReadStream(), MaxSize, MaxSize, ct);
             }
             catch (UnknownImageFormatException)
             {
@@ -57,8 +54,8 @@ public sealed class CreateCategoryCommandHandler(
             }
 
             var objectKey = $"categories/{categoryId}.webp";
-            using var stream = new MemoryStream(processedData);
-            imageUrl = await storageService.UploadAsync(stream, objectKey, MimeType, ct);
+            using var stream = new MemoryStream(processed.Data);
+            imageUrl = await storageService.UploadAsync(stream, objectKey, ProcessedImage.MimeType, ct);
         }
 
         var category = new Category(categoryId)
@@ -77,25 +74,5 @@ public sealed class CreateCategoryCommandHandler(
         await cache.RemoveAsync("categories:all", ct);
 
         return mapper.Map<CategoryDto>(category);
-    }
-
-    private static async Task<byte[]> ProcessImageAsync(Stream stream, CancellationToken ct)
-    {
-        await using var inputStream = stream;
-        using var image = await Image.LoadAsync(inputStream, ct);
-
-        if (image.Width > MaxSize || image.Height > MaxSize)
-        {
-            image.Mutate(x => x.Resize(new ResizeOptions
-            {
-                Size = new Size(MaxSize, MaxSize),
-                Mode = ResizeMode.Max,
-                Sampler = KnownResamplers.Lanczos3
-            }));
-        }
-
-        using var outputStream = new MemoryStream();
-        await image.SaveAsync(outputStream, Encoder, ct);
-        return outputStream.ToArray();
     }
 }

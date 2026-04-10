@@ -12,6 +12,7 @@ public sealed class GetShopsBySellerQueryHandler(CatalogDbContext db, IMapper ma
     public async Task<IReadOnlyList<ShopDto>> Handle(GetShopsBySellerQuery request, CancellationToken ct)
     {
         var shops = await db.Shops
+            .Include(s => s.Photos)
             .Where(s => s.SellerId == request.SellerId)
             .OrderBy(s => s.CreatedAt)
             .ToListAsync(ct);
