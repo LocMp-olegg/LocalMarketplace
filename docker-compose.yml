@@ -135,6 +135,39 @@ services:
       identity:
         condition: service_started
 
+  orders:
+    build:
+      context: .
+      dockerfile: OrderService/Dockerfile
+    image: locmp-orders:latest
+    container_name: locmp-orders
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__LocalMarketplaceDb: "Host=locmp-postgres;Port=5430;Database=LocalMarketplaceDb;Username=postgres;Password=123Qq123"
+      ConnectionStrings__RabbitMq: "amqp://guest:guest@locmp-rabbitmq:5672"
+      ConnectionStrings__Redis: "locmp-redis:6379"
+      Minio__Endpoint: "locmp-minio:9000"
+      Minio__AccessKey: "minioadmin"
+      Minio__SecretKey: "minioadmin"
+      Minio__BucketName: "locmp-orders"
+      Minio__UseSSL: "false"
+      Minio__PublicEndpoint: "localhost:9000"
+      JwtAuthenticationOptions__Authority: "http://locmp-identity:8080"
+    ports:
+      - "5003:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      identity:
+        condition: service_started
+
   gateway:
     build:
       context: .
@@ -152,6 +185,8 @@ services:
       identity:
         condition: service_started
       catalog:
+        condition: service_started
+      orders:
         condition: service_started
 
 volumes:

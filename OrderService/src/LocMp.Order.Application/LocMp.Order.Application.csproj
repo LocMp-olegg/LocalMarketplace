@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AutoMapper" Version="16.1.1" />
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+        <PackageReference Include="MediatR" Version="14.1.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\LocMp.Order.Domain\LocMp.Order.Domain.csproj" />
+        <ProjectReference Include="..\LocMp.Order.Infrastructure\LocMp.Order.Infrastructure.csproj" />
+        <ProjectReference Include="..\..\..\BuildingBlocks\src\LocMp.BuildingBlocks.Application\LocMp.BuildingBlocks.Application.csproj" />
+        <ProjectReference Include="..\..\..\Contracts\LocMp.Contracts\LocMp.Contracts.csproj" />
+    </ItemGroup>
+
+</Project>
