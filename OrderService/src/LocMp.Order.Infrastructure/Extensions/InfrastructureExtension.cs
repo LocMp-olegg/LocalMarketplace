@@ -1,4 +1,5 @@
 using LocMp.BuildingBlocks.Application.Interfaces;
+using LocMp.Order.Infrastructure.Clients;
 using LocMp.Order.Infrastructure.Events;
 using LocMp.Order.Infrastructure.Images;
 using LocMp.Order.Infrastructure.Options;
@@ -57,6 +58,10 @@ public static class InfrastructureExtension
 
         services.AddScoped<IStorageService, MinioStorageService>();
         services.AddSingleton<IImageProcessor, ImageSharpProcessor>();
+
+        services.AddHttpClient<CatalogServiceClient>(c =>
+            c.BaseAddress = new Uri(configuration["Services:Catalog"]
+                ?? throw new InvalidOperationException("Services:Catalog not configured.")));
 
         var redisConnection = configuration.GetConnectionString("Redis")
                               ?? "localhost:6379";

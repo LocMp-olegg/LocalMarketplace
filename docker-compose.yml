@@ -153,6 +153,7 @@ services:
       Minio__BucketName: "locmp-orders"
       Minio__UseSSL: "false"
       Minio__PublicEndpoint: "localhost:9000"
+      Services__Catalog: "http://locmp-catalog:8080/"
       JwtAuthenticationOptions__Authority: "http://locmp-identity:8080"
     ports:
       - "5003:8080"
