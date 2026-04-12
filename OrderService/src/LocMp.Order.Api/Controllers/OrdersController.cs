@@ -6,6 +6,8 @@ using LocMp.Order.Application.Orders.Commands.Orders.AssignCourier;
 using LocMp.Order.Application.Orders.Commands.Orders.CancelOrder;
 using LocMp.Order.Application.Orders.Commands.Orders.CompleteOrder;
 using LocMp.Order.Application.Orders.Commands.Orders.ConfirmOrder;
+using LocMp.Order.Application.Orders.Commands.Orders.MarkOrderDelivered;
+using LocMp.Order.Application.Orders.Commands.Orders.MarkOrderPickedUp;
 using LocMp.Order.Application.Orders.Commands.Orders.MarkReadyForPickup;
 using LocMp.Order.Application.Orders.Commands.Orders.OpenDispute;
 using LocMp.Order.Application.Orders.Commands.Orders.ResolveDispute;
@@ -13,10 +15,14 @@ using LocMp.Order.Application.Orders.Commands.Photos.DeleteDisputePhoto;
 using LocMp.Order.Application.Orders.Commands.Photos.DeleteOrderPhoto;
 using LocMp.Order.Application.Orders.Commands.Photos.UploadDisputePhotos;
 using LocMp.Order.Application.Orders.Commands.Photos.UploadOrderPhotos;
+using LocMp.Order.Application.Orders.Queries.GetAllDisputes;
+using LocMp.Order.Application.Orders.Queries.GetAllOrders;
 using LocMp.Order.Application.Orders.Queries.GetAvailableOrdersForCourier;
+using LocMp.Order.Application.Orders.Queries.GetDisputeById;
 using LocMp.Order.Application.Orders.Queries.GetOrderById;
 using LocMp.Order.Application.Orders.Queries.GetOrdersByBuyer;
 using LocMp.Order.Application.Orders.Queries.GetOrdersBySeller;
+using LocMp.Order.Application.Orders.Queries.GetOrdersAssignedToCourier;
 using LocMp.Order.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -78,6 +84,36 @@ public sealed class OrdersController(ISender sender) : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("all")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<PagedResult<OrderSummaryDto>>> GetAll(
+        [FromQuery] OrderStatus? status,
+        [FromQuery] DateTimeOffset? from,
+        [FromQuery] DateTimeOffset? to,
+        [FromQuery] decimal? minAmount,
+        [FromQuery] decimal? maxAmount,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
+    {
+        var result = await sender.Send(
+            new GetAllOrdersQuery(status, from, to, minAmount, maxAmount, page, pageSize), ct);
+        return Ok(result);
+    }
+
+    [HttpGet("my-deliveries")]
+    [Authorize(Roles = "Courier")]
+    public async Task<ActionResult<PagedResult<OrderSummaryDto>>> GetMyDeliveries(
+        [FromQuery] OrderStatus? status,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
+    {
+        var result = await sender.Send(
+            new GetOrdersAssignedToCourierQuery(HttpContext.GetUserId(), status, page, pageSize), ct);
+        return Ok(result);
+    }
+
     [HttpGet("available")]
     [Authorize(Roles = "Courier")]
     public async Task<ActionResult<IReadOnlyList<OrderSummaryDto>>> GetAvailableForCourier(
@@ -119,6 +155,22 @@ public sealed class OrdersController(ISender sender) : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{id:guid}/pickup")]
+    [Authorize(Roles = "Courier")]
+    public async Task<IActionResult> PickUp(Guid id, CancellationToken ct)
+    {
+        await sender.Send(new MarkOrderPickedUpCommand(id, HttpContext.GetUserId()), ct);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/deliver")]
+    [Authorize(Roles = "Courier")]
+    public async Task<IActionResult> Deliver(Guid id, CancellationToken ct)
+    {
+        await sender.Send(new MarkOrderDeliveredCommand(id, HttpContext.GetUserId()), ct);
+        return NoContent();
+    }
+
     [HttpPost("{id:guid}/complete")]
     public async Task<IActionResult> Complete(Guid id, CancellationToken ct)
     {
@@ -142,6 +194,26 @@ public sealed class OrdersController(ISender sender) : ControllerBase
     {
         await sender.Send(new OpenDisputeCommand(id, HttpContext.GetUserId(), request.Reason), ct);
         return NoContent();
+    }
+
+    [HttpGet("disputes")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<PagedResult<DisputeSummaryDto>>> GetAllDisputes(
+        [FromQuery] DisputeStatus? status,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
+    {
+        var result = await sender.Send(new GetAllDisputesQuery(status, page, pageSize), ct);
+        return Ok(result);
+    }
+
+    [HttpGet("disputes/{disputeId:guid}")]
+    public async Task<ActionResult<DisputeDto>> GetDisputeById(Guid disputeId, CancellationToken ct)
+    {
+        var isAdmin = HttpContext.IsInRole("Admin");
+        var result = await sender.Send(new GetDisputeByIdQuery(disputeId, HttpContext.GetUserId(), isAdmin), ct);
+        return Ok(result);
     }
 
     [HttpPost("disputes/{disputeId:guid}/resolve")]

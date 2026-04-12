@@ -24,9 +24,9 @@ public sealed class CheckoutCommandHandler(
     public async Task<OrderDto> Handle(CheckoutCommand request, CancellationToken ct)
     {
         var cart = await db.Carts
-            .Include(c => c.Items)
-            .FirstOrDefaultAsync(c => c.UserId == request.UserId && c.ExpiresAt > DateTimeOffset.UtcNow, ct)
-            ?? throw new NotFoundException("Active cart not found.");
+                       .Include(c => c.Items)
+                       .FirstOrDefaultAsync(c => c.UserId == request.UserId && c.ExpiresAt > DateTimeOffset.UtcNow, ct)
+                   ?? throw new NotFoundException("Active cart not found.");
 
         if (!cart.Items.Any())
             throw new ConflictException("Cart is empty.");
@@ -34,7 +34,6 @@ public sealed class CheckoutCommandHandler(
         if (request.DeliveryType == DeliveryType.NeighborCourier && request.DeliveryAddress is null)
             throw new ConflictException("Delivery address is required for courier delivery.");
 
-        // Fetch product snapshots and validate
         var snapshots = new Dictionary<Guid, ProductSnapshotDto>(cart.Items.Count);
         foreach (var item in cart.Items)
         {
@@ -119,16 +118,23 @@ public sealed class CheckoutCommandHandler(
             };
         }
 
+        var cartItemsForReservation = cart.Items
+            .Select(i => (i.ProductId, i.Quantity))
+            .ToList();
+
         db.Orders.Add(order);
         db.OrderItems.AddRange(items);
         db.OrderStatusHistory.Add(statusEntry);
+
+        db.CartItems.RemoveRange(cart.Items);
+        db.Carts.Remove(cart);
+
         await db.SaveChangesAsync(ct);
 
-        // Reserve stock synchronously — rollback DB on failure
         try
         {
-            foreach (var item in cart.Items)
-                await catalogClient.ReserveStockAsync(item.ProductId, item.Quantity, orderId, ct);
+            foreach (var (productId, quantity) in cartItemsForReservation)
+                await catalogClient.ReserveStockAsync(productId, quantity, orderId, ct);
         }
         catch
         {
@@ -138,15 +144,9 @@ public sealed class CheckoutCommandHandler(
 
         await transaction.CommitAsync(ct);
 
-        // Clear cart after successful checkout
-        db.CartItems.RemoveRange(cart.Items);
-        db.Carts.Remove(cart);
-        await db.SaveChangesAsync(ct);
-
         await eventBus.PublishAsync(new OrderPlacedEvent(
             orderId, request.UserId, sellerId, order.TotalAmount, now), ct);
 
-        // Reload with all relations for mapping
         var created = await db.Orders
             .Include(o => o.Items)
             .Include(o => o.StatusHistory)

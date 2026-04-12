@@ -1,4 +1,5 @@
 using LocMp.BuildingBlocks.Application.Interfaces;
+using LocMp.Order.Infrastructure.BackgroundServices;
 using LocMp.Order.Infrastructure.Clients;
 using LocMp.Order.Infrastructure.Events;
 using LocMp.Order.Infrastructure.Images;
@@ -70,5 +71,10 @@ public static class InfrastructureExtension
             opts.Configuration = redisConnection;
             opts.InstanceName = "locmp-orders:";
         });
+
+        services.Configure<DisputeOptions>(configuration.GetSection("Dispute"));
+
+        services.AddHostedService<CartCleanupBackgroundService>();
+        services.AddHostedService<DisputeAutoResolveBackgroundService>();
     }
 }

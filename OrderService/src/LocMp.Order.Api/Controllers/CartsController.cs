@@ -4,6 +4,7 @@ using LocMp.Order.Application.DTOs;
 using LocMp.Order.Application.Orders.Commands.Cart.AddToCart;
 using LocMp.Order.Application.Orders.Commands.Cart.ClearCart;
 using LocMp.Order.Application.Orders.Commands.Cart.RemoveFromCart;
+using LocMp.Order.Application.Orders.Commands.Cart.UpdateCartItemQuantity;
 using LocMp.Order.Application.Orders.Commands.Orders.Checkout;
 using LocMp.Order.Application.Orders.Queries.GetCartByUser;
 using MediatR;
@@ -30,6 +31,15 @@ public sealed class CartsController(ISender sender) : ControllerBase
     {
         var result = await sender.Send(
             new AddToCartCommand(HttpContext.GetUserId(), request.ProductId, request.Quantity), ct);
+        return Ok(result);
+    }
+
+    [HttpPut("items/{cartItemId:guid}")]
+    public async Task<ActionResult<CartDto>> UpdateItemQuantity(
+        Guid cartItemId, [FromBody] UpdateCartItemQuantityRequest request, CancellationToken ct)
+    {
+        var result = await sender.Send(
+            new UpdateCartItemQuantityCommand(HttpContext.GetUserId(), cartItemId, request.Quantity), ct);
         return Ok(result);
     }
 
