@@ -6,7 +6,7 @@ using LocMp.Order.Application.Orders.Commands.Cart.ClearCart;
 using LocMp.Order.Application.Orders.Commands.Cart.RemoveFromCart;
 using LocMp.Order.Application.Orders.Commands.Cart.UpdateCartItemQuantity;
 using LocMp.Order.Application.Orders.Commands.Orders.Checkout;
-using LocMp.Order.Application.Orders.Queries.GetCartByUser;
+using LocMp.Order.Application.Orders.Queries.Cart.GetCartByUser;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
