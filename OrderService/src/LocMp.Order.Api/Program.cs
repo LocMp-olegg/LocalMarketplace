@@ -1,3 +1,4 @@
+using LocMp.BuildingBlocks.Infrastructure.Extensions;
 using LocMp.Order.Api.Extensions;
 using LocMp.Order.Application.Extensions;
 using LocMp.Order.Infrastructure.Extensions;
