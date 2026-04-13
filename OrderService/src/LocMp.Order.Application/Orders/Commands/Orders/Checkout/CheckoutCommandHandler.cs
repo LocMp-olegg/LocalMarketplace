@@ -131,13 +131,30 @@ public sealed class CheckoutCommandHandler(
 
         await db.SaveChangesAsync(ct);
 
+        var reserved = new List<(Guid ProductId, int Quantity)>(cartItemsForReservation.Count);
         try
         {
             foreach (var (productId, quantity) in cartItemsForReservation)
+            {
                 await catalogClient.ReserveStockAsync(productId, quantity, orderId, ct);
+                reserved.Add((productId, quantity));
+            }
         }
         catch
         {
+            // Release already-reserved items before rolling back DB
+            foreach (var (productId, quantity) in reserved)
+            {
+                try
+                {
+                    await catalogClient.ReleaseStockAsync(productId, quantity, orderId, CancellationToken.None);
+                }
+                catch
+                {
+                    /* best-effort: stock will reconcile via StockReservationFailedConsumer */
+                }
+            }
+
             await transaction.RollbackAsync(ct);
             throw new ConflictException("Stock reservation failed. Please try again.");
         }

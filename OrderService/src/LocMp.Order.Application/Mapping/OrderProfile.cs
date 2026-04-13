@@ -13,7 +13,8 @@ public sealed class OrderProfile : Profile
             .ForCtorParam(nameof(CartItemDto.Subtotal), o => o.MapFrom(s => s.Price * s.Quantity));
 
         CreateMap<Cart, CartDto>()
-            .ForCtorParam(nameof(CartDto.Items), o => o.MapFrom(s => s.Items.ToList()));
+            .ForCtorParam(nameof(CartDto.Items), o => o.MapFrom(s => s.Items.ToList()))
+            .ForCtorParam(nameof(CartDto.TotalAmount), o => o.MapFrom(s => s.Items.Sum(i => i.Price * i.Quantity)));
 
         CreateMap<OrderItem, OrderItemDto>();
 
@@ -22,8 +23,10 @@ public sealed class OrderProfile : Profile
         CreateMap<OrderPhoto, OrderPhotoDto>();
 
         CreateMap<DeliveryAddress, DeliveryAddressDto>()
-            .ForCtorParam(nameof(DeliveryAddressDto.Latitude), o => o.MapFrom(s => s.Location != null ? s.Location.Y : (double?)null))
-            .ForCtorParam(nameof(DeliveryAddressDto.Longitude), o => o.MapFrom(s => s.Location != null ? s.Location.X : (double?)null));
+            .ForCtorParam(nameof(DeliveryAddressDto.Latitude),
+                o => o.MapFrom(s => s.Location != null ? s.Location.Y : (double?)null))
+            .ForCtorParam(nameof(DeliveryAddressDto.Longitude),
+                o => o.MapFrom(s => s.Location != null ? s.Location.X : (double?)null));
 
         CreateMap<CourierAssignment, CourierAssignmentDto>();
 
@@ -34,7 +37,8 @@ public sealed class OrderProfile : Profile
 
         CreateMap<OrderEntity, OrderDto>()
             .ForCtorParam(nameof(OrderDto.Items), o => o.MapFrom(s => s.Items.ToList()))
-            .ForCtorParam(nameof(OrderDto.StatusHistory), o => o.MapFrom(s => s.StatusHistory.OrderBy(h => h.ChangedAt).ToList()))
+            .ForCtorParam(nameof(OrderDto.StatusHistory),
+                o => o.MapFrom(s => s.StatusHistory.OrderBy(h => h.ChangedAt).ToList()))
             .ForCtorParam(nameof(OrderDto.Photos), o => o.MapFrom(s => s.Photos.OrderBy(p => p.SortOrder).ToList()));
     }
 }

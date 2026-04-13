@@ -10,8 +10,6 @@ public sealed record OrderSummaryDto(
     DeliveryType DeliveryType,
     PaymentStatus PaymentStatus,
     decimal TotalAmount,
-    int ItemCount,
-    string? FirstItemName,
-    string? FirstItemPhotoUrl,
+    IReadOnlyList<OrderItemDto> Items,
     DateTimeOffset CreatedAt,
     DateTimeOffset? CompletedAt);

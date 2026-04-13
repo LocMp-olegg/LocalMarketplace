@@ -5,4 +5,5 @@ public sealed record CartDto(
     Guid UserId,
     DateTimeOffset CreatedAt,
     DateTimeOffset ExpiresAt,
-    IReadOnlyList<CartItemDto> Items);
+    IReadOnlyList<CartItemDto> Items,
+    decimal TotalAmount);

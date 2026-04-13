@@ -11,7 +11,7 @@ public sealed class CatalogServiceClient(HttpClient http)
     {
         var response = await http.PostAsJsonAsync(
             $"api/products/{productId}/reserve",
-            new { quantity, referenceId = orderId }, ct);
+            new { quantity, orderId }, ct);
         response.EnsureSuccessStatusCode();
     }
 
@@ -19,7 +19,7 @@ public sealed class CatalogServiceClient(HttpClient http)
     {
         var response = await http.PostAsJsonAsync(
             $"api/products/{productId}/release",
-            new { quantity, referenceId = orderId }, ct);
+            new { quantity, orderId }, ct);
         response.EnsureSuccessStatusCode();
     }
 }

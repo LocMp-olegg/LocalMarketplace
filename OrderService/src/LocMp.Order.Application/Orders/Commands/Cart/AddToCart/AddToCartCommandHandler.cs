@@ -45,7 +45,8 @@ public sealed class AddToCartCommandHandler(
         if (existing is not null)
         {
             if (product.StockQuantity < existing.Quantity + request.Quantity)
-                throw new ConflictException($"Insufficient stock. Available: {product.StockQuantity}, already in cart: {existing.Quantity}.");
+                throw new ConflictException(
+                    $"Insufficient stock. Available: {product.StockQuantity}, already in cart: {existing.Quantity}.");
 
             existing.Quantity += request.Quantity;
             existing.Price = product.Price;
@@ -61,7 +62,7 @@ public sealed class AddToCartCommandHandler(
                 Price = product.Price,
                 Quantity = request.Quantity
             };
-            cart.Items.Add(item);
+            db.CartItems.Add(item);
         }
 
         cart.UpdatedAt = DateTimeOffset.UtcNow;

@@ -33,9 +33,10 @@ public sealed class GetAvailableOrdersForCourierQueryHandler(OrderDbContext db)
         return orders.Select(o => new OrderSummaryDto(
             o.Id, o.BuyerId, o.SellerId,
             o.Status, o.DeliveryType, o.PaymentStatus,
-            o.TotalAmount, o.Items.Count,
-            o.Items.FirstOrDefault()?.ProductName,
-            o.Items.FirstOrDefault()?.MainPhotoUrl,
+            o.TotalAmount,
+            o.Items.Select(i => new OrderItemDto(
+                i.Id, i.ProductId, i.ProductName, i.ProductDescription,
+                i.MainPhotoUrl, i.UnitPrice, i.Quantity, i.Subtotal)).ToList(),
             o.CreatedAt, o.CompletedAt)).ToList();
     }
 }

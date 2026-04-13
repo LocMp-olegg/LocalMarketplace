@@ -61,8 +61,13 @@ public static class InfrastructureExtension
         services.AddSingleton<IImageProcessor, ImageSharpProcessor>();
 
         services.AddHttpClient<CatalogServiceClient>(c =>
+        {
             c.BaseAddress = new Uri(configuration["Services:Catalog"]
-                ?? throw new InvalidOperationException("Services:Catalog not configured.")));
+                                    ?? throw new InvalidOperationException("Services:Catalog not configured."));
+            var internalKey = configuration["Services:InternalApiKey"]
+                              ?? throw new InvalidOperationException("Services:InternalApiKey not configured.");
+            c.DefaultRequestHeaders.Add("X-Internal-Key", internalKey);
+        });
 
         var redisConnection = configuration.GetConnectionString("Redis")
                               ?? "localhost:6379";
