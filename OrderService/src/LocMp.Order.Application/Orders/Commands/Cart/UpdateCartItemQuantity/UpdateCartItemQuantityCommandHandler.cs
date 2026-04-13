@@ -1,7 +1,7 @@
 using AutoMapper;
 using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Order.Application.DTOs;
-using LocMp.Order.Infrastructure.Clients;
+using LocMp.Order.Infrastructure.Interfaces;
 using LocMp.Order.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +10,7 @@ namespace LocMp.Order.Application.Orders.Commands.Cart.UpdateCartItemQuantity;
 
 public sealed class UpdateCartItemQuantityCommandHandler(
     OrderDbContext db,
-    CatalogServiceClient catalogClient,
+    ICatalogClient catalogClient,
     IMapper mapper)
     : IRequestHandler<UpdateCartItemQuantityCommand, CartDto>
 {

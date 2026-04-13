@@ -3,9 +3,10 @@ using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.BuildingBlocks.Application.Interfaces;
 using LocMp.Contracts.Orders;
 using LocMp.Order.Application.DTOs;
+using LocMp.Order.Infrastructure.DTOs;
+using LocMp.Order.Infrastructure.Interfaces;
 using LocMp.Order.Domain.Entities;
 using LocMp.Order.Domain.Enums;
-using LocMp.Order.Infrastructure.Clients;
 using LocMp.Order.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +17,7 @@ namespace LocMp.Order.Application.Orders.Commands.Orders.Checkout;
 
 public sealed class CheckoutCommandHandler(
     OrderDbContext db,
-    CatalogServiceClient catalogClient,
+    ICatalogClient catalogClient,
     IEventBus eventBus,
     IMapper mapper)
     : IRequestHandler<CheckoutCommand, OrderDto>
@@ -31,23 +32,25 @@ public sealed class CheckoutCommandHandler(
         if (!cart.Items.Any())
             throw new ConflictException("Cart is empty.");
 
-        if (request.DeliveryType == DeliveryType.NeighborCourier && request.DeliveryAddress is null)
-            throw new ConflictException("Delivery address is required for courier delivery.");
+        // Fetch all products in parallel instead of sequential HTTP calls
+        var productResults = await Task.WhenAll(
+            cart.Items.Select(item => catalogClient.GetProductAsync(item.ProductId, ct)));
 
         var snapshots = new Dictionary<Guid, ProductSnapshotDto>(cart.Items.Count);
-        foreach (var item in cart.Items)
+        for (var i = 0; i < cart.Items.Count; i++)
         {
-            var product = await catalogClient.GetProductAsync(item.ProductId, ct)
-                          ?? throw new ConflictException($"Product '{item.ProductId}' is no longer available.");
+            var cartItem = cart.Items.ElementAt(i);
+            var product = productResults[i]
+                          ?? throw new ConflictException($"Product '{cartItem.ProductId}' is no longer available.");
 
             if (!product.IsActive)
                 throw new ConflictException($"Product '{product.Name}' is not active.");
 
-            if (product.StockQuantity < item.Quantity)
+            if (product.StockQuantity < cartItem.Quantity)
                 throw new ConflictException(
-                    $"Insufficient stock for '{product.Name}'. Available: {product.StockQuantity}, requested: {item.Quantity}.");
+                    $"Insufficient stock for '{product.Name}'. Available: {product.StockQuantity}, requested: {cartItem.Quantity}.");
 
-            snapshots[item.ProductId] = product;
+            snapshots[cartItem.ProductId] = product;
         }
 
         // All sellers must be the same (one order per seller)
@@ -125,7 +128,6 @@ public sealed class CheckoutCommandHandler(
         db.Orders.Add(order);
         db.OrderItems.AddRange(items);
         db.OrderStatusHistory.Add(statusEntry);
-
         db.CartItems.RemoveRange(cart.Items);
         db.Carts.Remove(cart);
 
@@ -142,17 +144,10 @@ public sealed class CheckoutCommandHandler(
         }
         catch
         {
-            // Release already-reserved items before rolling back DB
             foreach (var (productId, quantity) in reserved)
             {
-                try
-                {
-                    await catalogClient.ReleaseStockAsync(productId, quantity, orderId, CancellationToken.None);
-                }
-                catch
-                {
-                    /* best-effort: stock will reconcile via StockReservationFailedConsumer */
-                }
+                try { await catalogClient.ReleaseStockAsync(productId, quantity, orderId, CancellationToken.None); }
+                catch { /* best-effort: stock will reconcile via StockReservationFailedConsumer */ }
             }
 
             await transaction.RollbackAsync(ct);

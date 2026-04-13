@@ -18,14 +18,16 @@ namespace LocMp.Order.Api.Controllers;
 public sealed class CourierController(ISender sender) : ControllerBase
 {
     [HttpGet("orders/available")]
-    public async Task<ActionResult<IReadOnlyList<OrderSummaryDto>>> GetAvailable(
+    public async Task<IActionResult> GetAvailable(
         [FromQuery] double latitude,
         [FromQuery] double longitude,
         [FromQuery] double radiusKm = 5,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
     {
         var result = await sender.Send(
-            new GetAvailableOrdersForCourierQuery(latitude, longitude, radiusKm), ct);
+            new GetAvailableOrdersForCourierQuery(latitude, longitude, radiusKm, page, pageSize), ct);
         return Ok(result);
     }
 

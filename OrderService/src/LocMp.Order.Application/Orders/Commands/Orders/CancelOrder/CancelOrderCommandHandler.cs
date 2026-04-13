@@ -1,18 +1,19 @@
 using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.BuildingBlocks.Application.Interfaces;
 using LocMp.Contracts.Orders;
+using LocMp.Order.Infrastructure.Interfaces;
 using LocMp.Order.Domain.Entities;
 using LocMp.Order.Domain.Enums;
-using LocMp.Order.Infrastructure.Clients;
 using LocMp.Order.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using OrderEntity = LocMp.Order.Domain.Entities.Order;
 
 namespace LocMp.Order.Application.Orders.Commands.Orders.CancelOrder;
 
 public sealed class CancelOrderCommandHandler(
     OrderDbContext db,
-    CatalogServiceClient catalogClient,
+    ICatalogClient catalogClient,
     IEventBus eventBus)
     : IRequestHandler<CancelOrderCommand>
 {
@@ -52,15 +53,15 @@ public sealed class CancelOrderCommandHandler(
 
         await db.SaveChangesAsync(ct);
 
-        // Release reserved stock (fire-and-forget on failure — stock will reconcile via events later)
+        // Release reserved stock after successful save — fire-and-forget on failure
         foreach (var item in order.Items)
         {
             try { await catalogClient.ReleaseStockAsync(item.ProductId, item.Quantity, order.Id, ct); }
-            catch { /* log and continue */ }
+            catch { /* stock will reconcile via events */ }
         }
 
         await eventBus.PublishAsync(new OrderStatusChangedEvent(
             order.Id, order.BuyerId, order.SellerId,
-            prev.ToString(), OrderStatus.Cancelled.ToString(), now), ct);
+            prev.ToString(), nameof(OrderStatus.Cancelled), now), ct);
     }
 }

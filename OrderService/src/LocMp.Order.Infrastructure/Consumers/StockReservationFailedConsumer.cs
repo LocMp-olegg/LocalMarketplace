@@ -54,7 +54,7 @@ public sealed class StockReservationFailedConsumer(
 
         await context.Publish(new OrderStatusChangedEvent(
             order.Id, order.BuyerId, order.SellerId,
-            prev.ToString(), OrderStatus.Cancelled.ToString(), now));
+            prev.ToString(), nameof(OrderStatus.Cancelled), now), ct);
 
         logger.LogInformation(
             "Order {OrderId} cancelled due to stock reservation failure for product {ProductId}: {Reason}",

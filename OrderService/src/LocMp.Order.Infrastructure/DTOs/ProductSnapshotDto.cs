@@ -1,4 +1,4 @@
-namespace LocMp.Order.Infrastructure.Clients;
+namespace LocMp.Order.Infrastructure.DTOs;
 
 public sealed record ProductSnapshotDto(
     Guid Id,

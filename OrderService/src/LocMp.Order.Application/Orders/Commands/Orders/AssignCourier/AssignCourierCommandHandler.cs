@@ -52,6 +52,6 @@ public sealed class AssignCourierCommandHandler(OrderDbContext db, IEventBus eve
 
         await eventBus.PublishAsync(new OrderStatusChangedEvent(
             order.Id, order.BuyerId, order.SellerId,
-            prev.ToString(), OrderStatus.InDelivery.ToString(), now), ct);
+            prev.ToString(), nameof(OrderStatus.InDelivery), now), ct);
     }
 }

@@ -57,6 +57,6 @@ public sealed class CompleteOrderCommandHandler(OrderDbContext db, IEventBus eve
 
         await eventBus.PublishAsync(new OrderStatusChangedEvent(
             order.Id, order.BuyerId, order.SellerId,
-            prev.ToString(), OrderStatus.Completed.ToString(), now), ct);
+            prev.ToString(), nameof(OrderStatus.Completed), now), ct);
     }
 }

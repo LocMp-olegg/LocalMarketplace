@@ -1,4 +1,5 @@
 using LocMp.BuildingBlocks.Application.Interfaces;
+using LocMp.Order.Infrastructure.Interfaces;
 using LocMp.Order.Infrastructure.BackgroundServices;
 using LocMp.Order.Infrastructure.Clients;
 using LocMp.Order.Infrastructure.Events;
@@ -60,7 +61,7 @@ public static class InfrastructureExtension
         services.AddScoped<IStorageService, MinioStorageService>();
         services.AddSingleton<IImageProcessor, ImageSharpProcessor>();
 
-        services.AddHttpClient<CatalogServiceClient>(c =>
+        services.AddHttpClient<ICatalogClient, CatalogServiceClient>(c =>
         {
             c.BaseAddress = new Uri(configuration["Services:Catalog"]
                                     ?? throw new InvalidOperationException("Services:Catalog not configured."));

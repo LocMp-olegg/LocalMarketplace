@@ -41,6 +41,6 @@ public sealed class ConfirmOrderCommandHandler(OrderDbContext db, IEventBus even
 
         await eventBus.PublishAsync(new OrderStatusChangedEvent(
             order.Id, order.BuyerId, order.SellerId,
-            prev.ToString(), OrderStatus.Confirmed.ToString(), now), ct);
+            prev.ToString(), nameof(OrderStatus.Confirmed), now), ct);
     }
 }

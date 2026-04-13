@@ -51,6 +51,7 @@ public sealed class DisputeAutoResolveBackgroundService(
             if (disputes.Count == 0) return;
 
             var now = DateTimeOffset.UtcNow;
+            var eventsToPublish = new List<(DisputeResolvedEvent Dispute, OrderStatusChangedEvent Order)>(disputes.Count);
 
             foreach (var dispute in disputes)
             {
@@ -73,15 +74,19 @@ public sealed class DisputeAutoResolveBackgroundService(
                     ChangedAt = now
                 });
 
-                await publishEndpoint.Publish(new DisputeResolvedEvent(
-                    dispute.Id, order.Id, options.Value.AutoResolveDays * 24 * 60, now), ct);
-
-                await publishEndpoint.Publish(new OrderStatusChangedEvent(
-                    order.Id, order.BuyerId, order.SellerId,
-                    prev.ToString(), OrderStatus.Cancelled.ToString(), now), ct);
+                eventsToPublish.Add((
+                    new DisputeResolvedEvent(dispute.Id, order.Id, options.Value.AutoResolveDays * 24 * 60, now),
+                    new OrderStatusChangedEvent(order.Id, order.BuyerId, order.SellerId,
+                        prev.ToString(), nameof(OrderStatus.Cancelled), now)));
             }
 
             await db.SaveChangesAsync(ct);
+
+            foreach (var (disputeEvt, orderEvt) in eventsToPublish)
+            {
+                await publishEndpoint.Publish(disputeEvt, ct);
+                await publishEndpoint.Publish(orderEvt, ct);
+            }
 
             logger.LogInformation("Auto-resolved {Count} stale disputes", disputes.Count);
         }

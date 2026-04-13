@@ -40,6 +40,6 @@ public sealed class MarkReadyForPickupCommandHandler(OrderDbContext db, IEventBu
 
         await eventBus.PublishAsync(new OrderStatusChangedEvent(
             order.Id, order.BuyerId, order.SellerId,
-            prev.ToString(), OrderStatus.ReadyForPickup.ToString(), now), ct);
+            prev.ToString(), nameof(OrderStatus.ReadyForPickup), now), ct);
     }
 }

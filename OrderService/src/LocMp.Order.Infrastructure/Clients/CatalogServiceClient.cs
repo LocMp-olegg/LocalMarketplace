@@ -1,8 +1,10 @@
 using System.Net.Http.Json;
+using LocMp.Order.Infrastructure.DTOs;
+using LocMp.Order.Infrastructure.Interfaces;
 
 namespace LocMp.Order.Infrastructure.Clients;
 
-public sealed class CatalogServiceClient(HttpClient http)
+public sealed class CatalogServiceClient(HttpClient http) : ICatalogClient
 {
     public Task<ProductSnapshotDto?> GetProductAsync(Guid productId, CancellationToken ct = default)
         => http.GetFromJsonAsync<ProductSnapshotDto>($"api/products/{productId}", ct);

@@ -1,8 +1,8 @@
 using AutoMapper;
 using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Order.Application.DTOs;
+using LocMp.Order.Infrastructure.Interfaces;
 using LocMp.Order.Domain.Entities;
-using LocMp.Order.Infrastructure.Clients;
 using LocMp.Order.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +12,7 @@ namespace LocMp.Order.Application.Orders.Commands.Cart.AddToCart;
 
 public sealed class AddToCartCommandHandler(
     OrderDbContext db,
-    CatalogServiceClient catalogClient,
+    ICatalogClient catalogClient,
     IMapper mapper)
     : IRequestHandler<AddToCartCommand, CartDto>
 {
