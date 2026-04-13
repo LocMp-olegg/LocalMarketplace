@@ -19,12 +19,15 @@ public sealed class UpdateStockCommandHandler(CatalogDbContext db, IEventBus eve
         if (product.SellerId != request.SellerId)
             throw new ForbiddenException("You do not own this product.");
 
-        var newQuantity = product.StockQuantity + request.QuantityDelta;
-        if (newQuantity < 0)
-            throw new ConflictException($"Insufficient stock. Current: {product.StockQuantity}, delta: {request.QuantityDelta}.");
-
-        product.StockQuantity = newQuantity;
-        product.UpdatedAt = DateTimeOffset.UtcNow;
+        int newQuantity;
+        try
+        {
+            newQuantity = product.AdjustStock(request.QuantityDelta);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new ConflictException(ex.Message);
+        }
 
         db.StockHistory.Add(new StockHistory(Guid.NewGuid())
         {

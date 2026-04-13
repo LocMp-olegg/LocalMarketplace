@@ -35,15 +35,14 @@ public sealed class ReserveStockCommandHandler(CatalogDbContext db, IEventBus ev
                 $"Insufficient stock. Available: {product.StockQuantity}, requested: {request.Quantity}.");
         }
 
-        product.StockQuantity -= request.Quantity;
-        product.UpdatedAt = DateTimeOffset.UtcNow;
+        var newStock = product.Reserve(request.Quantity);
 
         db.StockHistory.Add(new StockHistory(Guid.NewGuid())
         {
             ProductId = product.Id,
             ChangeType = StockChangeType.OrderReserved,
             QuantityDelta = -request.Quantity,
-            QuantityAfter = product.StockQuantity,
+            QuantityAfter = newStock,
             ReferenceId = request.OrderId,
             CreatedAt = DateTimeOffset.UtcNow
         });
@@ -54,7 +53,7 @@ public sealed class ReserveStockCommandHandler(CatalogDbContext db, IEventBus ev
         await eventBus.PublishAsync(new StockReservedEvent(
             product.Id, request.OrderId, request.Quantity, DateTimeOffset.UtcNow), ct);
 
-        if (product.StockQuantity == 0)
+        if (newStock == 0)
         {
             await eventBus.PublishAsync(new StockDepletedEvent(
                 product.Id, product.SellerId, product.Name, DateTimeOffset.UtcNow), ct);
