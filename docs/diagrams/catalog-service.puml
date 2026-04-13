@@ -48,6 +48,46 @@ enum StockChangeType {
     OrderReleased
 }
 
+enum BusinessType {
+    Individual = 1
+    SoleProprietor = 2
+    SmallBusiness = 3
+}
+
+' ─── Shop ────────────────────────────────────────────────────────────────────
+
+class Shop {
+    + Id : Guid <<PK>>
+    + SellerId : Guid <<logical ref: Identity>>
+    + BusinessName : string
+    + PhoneNumber : string
+    + Email : string
+    + Description : string?
+    + Inn : string?
+    + BusinessType : BusinessType
+    + WorkingHours : string?
+    + ServiceRadiusMeters : int?
+    + Location : Point? <<geometry(Point,4326)>>
+    + AvatarUrl : string?
+    + AvatarObjectKey : string?
+    + IsVerified : bool
+    + VerifiedAt : DateTimeOffset?
+    + IsActive : bool
+    + CreatedAt : DateTimeOffset
+    + UpdatedAt : DateTimeOffset?
+}
+
+class ShopPhoto {
+    + Id : Guid <<PK>>
+    + ShopId : Guid <<FK>>
+    + StorageUrl : string <<MinIO bucket: catalog-media>>
+    + ObjectKey : string <<MinIO object key>>
+    + MimeType : string
+    + FileSize : long
+    + SortOrder : int
+    + UploadedAt : DateTimeOffset
+}
+
 ' ─── Category ────────────────────────────────────────────────────────────────
 
 class Category {
@@ -67,6 +107,7 @@ class Category {
 class Product <<aggregate root>> {
     + Id : Guid <<PK>>
     + SellerId : Guid <<logical ref: Identity>>
+    + ShopId : Guid? <<FK>>
     + CategoryId : Guid <<FK>>
     ..описание..
     + Name : string
@@ -92,6 +133,7 @@ class ProductPhoto {
     + Id : Guid <<PK>>
     + ProductId : Guid <<FK>>
     + StorageUrl : string <<MinIO bucket: catalog-media>>
+    + ObjectKey : string <<MinIO object key>>
     + MimeType : string
     + FileSize : long
     + SortOrder : int
@@ -130,7 +172,7 @@ class SellerReadModel <<read model>> {
     + AvatarUrl : string?
     + AverageRating : decimal
     + ReviewCount : int
-    + Location : Point <<geometry(Point,4326)>>
+    + Location : Point? <<geometry(Point,4326)>>
     + LastSyncedAt : DateTimeOffset
 }
 
@@ -145,6 +187,10 @@ class Favorite {
 ' ─── Relationships ────────────────────────────────────────────────────────────
 
 Category "0..1" -right- "0..*" Category : parent >
+
+Shop "1" *-down- "0..*" ShopPhoto : фото магазина >
+Shop "1" -right- "0..*" Product : товары >
+Shop ..> BusinessType : использует
 
 Product "0..*" -up-> "1" Category : принадлежит >
 Product "1" *-down- "1..*" ProductPhoto : фото >
@@ -201,6 +247,8 @@ end note
 legend bottom
   <b>Таблицы сервиса (schema: catalog)</b>
   |= Класс C# |= Таблица в БД |= Описание |
+  | Shop | Shops | Магазин продавца с геолокацией и бизнес-типом |
+  | ShopPhoto | ShopPhotos | Фото магазина (StorageUrl → MinIO bucket: catalog-media) |
   | Category | Categories | Дерево категорий товаров (self-referencing) |
   | Product | Products | Товар продавца с геолокацией и JSONB-атрибутами |
   | ProductPhoto | ProductPhotos | Фото товара (StorageUrl → MinIO bucket: catalog-media) |

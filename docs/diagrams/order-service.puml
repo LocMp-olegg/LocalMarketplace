@@ -116,6 +116,7 @@ class OrderItem {
     + ProductId : Guid <<logical ref: Catalog>>
     + ProductName : string <<snapshot>>
     + ProductDescription : string? <<snapshot>>
+    + MainPhotoUrl : string? <<snapshot>>
     + UnitPrice : decimal <<snapshot>>
     + Quantity : int
     + Subtotal : decimal
@@ -169,6 +170,30 @@ class Dispute {
     + ResolvedAt : DateTimeOffset?
 }
 
+class OrderPhoto {
+    + Id : Guid <<PK>>
+    + OrderId : Guid <<FK>>
+    + UploadedById : Guid <<logical ref: Identity>>
+    + StorageUrl : string <<MinIO bucket: order-media>>
+    + ObjectKey : string <<MinIO object key>>
+    + MimeType : string
+    + FileSize : long
+    + SortOrder : int
+    + UploadedAt : DateTimeOffset
+}
+
+class DisputePhoto {
+    + Id : Guid <<PK>>
+    + DisputeId : Guid <<FK>>
+    + UploadedById : Guid <<logical ref: Identity>>
+    + StorageUrl : string <<MinIO bucket: order-media>>
+    + ObjectKey : string <<MinIO object key>>
+    + MimeType : string
+    + FileSize : long
+    + SortOrder : int
+    + UploadedAt : DateTimeOffset
+}
+
 ' ─── Relationships ────────────────────────────────────────────────────────────
 
 Cart "1" *-down- "0..*" CartItem : содержит >
@@ -178,6 +203,8 @@ Order "1" *-right- "1..*" OrderStatusHistory : история >
 Order "1" *-down- "0..1" DeliveryAddress : адрес >
 Order "1" *-left- "0..1" CourierAssignment : курьер >
 Order "1" *-right- "0..1" Dispute : спор >
+Order "1" *-down- "0..*" OrderPhoto : фото к заказу >
+Dispute "1" *-down- "0..*" DisputePhoto : фото к спору >
 
 Order ..> OrderStatus
 Order ..> DeliveryType
@@ -242,6 +269,8 @@ legend bottom
   | DeliveryAddress | DeliveryAddresses | Снепшот адреса и контактов получателя (только для курьерской доставки) |
   | CourierAssignment | CourierAssignments | Назначение курьера-соседа на заказ (1:1) |
   | Dispute | Disputes | Спор по заказу с историей разрешения (1:1) |
+  | OrderPhoto | OrderPhotos | Фото к заказу (StorageUrl → MinIO bucket: order-media) |
+  | DisputePhoto | DisputePhotos | Фото к спору (StorageUrl → MinIO bucket: order-media) |
 endlegend
 
 @enduml

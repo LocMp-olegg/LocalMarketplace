@@ -67,7 +67,7 @@ class ApplicationUser <<IdentityUser<Guid>>> {
     + PhoneNumber : string <<unique, nullable>>
     + FirstName : string
     + LastName : string
-    + Gender : Gender
+    + Gender : int?
     + BirthDate : DateOnly?
     + RegisteredAt : DateTimeOffset
     + Active : bool
@@ -100,7 +100,7 @@ class UserAddress {
     + HouseNumber : string
     + Apartment : string?
     + Entrance : string?
-    + Floor : int?
+    + Floor : string?
     ..геолокация..
     + Location : Point <<geometry(Point,4326)>>
     + IsDefault : bool
@@ -111,6 +111,7 @@ class UserPhoto <<schema: media>> {
     + Id : Guid <<PK>>
     + UserId : Guid <<FK, unique>>
     + StorageUrl : string <<MinIO bucket: identity-media>>
+    + ObjectKey : string <<MinIO object key>>
     + MimeType : string
     + FileSize : long
     + UploadedAt : DateTimeOffset
