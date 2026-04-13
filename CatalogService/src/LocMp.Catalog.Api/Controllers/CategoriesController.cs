@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LocMp.Catalog.Api.Controllers;
 
 [ApiController]
-[Route("api/categories")]
+[Route("api/[controller]")]
 public sealed class CategoriesController(ISender sender) : ControllerBase
 {
     [HttpGet("tree")]
