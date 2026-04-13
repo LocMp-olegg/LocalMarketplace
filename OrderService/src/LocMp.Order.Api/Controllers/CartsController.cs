@@ -15,7 +15,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LocMp.Order.Api.Controllers;
 
 [ApiController]
-[Route("api/cart")]
+[Route("api/[controller]")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public sealed class CartsController(ISender sender) : ControllerBase
 {
