@@ -1,4 +1,5 @@
 using LocMp.BuildingBlocks.Application.Common;
+using LocMp.Catalog.Api.Filters;
 using LocMp.Catalog.Api.Requests.Products;
 using LocMp.Catalog.Application.Catalog.Commands.Products.AddProductTag;
 using LocMp.Catalog.Application.Catalog.Commands.Products.CreateProduct;
@@ -169,7 +170,7 @@ public sealed class ProductsController(ISender sender) : ControllerBase
     }
 
     [HttpPost("{id:guid}/reserve")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [InternalApiKey]
     public async Task<ActionResult> Reserve(Guid id, [FromBody] ReserveStockRequest request, CancellationToken ct)
     {
         await sender.Send(new ReserveStockCommand(id, request.Quantity, request.OrderId), ct);
@@ -177,7 +178,7 @@ public sealed class ProductsController(ISender sender) : ControllerBase
     }
 
     [HttpPost("{id:guid}/release")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [InternalApiKey]
     public async Task<ActionResult> Release(Guid id, [FromBody] ReleaseStockRequest request, CancellationToken ct)
     {
         await sender.Send(new ReleaseStockCommand(id, request.Quantity, request.OrderId), ct);
