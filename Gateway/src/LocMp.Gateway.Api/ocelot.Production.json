@@ -31,6 +31,16 @@
         { "Host": "locmp-catalog", "Port": 8080 }
       ],
       "SwaggerKey": "catalog-service"
+    },
+    {
+      "UpstreamPathTemplate": "/api/orders/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Patch", "Delete" ],
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "locmp-orders", "Port": 8080 }
+      ],
+      "SwaggerKey": "order-service"
     }
   ],
   "SwaggerEndPoints": [
@@ -51,6 +61,16 @@
           "Name": "CatalogService API",
           "Version": "v1",
           "Url": "http://locmp-catalog:8080/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "order-service",
+      "Config": [
+        {
+          "Name": "OrderService API",
+          "Version": "v1",
+          "Url": "http://locmp-orders:8080/swagger/v1/swagger.json"
         }
       ]
     }
