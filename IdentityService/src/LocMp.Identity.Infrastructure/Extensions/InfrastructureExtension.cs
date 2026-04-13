@@ -1,9 +1,10 @@
 ﻿using LocMp.BuildingBlocks.Application.Interfaces;
+using LocMp.BuildingBlocks.Infrastructure.Events;
+using LocMp.BuildingBlocks.Infrastructure.Options;
+using LocMp.BuildingBlocks.Infrastructure.Storage;
 using LocMp.Identity.Infrastructure.BackgroundServices;
-using LocMp.Identity.Infrastructure.Events;
 using LocMp.Identity.Infrastructure.Options;
 using LocMp.Identity.Infrastructure.Persistence;
-using LocMp.Identity.Infrastructure.Storage;
 using MassTransit;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;

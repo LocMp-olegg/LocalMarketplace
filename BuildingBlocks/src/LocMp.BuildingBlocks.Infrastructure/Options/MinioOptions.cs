@@ -1,4 +1,4 @@
-namespace LocMp.Order.Infrastructure.Options;
+namespace LocMp.BuildingBlocks.Infrastructure.Options;
 
 public sealed class MinioOptions
 {

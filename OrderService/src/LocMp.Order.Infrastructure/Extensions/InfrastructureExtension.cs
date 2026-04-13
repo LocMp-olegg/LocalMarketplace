@@ -1,12 +1,13 @@
 using LocMp.BuildingBlocks.Application.Interfaces;
-using LocMp.Order.Infrastructure.Interfaces;
+using LocMp.BuildingBlocks.Infrastructure.Events;
+using LocMp.BuildingBlocks.Infrastructure.Images;
+using LocMp.BuildingBlocks.Infrastructure.Options;
+using LocMp.BuildingBlocks.Infrastructure.Storage;
 using LocMp.Order.Infrastructure.BackgroundServices;
 using LocMp.Order.Infrastructure.Clients;
-using LocMp.Order.Infrastructure.Events;
-using LocMp.Order.Infrastructure.Images;
+using LocMp.Order.Infrastructure.Interfaces;
 using LocMp.Order.Infrastructure.Options;
 using LocMp.Order.Infrastructure.Persistence;
-using LocMp.Order.Infrastructure.Storage;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

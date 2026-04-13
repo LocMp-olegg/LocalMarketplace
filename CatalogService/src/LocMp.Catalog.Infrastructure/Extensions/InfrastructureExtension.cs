@@ -1,9 +1,9 @@
 using LocMp.BuildingBlocks.Application.Interfaces;
-using LocMp.Catalog.Infrastructure.Events;
-using LocMp.Catalog.Infrastructure.Images;
-using LocMp.Catalog.Infrastructure.Options;
+using LocMp.BuildingBlocks.Infrastructure.Events;
+using LocMp.BuildingBlocks.Infrastructure.Images;
+using LocMp.BuildingBlocks.Infrastructure.Options;
+using LocMp.BuildingBlocks.Infrastructure.Storage;
 using LocMp.Catalog.Infrastructure.Persistence;
-using LocMp.Catalog.Infrastructure.Storage;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
