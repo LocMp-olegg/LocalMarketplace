@@ -156,6 +156,17 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
             + OccurredAt : DateTimeOffset
         }
     }
+
+    package "Chat Events" #E8EAF6 {
+        class ChatMessageSentEvent {
+            + ChatId : Guid
+            + MessageId : Guid
+            + SenderId : Guid
+            + RecipientId : Guid
+            + MessagePreview : string
+            + OccurredAt : DateTimeOffset
+        }
+    }
 }
 
 ' ─── Notes ───────────────────────────────────────────────────────────────────
@@ -181,6 +192,9 @@ note as PublisherNote
                      DisputeResolvedEvent
   ─────────────────────────────────────────
   ReviewService    → RatingAggregateUpdatedEvent
+  ─────────────────────────────────────────
+  ChatService      → ChatMessageSentEvent
+                     (при офлайн-получателе)
 end note
 
 note as ConsumerNote
@@ -217,6 +231,12 @@ note as ConsumerNote
     • OrderCompletedEvent         → предложение написать отзыв
     • StockDepletedEvent          → уведомление продавцу
     • RatingAggregateUpdatedEvent → уведомление о новом отзыве
+    • ChatMessageSentEvent        → push-уведомление получателю
+  ─────────────────────────────────────────
+  ChatService:
+    • OrderPlacedEvent            → создать Order-чат (BuyerId + SellerId)
+    • OrderStatusChangedEvent     → закрыть чат при Completed / Cancelled
+    • UserBlockedEvent            → закрыть все чаты пользователя
 end note
 
 @enduml
