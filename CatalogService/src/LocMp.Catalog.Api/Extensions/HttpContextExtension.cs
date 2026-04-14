@@ -1,7 +1,6 @@
 ﻿using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
 
-namespace LocMp.Catalog.Infrastructure.Extensions;
+namespace LocMp.Catalog.Api.Extensions;
 
 public static class HttpContextExtensions
 {
