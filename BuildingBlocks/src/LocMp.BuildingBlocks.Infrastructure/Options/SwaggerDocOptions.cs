@@ -1,4 +1,4 @@
-﻿namespace LocMp.Identity.Api.Options;
+namespace LocMp.BuildingBlocks.Infrastructure.Options;
 
 public class SwaggerDocOptions
 {

@@ -1,7 +1,7 @@
 using LocMp.BuildingBlocks.Application.Interfaces;
 using MassTransit;
 
-namespace LocMp.Order.Infrastructure.Events;
+namespace LocMp.BuildingBlocks.Infrastructure.Events;
 
 public sealed class MassTransitEventBus(IPublishEndpoint publishEndpoint) : IEventBus
 {

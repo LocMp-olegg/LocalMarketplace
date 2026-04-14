@@ -1,3 +1,4 @@
+using LocMp.BuildingBlocks.Infrastructure.Extensions;
 using LocMp.Catalog.Api.Extensions;
 using LocMp.Catalog.Application.Extensions;
 using LocMp.Catalog.Infrastructure.Extensions;

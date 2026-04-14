@@ -36,11 +36,9 @@ public sealed class OpenDisputeCommandHandler(OrderDbContext db, IEventBus event
             throw new ConflictException("A dispute is already open for this order.");
 
         var now = DateTimeOffset.UtcNow;
-        var prev = order.Status;
         var disputeId = Guid.NewGuid();
 
-        order.Status = OrderStatus.Disputed;
-        order.UpdatedAt = now;
+        var (_, history) = order.TransitionTo(OrderStatus.Disputed, request.InitiatorId, now, request.Reason);
 
         db.Disputes.Add(new Dispute(disputeId)
         {
@@ -50,16 +48,7 @@ public sealed class OpenDisputeCommandHandler(OrderDbContext db, IEventBus event
             Status = DisputeStatus.Open,
             CreatedAt = now
         });
-
-        db.OrderStatusHistory.Add(new OrderStatusHistory(Guid.NewGuid())
-        {
-            OrderId = order.Id,
-            FromStatus = prev,
-            ToStatus = OrderStatus.Disputed,
-            Comment = request.Reason,
-            ChangedById = request.InitiatorId,
-            ChangedAt = now
-        });
+        db.OrderStatusHistory.Add(history);
 
         await db.SaveChangesAsync(ct);
 

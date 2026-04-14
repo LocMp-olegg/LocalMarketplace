@@ -16,7 +16,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LocMp.Catalog.Api.Controllers;
 
 [ApiController]
-[Route("api/shops")]
+[Route("api/[controller]")]
 public sealed class ShopsController(ISender sender) : ControllerBase
 {
     [HttpGet("{id:guid}")]

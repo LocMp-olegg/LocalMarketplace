@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LocMp.Catalog.Api.Controllers;
 
 [ApiController]
-[Route("api/tags")]
+[Route("api/[controller]")]
 public sealed class TagsController(ISender sender) : ControllerBase
 {
     [HttpGet]

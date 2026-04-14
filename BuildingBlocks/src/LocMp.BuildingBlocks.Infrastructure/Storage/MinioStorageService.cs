@@ -1,10 +1,10 @@
 using LocMp.BuildingBlocks.Application.Interfaces;
-using LocMp.Identity.Infrastructure.Options;
+using LocMp.BuildingBlocks.Infrastructure.Options;
 using Microsoft.Extensions.Options;
 using Minio;
 using Minio.DataModel.Args;
 
-namespace LocMp.Identity.Infrastructure.Storage;
+namespace LocMp.BuildingBlocks.Infrastructure.Storage;
 
 public sealed class MinioStorageService(IMinioClient minioClient, IOptions<MinioOptions> options) : IStorageService
 {
@@ -52,7 +52,6 @@ public sealed class MinioStorageService(IMinioClient minioClient, IOptions<Minio
             await minioClient.MakeBucketAsync(
                 new MakeBucketArgs().WithBucket(_opts.BucketName), ct);
 
-            // Открываем публичный доступ на чтение (GET) для всех объектов бакета
             var policy = $$"""
                            {
                                "Version": "2012-10-17",

@@ -3,7 +3,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
 
-namespace LocMp.Catalog.Infrastructure.Images;
+namespace LocMp.BuildingBlocks.Infrastructure.Images;
 
 public sealed class ImageSharpProcessor : IImageProcessor
 {

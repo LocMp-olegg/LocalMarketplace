@@ -15,20 +15,18 @@ public sealed class ReleaseStockCommandHandler(CatalogDbContext db, IEventBus ev
 {
     public async Task Handle(ReleaseStockCommand request, CancellationToken ct)
     {
-        // Ищем без фильтра на IsDeleted — освобождение нужно даже для удалённых товаров
         var product = await db.Products
                           .FirstOrDefaultAsync(p => p.Id == request.ProductId, ct)
                       ?? throw new NotFoundException($"Product '{request.ProductId}' not found.");
 
-        product.StockQuantity += request.Quantity;
-        product.UpdatedAt = DateTimeOffset.UtcNow;
+        var newStock = product.Release(request.Quantity);
 
         db.StockHistory.Add(new StockHistory(Guid.NewGuid())
         {
             ProductId = product.Id,
             ChangeType = StockChangeType.OrderReleased,
             QuantityDelta = request.Quantity,
-            QuantityAfter = product.StockQuantity,
+            QuantityAfter = newStock,
             ReferenceId = request.OrderId,
             CreatedAt = DateTimeOffset.UtcNow
         });

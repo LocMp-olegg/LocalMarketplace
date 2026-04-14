@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LocMp.Catalog.Api.Controllers;
 
 [ApiController]
-[Route("api/favorites")]
+[Route("api/[controller]")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public sealed class FavoritesController(ISender sender) : ControllerBase
 {

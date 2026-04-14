@@ -21,9 +21,9 @@ public sealed class CompleteOrderCommandHandler(OrderDbContext db, IEventBus eve
     public async Task Handle(CompleteOrderCommand request, CancellationToken ct)
     {
         var order = await db.Orders
-            .Include(o => o.CourierAssignment)
-            .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct)
-            ?? throw new NotFoundException($"Order '{request.OrderId}' not found.");
+                        .Include(o => o.CourierAssignment)
+                        .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct)
+                    ?? throw new NotFoundException($"Order '{request.OrderId}' not found.");
 
         if (order.BuyerId != request.BuyerId)
             throw new ForbiddenException("Only the buyer can confirm receipt.");
@@ -32,23 +32,12 @@ public sealed class CompleteOrderCommandHandler(OrderDbContext db, IEventBus eve
             throw new ConflictException($"Order cannot be completed from status '{order.Status}'.");
 
         var now = DateTimeOffset.UtcNow;
-        var prev = order.Status;
-        order.Status = OrderStatus.Completed;
-        order.CompletedAt = now;
-        order.UpdatedAt = now;
+        var (prev, history) = order.TransitionTo(OrderStatus.Completed, request.BuyerId, now);
 
         if (order.CourierAssignment is not null)
             order.CourierAssignment.DeliveredAt = now;
 
-        db.OrderStatusHistory.Add(new OrderStatusHistory(Guid.NewGuid())
-        {
-            OrderId = order.Id,
-            FromStatus = prev,
-            ToStatus = OrderStatus.Completed,
-            ChangedById = request.BuyerId,
-            ChangedAt = now
-        });
-
+        db.OrderStatusHistory.Add(history);
         await db.SaveChangesAsync(ct);
 
         await eventBus.PublishAsync(new OrderCompletedEvent(

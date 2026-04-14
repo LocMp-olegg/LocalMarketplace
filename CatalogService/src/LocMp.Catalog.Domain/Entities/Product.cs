@@ -29,6 +29,34 @@ public class Product(Guid id) : AggregateRoot<Guid>(id)
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; set; }
 
+    public int Reserve(int quantity)
+    {
+        if (StockQuantity < quantity)
+            throw new InvalidOperationException(
+                $"Insufficient stock. Available: {StockQuantity}, requested: {quantity}.");
+        StockQuantity -= quantity;
+        UpdatedAt = DateTimeOffset.UtcNow;
+        return StockQuantity;
+    }
+
+    public int Release(int quantity)
+    {
+        StockQuantity += quantity;
+        UpdatedAt = DateTimeOffset.UtcNow;
+        return StockQuantity;
+    }
+
+    public int AdjustStock(int delta)
+    {
+        var newQuantity = StockQuantity + delta;
+        if (newQuantity < 0)
+            throw new InvalidOperationException(
+                $"Insufficient stock. Current: {StockQuantity}, delta: {delta}.");
+        StockQuantity = newQuantity;
+        UpdatedAt = DateTimeOffset.UtcNow;
+        return newQuantity;
+    }
+
     public virtual Shop? Shop { get; set; }
     public virtual Category Category { get; set; } = null!;
     public virtual ICollection<ProductPhoto> Photos { get; set; } = [];

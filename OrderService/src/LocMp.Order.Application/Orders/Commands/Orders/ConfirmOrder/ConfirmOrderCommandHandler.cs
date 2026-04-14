@@ -20,23 +20,19 @@ public sealed class ConfirmOrderCommandHandler(OrderDbContext db, IEventBus even
         if (order.SellerId != request.SellerId)
             throw new ForbiddenException("You can only confirm your own orders.");
 
-        if (order.Status != OrderStatus.Pending)
-            throw new ConflictException($"Order cannot be confirmed from status '{order.Status}'.");
-
         var now = DateTimeOffset.UtcNow;
-        var prev = order.Status;
-        order.Status = OrderStatus.Confirmed;
-        order.UpdatedAt = now;
-
-        db.OrderStatusHistory.Add(new OrderStatusHistory(Guid.NewGuid())
+        OrderStatus prev;
+        OrderStatusHistory history;
+        try
         {
-            OrderId = order.Id,
-            FromStatus = prev,
-            ToStatus = OrderStatus.Confirmed,
-            ChangedById = request.SellerId,
-            ChangedAt = now
-        });
+            (prev, history) = order.TransitionTo(OrderStatus.Confirmed, request.SellerId, now);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new ConflictException(ex.Message);
+        }
 
+        db.OrderStatusHistory.Add(history);
         await db.SaveChangesAsync(ct);
 
         await eventBus.PublishAsync(new OrderStatusChangedEvent(

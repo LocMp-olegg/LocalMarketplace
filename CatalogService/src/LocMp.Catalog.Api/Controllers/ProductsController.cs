@@ -29,7 +29,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LocMp.Catalog.Api.Controllers;
 
 [ApiController]
-[Route("api/products")]
+[Route("api/[controller]")]
 public sealed class ProductsController(ISender sender) : ControllerBase
 {
     [HttpGet("{id:guid}")]

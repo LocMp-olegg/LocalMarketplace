@@ -1,8 +1,11 @@
-using LocMp.Order.Api.Options;
+using LocMp.BuildingBlocks.Infrastructure.Options;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace LocMp.Order.Api.Extensions;
+namespace LocMp.BuildingBlocks.Infrastructure.Extensions;
 
 public static class SwaggerExtension
 {
