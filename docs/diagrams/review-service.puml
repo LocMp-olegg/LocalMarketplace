@@ -86,6 +86,16 @@ class ReviewResponse {
     + UpdatedAt : DateTimeOffset?
 }
 
+' ─── AllowedReview (event projection) ───────────────────────────────────────
+
+class AllowedReview <<event projection>> {
+    + OrderId : Guid <<PK>>
+    + BuyerId : Guid <<logical ref: Identity>>
+    + SellerId : Guid <<logical ref: Identity>>
+    + CourierId : Guid? <<logical ref: Identity>>
+    + AllowedAt : DateTimeOffset
+}
+
 ' ─── Aggregated Read Model ───────────────────────────────────────────────────
 
 class RatingAggregate <<read model>> {
@@ -107,6 +117,8 @@ class RatingAggregate <<read model>> {
 
 Review "1" *-down- "0..*" ReviewPhoto : фото к отзыву >
 Review "1" *-right- "0..1" ReviewResponse : ответ продавца >
+
+AllowedReview .right.> Review : разрешает создание\n(проверяется по OrderId)
 
 Review ..> ReviewSubjectType : тип субъекта
 RatingAggregate ..> ReviewSubjectType : субъект агрегата
@@ -156,6 +168,15 @@ note right of ReviewPhoto
   Путь: reviews/{reviewId}/{photoId}.jpg
 end note
 
+note bottom of AllowedReview
+  Создаётся OrderCompletedConsumer
+  при получении OrderCompletedEvent.
+
+  Идемпотентна: если запись уже есть,
+  Consumer пропускает создание.
+
+end note
+
 
 ' ─── Сводная таблица сущностей ───────────────────────────────────────────────
 
@@ -166,6 +187,7 @@ legend bottom
   | ReviewPhoto | ReviewPhotos | Фото к отзыву (StorageUrl → MinIO bucket: review-media) |
   | ReviewResponse | ReviewResponses | Ответ продавца на отзыв (1:1, один раз) |
   | RatingAggregate | RatingAggregates | Pre-computed рейтинг: составной PK (SubjectId, SubjectType) |
+  | AllowedReview | AllowedReviews | Проекция OrderCompletedEvent; разрешает покупателю оставить отзыв |
 endlegend
 
 @enduml
