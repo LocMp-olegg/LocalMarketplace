@@ -10,6 +10,7 @@ public class ReviewDbContext(DbContextOptions<ReviewDbContext> options) : DbCont
     public DbSet<ReviewPhoto> ReviewPhotos => Set<ReviewPhoto>();
     public DbSet<ReviewResponse> ReviewResponses => Set<ReviewResponse>();
     public DbSet<RatingAggregate> RatingAggregates => Set<RatingAggregate>();
+    public DbSet<AllowedReview> AllowedReviews => Set<AllowedReview>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

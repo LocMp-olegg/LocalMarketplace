@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LocMp.Review.Infrastructure.Migrations
 {
     [DbContext(typeof(ReviewDbContext))]
-    [Migration("20260414211127_Initial")]
+    [Migration("20260414221003_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -25,6 +25,31 @@ namespace LocMp.Review.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("LocMp.Review.Domain.Entities.AllowedReview", b =>
+                {
+                    b.Property<Guid>("OrderId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("AllowedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("BuyerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CourierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SellerId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("OrderId");
+
+                    b.HasIndex("BuyerId");
+
+                    b.ToTable("AllowedReviews", "reviews");
+                });
 
             modelBuilder.Entity("LocMp.Review.Domain.Entities.RatingAggregate", b =>
                 {

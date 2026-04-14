@@ -15,6 +15,22 @@ namespace LocMp.Review.Infrastructure.Migrations
                 name: "reviews");
 
             migrationBuilder.CreateTable(
+                name: "AllowedReviews",
+                schema: "reviews",
+                columns: table => new
+                {
+                    OrderId = table.Column<Guid>(type: "uuid", nullable: false),
+                    BuyerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SellerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CourierId = table.Column<Guid>(type: "uuid", nullable: true),
+                    AllowedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AllowedReviews", x => x.OrderId);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "RatingAggregates",
                 schema: "reviews",
                 columns: table => new
@@ -108,6 +124,12 @@ namespace LocMp.Review.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_AllowedReviews_BuyerId",
+                schema: "reviews",
+                table: "AllowedReviews",
+                column: "BuyerId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ReviewPhotos_ReviewId",
                 schema: "reviews",
                 table: "ReviewPhotos",
@@ -149,6 +171,10 @@ namespace LocMp.Review.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "AllowedReviews",
+                schema: "reviews");
+
             migrationBuilder.DropTable(
                 name: "RatingAggregates",
                 schema: "reviews");

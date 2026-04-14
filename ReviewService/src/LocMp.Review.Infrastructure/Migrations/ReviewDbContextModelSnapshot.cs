@@ -23,6 +23,31 @@ namespace LocMp.Review.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("LocMp.Review.Domain.Entities.AllowedReview", b =>
+                {
+                    b.Property<Guid>("OrderId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("AllowedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("BuyerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CourierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SellerId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("OrderId");
+
+                    b.HasIndex("BuyerId");
+
+                    b.ToTable("AllowedReviews", "reviews");
+                });
+
             modelBuilder.Entity("LocMp.Review.Domain.Entities.RatingAggregate", b =>
                 {
                     b.Property<Guid>("SubjectId")
