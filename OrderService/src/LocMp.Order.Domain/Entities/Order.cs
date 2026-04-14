@@ -5,6 +5,16 @@ namespace LocMp.Order.Domain.Entities;
 
 public class Order(Guid id) : AggregateRoot<Guid>(id)
 {
+    private static readonly Dictionary<OrderStatus, HashSet<OrderStatus>> AllowedTransitions = new()
+    {
+        [OrderStatus.Pending] = [OrderStatus.Confirmed, OrderStatus.Cancelled],
+        [OrderStatus.Confirmed] =
+            [OrderStatus.ReadyForPickup, OrderStatus.InDelivery, OrderStatus.Cancelled, OrderStatus.Disputed],
+        [OrderStatus.ReadyForPickup] = [OrderStatus.Completed, OrderStatus.Disputed],
+        [OrderStatus.InDelivery] = [OrderStatus.Completed, OrderStatus.Disputed],
+        [OrderStatus.Disputed] = [OrderStatus.Cancelled],
+    };
+
     public Guid BuyerId { get; set; }
     public Guid SellerId { get; set; }
 
@@ -25,4 +35,28 @@ public class Order(Guid id) : AggregateRoot<Guid>(id)
     public virtual DeliveryAddress? DeliveryAddress { get; set; }
     public virtual CourierAssignment? CourierAssignment { get; set; }
     public virtual Dispute? Dispute { get; set; }
+
+    public (OrderStatus Prev, OrderStatusHistory Entry) TransitionTo(
+        OrderStatus to, Guid changedById, DateTimeOffset now, string? comment = null)
+    {
+        if (!AllowedTransitions.TryGetValue(Status, out var allowed) || !allowed.Contains(to))
+            throw new InvalidOperationException($"Cannot transition order from '{Status}' to '{to}'.");
+
+        var prev = Status;
+        Status = to;
+        UpdatedAt = now;
+
+        if (to == OrderStatus.Completed)
+            CompletedAt = now;
+
+        return (prev, new OrderStatusHistory(Guid.NewGuid())
+        {
+            OrderId = Id,
+            FromStatus = prev,
+            ToStatus = to,
+            Comment = comment,
+            ChangedById = changedById,
+            ChangedAt = now
+        });
+    }
 }

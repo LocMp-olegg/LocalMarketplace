@@ -15,9 +15,9 @@ public sealed class AssignCourierCommandHandler(OrderDbContext db, IEventBus eve
     public async Task Handle(AssignCourierCommand request, CancellationToken ct)
     {
         var order = await db.Orders
-            .Include(o => o.CourierAssignment)
-            .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct)
-            ?? throw new NotFoundException($"Order '{request.OrderId}' not found.");
+                        .Include(o => o.CourierAssignment)
+                        .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct)
+                    ?? throw new NotFoundException($"Order '{request.OrderId}' not found.");
 
         if (order.Status != OrderStatus.Confirmed || order.DeliveryType != DeliveryType.NeighborCourier)
             throw new ConflictException("Order must be Confirmed with NeighborCourier delivery type.");
@@ -26,9 +26,7 @@ public sealed class AssignCourierCommandHandler(OrderDbContext db, IEventBus eve
             throw new ConflictException("Courier is already assigned to this order.");
 
         var now = DateTimeOffset.UtcNow;
-        var prev = order.Status;
-        order.Status = OrderStatus.InDelivery;
-        order.UpdatedAt = now;
+        var (prev, history) = order.TransitionTo(OrderStatus.InDelivery, request.CourierId, now);
 
         db.CourierAssignments.Add(new CourierAssignment(Guid.NewGuid())
         {
@@ -38,15 +36,7 @@ public sealed class AssignCourierCommandHandler(OrderDbContext db, IEventBus eve
             CourierPhone = request.CourierPhone,
             AssignedAt = now
         });
-
-        db.OrderStatusHistory.Add(new OrderStatusHistory(Guid.NewGuid())
-        {
-            OrderId = order.Id,
-            FromStatus = prev,
-            ToStatus = OrderStatus.InDelivery,
-            ChangedById = request.CourierId,
-            ChangedAt = now
-        });
+        db.OrderStatusHistory.Add(history);
 
         await db.SaveChangesAsync(ct);
 

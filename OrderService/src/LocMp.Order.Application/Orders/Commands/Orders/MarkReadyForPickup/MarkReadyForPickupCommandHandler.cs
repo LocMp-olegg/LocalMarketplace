@@ -23,19 +23,9 @@ public sealed class MarkReadyForPickupCommandHandler(OrderDbContext db, IEventBu
             throw new ConflictException("Order must be Confirmed with Pickup delivery type.");
 
         var now = DateTimeOffset.UtcNow;
-        var prev = order.Status;
-        order.Status = OrderStatus.ReadyForPickup;
-        order.UpdatedAt = now;
+        var (prev, history) = order.TransitionTo(OrderStatus.ReadyForPickup, request.SellerId, now);
 
-        db.OrderStatusHistory.Add(new OrderStatusHistory(Guid.NewGuid())
-        {
-            OrderId = order.Id,
-            FromStatus = prev,
-            ToStatus = OrderStatus.ReadyForPickup,
-            ChangedById = request.SellerId,
-            ChangedAt = now
-        });
-
+        db.OrderStatusHistory.Add(history);
         await db.SaveChangesAsync(ct);
 
         await eventBus.PublishAsync(new OrderStatusChangedEvent(

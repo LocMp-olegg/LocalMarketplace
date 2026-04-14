@@ -26,20 +26,10 @@ public sealed class ResolveDisputeCommandHandler(OrderDbContext db, IEventBus ev
         dispute.Resolution = request.Resolution;
         dispute.ResolvedAt = now;
 
-        dispute.Order.UpdatedAt = now;
+        var (_, history) = dispute.Order.TransitionTo(OrderStatus.Cancelled, request.AdminId, now,
+            $"Dispute resolved: {request.Resolution}");
 
-        db.OrderStatusHistory.Add(new Domain.Entities.OrderStatusHistory(Guid.NewGuid())
-        {
-            OrderId = dispute.Order.Id,
-            FromStatus = OrderStatus.Disputed,
-            ToStatus = OrderStatus.Cancelled,
-            Comment = $"Dispute resolved: {request.Resolution}",
-            ChangedById = request.AdminId,
-            ChangedAt = now
-        });
-
-        dispute.Order.Status = OrderStatus.Cancelled;
-
+        db.OrderStatusHistory.Add(history);
         await db.SaveChangesAsync(ct);
 
         var minutesOpen = (int)(now - dispute.CreatedAt).TotalMinutes;

@@ -51,7 +51,8 @@ public sealed class DisputeAutoResolveBackgroundService(
             if (disputes.Count == 0) return;
 
             var now = DateTimeOffset.UtcNow;
-            var eventsToPublish = new List<(DisputeResolvedEvent Dispute, OrderStatusChangedEvent Order)>(disputes.Count);
+            var eventsToPublish =
+                new List<(DisputeResolvedEvent Dispute, OrderStatusChangedEvent Order)>(disputes.Count);
 
             foreach (var dispute in disputes)
             {
@@ -60,19 +61,9 @@ public sealed class DisputeAutoResolveBackgroundService(
                 dispute.ResolvedAt = now;
 
                 var order = dispute.Order;
-                var prev = order.Status;
-                order.Status = OrderStatus.Cancelled;
-                order.UpdatedAt = now;
-
-                db.OrderStatusHistory.Add(new OrderStatusHistory(Guid.NewGuid())
-                {
-                    OrderId = order.Id,
-                    FromStatus = prev,
-                    ToStatus = OrderStatus.Cancelled,
-                    Comment = "Auto-resolved dispute",
-                    ChangedById = order.BuyerId,
-                    ChangedAt = now
-                });
+                var (prev, history) =
+                    order.TransitionTo(OrderStatus.Cancelled, order.BuyerId, now, "Auto-resolved dispute");
+                db.OrderStatusHistory.Add(history);
 
                 eventsToPublish.Add((
                     new DisputeResolvedEvent(dispute.Id, order.Id, options.Value.AutoResolveDays * 24 * 60, now),
@@ -90,7 +81,10 @@ public sealed class DisputeAutoResolveBackgroundService(
 
             logger.LogInformation("Auto-resolved {Count} stale disputes", disputes.Count);
         }
-        catch (OperationCanceledException) { /* shutdown */ }
+        catch (OperationCanceledException)
+        {
+            /* shutdown */
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error during dispute auto-resolve");
