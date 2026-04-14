@@ -56,7 +56,7 @@ public sealed class DisputesController(ISender sender) : ControllerBase
         Guid disputeId, [FromBody] ResolveDisputeRequest request, CancellationToken ct)
     {
         await sender.Send(
-            new ResolveDisputeCommand(disputeId, HttpContext.GetUserId(), request.Resolution), ct);
+            new ResolveDisputeCommand(disputeId, HttpContext.GetUserId(), request.Outcome, request.Resolution), ct);
         return NoContent();
     }
 

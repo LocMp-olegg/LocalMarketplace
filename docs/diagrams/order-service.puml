@@ -68,6 +68,11 @@ enum DisputeStatus {
     Closed
 }
 
+enum DisputeOutcome {
+    BuyerFavored
+    SellerFavored
+}
+
 ' ─── Cart ────────────────────────────────────────────────────────────────────
 
 class Cart {
@@ -165,6 +170,7 @@ class Dispute {
     + InitiatorId : Guid <<logical ref: Identity>>
     + Reason : string
     + Status : DisputeStatus
+    + Outcome : DisputeOutcome?
     + Resolution : string?
     + CreatedAt : DateTimeOffset
     + ResolvedAt : DateTimeOffset?
@@ -210,6 +216,7 @@ Order ..> OrderStatus
 Order ..> DeliveryType
 Order ..> PaymentStatus
 Dispute ..> DisputeStatus
+Dispute ..> DisputeOutcome
 
 ' ─── Notes ───────────────────────────────────────────────────────────────────
 
@@ -234,6 +241,8 @@ note right of Order
   ReadyForPickup ──► Completed
   InDelivery ──► Completed
   Confirmed+ ──► Disputed
+  Disputed ──► Cancelled  (BuyerFavored: возврат стока)
+           ──► Completed  (SellerFavored: сделка засчитана)
 
   FromStatus = null в первой записи
   OrderStatusHistory (создание заказа).

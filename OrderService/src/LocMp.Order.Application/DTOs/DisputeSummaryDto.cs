@@ -8,5 +8,6 @@ public sealed record DisputeSummaryDto(
     Guid InitiatorId,
     string Reason,
     DisputeStatus Status,
+    DisputeOutcome? Outcome,
     DateTimeOffset CreatedAt,
     DateTimeOffset? ResolvedAt);

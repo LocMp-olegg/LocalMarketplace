@@ -1,7 +1,7 @@
 using LocMp.Contracts.Dispute;
 using LocMp.Contracts.Orders;
-using LocMp.Order.Domain.Entities;
 using LocMp.Order.Domain.Enums;
+using LocMp.Order.Infrastructure.Interfaces;
 using LocMp.Order.Infrastructure.Options;
 using LocMp.Order.Infrastructure.Persistence;
 using MassTransit;
@@ -40,11 +40,13 @@ public sealed class DisputeAutoResolveBackgroundService(
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<OrderDbContext>();
             var publishEndpoint = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
+            var catalogClient = scope.ServiceProvider.GetRequiredService<ICatalogClient>();
 
             var threshold = DateTimeOffset.UtcNow.AddDays(-options.Value.AutoResolveDays);
 
             var disputes = await db.Disputes
                 .Include(d => d.Order)
+                .ThenInclude(o => o.Items)
                 .Where(d => d.Status == DisputeStatus.Open && d.CreatedAt <= threshold)
                 .ToListAsync(ct);
 
@@ -57,6 +59,7 @@ public sealed class DisputeAutoResolveBackgroundService(
             foreach (var dispute in disputes)
             {
                 dispute.Status = DisputeStatus.Resolved;
+                dispute.Outcome = DisputeOutcome.BuyerFavored;
                 dispute.Resolution = "Auto-resolved: no response within the allowed period.";
                 dispute.ResolvedAt = now;
 
@@ -72,6 +75,21 @@ public sealed class DisputeAutoResolveBackgroundService(
             }
 
             await db.SaveChangesAsync(ct);
+
+            foreach (var dispute in disputes)
+            {
+                foreach (var item in dispute.Order.Items)
+                {
+                    try
+                    {
+                        await catalogClient.ReleaseStockAsync(item.ProductId, item.Quantity, dispute.Order.Id, ct);
+                    }
+                    catch
+                    {
+                        /* best-effort: stock will reconcile via events */
+                    }
+                }
+            }
 
             foreach (var (disputeEvt, orderEvt) in eventsToPublish)
             {

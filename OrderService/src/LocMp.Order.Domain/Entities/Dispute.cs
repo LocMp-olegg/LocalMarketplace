@@ -10,6 +10,7 @@ public class Dispute(Guid id) : Entity<Guid>(id)
     public Guid InitiatorId { get; set; }
     public string Reason { get; set; } = null!;
     public DisputeStatus Status { get; set; } = DisputeStatus.Open;
+    public DisputeOutcome? Outcome { get; set; }
     public string? Resolution { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;

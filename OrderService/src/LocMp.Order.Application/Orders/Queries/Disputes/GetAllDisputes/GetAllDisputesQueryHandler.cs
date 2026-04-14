@@ -26,7 +26,7 @@ public sealed class GetAllDisputesQueryHandler(OrderDbContext db)
 
         var items = disputes.Select(d => new DisputeSummaryDto(
             d.Id, d.OrderId, d.InitiatorId,
-            d.Reason, d.Status,
+            d.Reason, d.Status, d.Outcome,
             d.CreatedAt, d.ResolvedAt)).ToList();
 
         return new PagedResult<DisputeSummaryDto>(items, total, request.PageNumber, request.PageSize);

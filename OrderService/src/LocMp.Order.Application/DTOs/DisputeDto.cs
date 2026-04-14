@@ -7,6 +7,7 @@ public sealed record DisputeDto(
     Guid InitiatorId,
     string Reason,
     DisputeStatus Status,
+    DisputeOutcome? Outcome,
     string? Resolution,
     DateTimeOffset CreatedAt,
     DateTimeOffset? ResolvedAt,

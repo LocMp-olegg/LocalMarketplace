@@ -12,7 +12,7 @@ public class Order(Guid id) : AggregateRoot<Guid>(id)
             [OrderStatus.ReadyForPickup, OrderStatus.InDelivery, OrderStatus.Cancelled, OrderStatus.Disputed],
         [OrderStatus.ReadyForPickup] = [OrderStatus.Completed, OrderStatus.Disputed],
         [OrderStatus.InDelivery] = [OrderStatus.Completed, OrderStatus.Disputed],
-        [OrderStatus.Disputed] = [OrderStatus.Cancelled],
+        [OrderStatus.Disputed] = [OrderStatus.Cancelled, OrderStatus.Completed],
     };
 
     public Guid BuyerId { get; set; }
