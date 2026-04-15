@@ -38,6 +38,10 @@ namespace LocMp.Review.Infrastructure.Migrations
                     b.Property<Guid?>("CourierId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ProductIds")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
                     b.Property<Guid>("SellerId")
                         .HasColumnType("uuid");
 
@@ -129,12 +133,12 @@ namespace LocMp.Review.Infrastructure.Migrations
 
                     b.HasIndex("CreatedAt");
 
-                    b.HasIndex("OrderId")
-                        .IsUnique();
-
                     b.HasIndex("ReviewerId");
 
                     b.HasIndex("SubjectId", "SubjectType");
+
+                    b.HasIndex("OrderId", "SubjectType", "SubjectId")
+                        .IsUnique();
 
                     b.ToTable("Reviews", "reviews");
                 });

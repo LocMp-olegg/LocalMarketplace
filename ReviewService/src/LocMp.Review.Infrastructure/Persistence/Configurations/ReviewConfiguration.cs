@@ -25,7 +25,7 @@ public class ReviewConfiguration : IEntityTypeConfiguration<ReviewEntity>
             .HasForeignKey<LocMp.Review.Domain.Entities.ReviewResponse>(rr => rr.ReviewId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(r => r.OrderId).IsUnique();
+        builder.HasIndex(r => new { r.OrderId, r.SubjectType, r.SubjectId }).IsUnique();
         builder.HasIndex(r => new { r.SubjectId, r.SubjectType });
         builder.HasIndex(r => r.ReviewerId);
         builder.HasIndex(r => r.CreatedAt);

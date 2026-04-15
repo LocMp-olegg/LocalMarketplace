@@ -4,6 +4,7 @@ using LocMp.BuildingBlocks.Application.Interfaces;
 using LocMp.Contracts.Review;
 using LocMp.Review.Application.DTOs;
 using LocMp.Review.Domain.Entities;
+using LocMp.Review.Domain.Enums;
 using LocMp.Review.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -28,9 +29,22 @@ public sealed class CreateReviewCommandHandler(
         if (allowed.BuyerId != request.ReviewerId)
             throw new ForbiddenException("Only the buyer of this order can leave a review.");
 
-        var alreadyExists = await db.Reviews.AnyAsync(r => r.OrderId == request.OrderId, ct);
+        var isValidSubject = request.SubjectType switch
+        {
+            ReviewSubjectType.Seller  => allowed.SellerId == request.SubjectId,
+            ReviewSubjectType.Courier => allowed.CourierId == request.SubjectId,
+            ReviewSubjectType.Product => allowed.ProductIds.Contains(request.SubjectId),
+            _                         => false
+        };
+        if (!isValidSubject)
+            throw new ForbiddenException("SubjectId does not match the order data.");
+
+        var alreadyExists = await db.Reviews.AnyAsync(r =>
+            r.OrderId == request.OrderId &&
+            r.SubjectType == request.SubjectType &&
+            r.SubjectId == request.SubjectId, ct);
         if (alreadyExists)
-            throw new ConflictException("A review for this order already exists.");
+            throw new ConflictException("A review for this subject and order already exists.");
 
         var now = DateTimeOffset.UtcNow;
         var review = new ReviewEntity(Guid.NewGuid())

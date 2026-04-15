@@ -5,13 +5,19 @@ using LocMp.Review.Application.DTOs;
 using LocMp.Review.Application.Reviews.Commands.CreateReview;
 using LocMp.Review.Application.Reviews.Commands.DeleteReview;
 using LocMp.Review.Application.Reviews.Commands.DeleteReviewPhoto;
+using LocMp.Review.Application.Reviews.Commands.DeleteReviewResponse;
 using LocMp.Review.Application.Reviews.Commands.ModerateReview;
 using LocMp.Review.Application.Reviews.Commands.RespondToReview;
 using LocMp.Review.Application.Reviews.Commands.UpdateReview;
+using LocMp.Review.Application.Reviews.Commands.UpdateReviewResponse;
 using LocMp.Review.Application.Reviews.Commands.UploadReviewPhotos;
+using LocMp.Review.Application.Reviews.Queries.GetAllowedReviewsForBuyer;
+using LocMp.Review.Application.Reviews.Queries.GetMyReviews;
 using LocMp.Review.Application.Reviews.Queries.GetRatingBySubject;
+using LocMp.Review.Application.Reviews.Queries.GetReviewById;
 using LocMp.Review.Application.Reviews.Queries.GetReviewByOrder;
 using LocMp.Review.Application.Reviews.Queries.GetReviewsBySubject;
+using LocMp.Review.Application.Reviews.Queries.GetReviewsForModeration;
 using LocMp.Review.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -43,6 +49,37 @@ public sealed class ReviewsController(ISender sender) : ControllerBase
         CancellationToken ct = default)
         => Ok(await sender.Send(new GetRatingBySubjectQuery(subjectType, subjectId), ct));
 
+    [HttpGet("my")]
+    public async Task<ActionResult<PagedResult<ReviewSummaryDto>>> GetMy(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
+        => Ok(await sender.Send(new GetMyReviewsQuery(HttpContext.GetUserId(), page, pageSize), ct));
+
+    [HttpGet("allowed")]
+    public async Task<ActionResult<PagedResult<PendingReviewSubjectDto>>> GetAllowed(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
+        => Ok(await sender.Send(new GetAllowedReviewsForBuyerQuery(HttpContext.GetUserId(), page, pageSize), ct));
+
+    [HttpGet("admin")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<PagedResult<ReviewSummaryDto>>> GetForModeration(
+        [FromQuery] bool? isVisible = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
+        => Ok(await sender.Send(new GetReviewsForModerationQuery(isVisible, page, pageSize), ct));
+
+    [HttpGet("{id:guid}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ReviewDto>> GetById(Guid id, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetReviewByIdQuery(id), ct);
+        return result is null ? NotFound() : Ok(result);
+    }
+
     [HttpGet("by-order/{orderId:guid}")]
     public async Task<ActionResult<ReviewDto>> GetByOrder(Guid orderId, CancellationToken ct)
     {
@@ -54,7 +91,7 @@ public sealed class ReviewsController(ISender sender) : ControllerBase
     public async Task<ActionResult<ReviewDto>> Create([FromBody] CreateReviewRequest request, CancellationToken ct)
     {
         var userId = HttpContext.GetUserId();
-        var reviewerName = User.FindFirst("name")?.Value
+        var reviewerName = User.FindFirst("username")?.Value
                            ?? User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
                            ?? "Unknown";
 
@@ -75,16 +112,9 @@ public sealed class ReviewsController(ISender sender) : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        var isAdmin = HttpContext.IsInRole("Admin");
-        await sender.Send(new DeleteReviewCommand(id, HttpContext.GetUserId(), isAdmin), ct);
+        await sender.Send(new DeleteReviewCommand(id, HttpContext.GetUserId(), HttpContext.IsInRole("Admin")), ct);
         return NoContent();
     }
-
-    [HttpPost("{id:guid}/response")]
-    [Authorize(Roles = "Seller")]
-    public async Task<ActionResult<ReviewResponseDto>> Respond(
-        Guid id, [FromBody] RespondToReviewRequest request, CancellationToken ct)
-        => Ok(await sender.Send(new RespondToReviewCommand(id, HttpContext.GetUserId(), request.Comment), ct));
 
     [HttpPost("{id:guid}/moderate")]
     [Authorize(Roles = "Admin")]
@@ -95,21 +125,41 @@ public sealed class ReviewsController(ISender sender) : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{id:guid}/response")]
+    [Authorize(Roles = "Seller")]
+    public async Task<ActionResult<ReviewResponseDto>> Respond(
+        Guid id, [FromBody] RespondToReviewRequest request, CancellationToken ct)
+        => Ok(await sender.Send(new RespondToReviewCommand(id, HttpContext.GetUserId(), request.Comment), ct));
+
+    [HttpPut("{id:guid}/response")]
+    [Authorize(Roles = "Seller")]
+    public async Task<ActionResult<ReviewResponseDto>> UpdateResponse(
+        Guid id, [FromBody] UpdateReviewResponseRequest request, CancellationToken ct)
+        => Ok(await sender.Send(new UpdateReviewResponseCommand(id, HttpContext.GetUserId(), request.Comment), ct));
+
+    [HttpDelete("{id:guid}/response")]
+    public async Task<IActionResult> DeleteResponse(Guid id, CancellationToken ct)
+    {
+        await sender.Send(new DeleteReviewResponseCommand(id, HttpContext.GetUserId(), HttpContext.IsInRole("Admin")),
+            ct);
+        return NoContent();
+    }
+
     [HttpPost("{id:guid}/photos")]
     public async Task<ActionResult<IReadOnlyList<ReviewPhotoDto>>> UploadPhotos(
         Guid id, [FromForm] IFormFileCollection images, CancellationToken ct)
     {
-        var isAdmin = HttpContext.IsInRole("Admin");
         var result = await sender.Send(
-            new UploadReviewPhotosCommand(id, HttpContext.GetUserId(), isAdmin, images.ToList()), ct);
+            new UploadReviewPhotosCommand(id, HttpContext.GetUserId(), HttpContext.IsInRole("Admin"), images.ToList()),
+            ct);
         return Ok(result);
     }
 
     [HttpDelete("photos/{photoId:guid}")]
     public async Task<IActionResult> DeletePhoto(Guid photoId, CancellationToken ct)
     {
-        var isAdmin = HttpContext.IsInRole("Admin");
-        await sender.Send(new DeleteReviewPhotoCommand(photoId, HttpContext.GetUserId(), isAdmin), ct);
+        await sender.Send(new DeleteReviewPhotoCommand(photoId, HttpContext.GetUserId(), HttpContext.IsInRole("Admin")),
+            ct);
         return NoContent();
     }
 }

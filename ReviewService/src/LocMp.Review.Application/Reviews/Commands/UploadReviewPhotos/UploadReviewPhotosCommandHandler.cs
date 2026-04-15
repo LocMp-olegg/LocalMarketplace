@@ -3,6 +3,7 @@ using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.BuildingBlocks.Application.Interfaces;
 using LocMp.Review.Application.DTOs;
 using LocMp.Review.Domain.Entities;
+using LocMp.Review.Domain.Enums;
 using LocMp.Review.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +17,7 @@ public sealed class UploadReviewPhotosCommandHandler(
     IMapper mapper)
     : IRequestHandler<UploadReviewPhotosCommand, IReadOnlyList<ReviewPhotoDto>>
 {
-    private const int MaxPhotosPerReview = 10;
+    private const int MaxPhotosPerReview = 5;
     private const int MaxImageDimension = 1200;
 
     public async Task<IReadOnlyList<ReviewPhotoDto>> Handle(
@@ -26,6 +27,9 @@ public sealed class UploadReviewPhotosCommandHandler(
                          .Include(r => r.Photos)
                          .FirstOrDefaultAsync(r => r.Id == request.ReviewId, ct)
                      ?? throw new NotFoundException($"Review '{request.ReviewId}' not found.");
+
+        if (review.SubjectType != ReviewSubjectType.Product)
+            throw new ConflictException("Photos can only be attached to product reviews.");
 
         if (!request.IsAdmin && review.ReviewerId != request.UploadedById)
             throw new ForbiddenException("You are not the author of this review.");

@@ -11,7 +11,7 @@ public sealed class UploadReviewPhotosCommandValidator : AbstractValidator<Uploa
     {
         RuleFor(x => x.Images)
             .NotEmpty().WithMessage("At least one photo is required.")
-            .Must(imgs => imgs.Count <= 5).WithMessage("Maximum 5 photos per request.");
+            .Must(imgs => imgs.Count <= 5).WithMessage("Maximum 5 photos request.");
 
         RuleForEach(x => x.Images).ChildRules(photo =>
         {

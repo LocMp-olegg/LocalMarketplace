@@ -23,6 +23,7 @@ namespace LocMp.Review.Infrastructure.Migrations
                     BuyerId = table.Column<Guid>(type: "uuid", nullable: false),
                     SellerId = table.Column<Guid>(type: "uuid", nullable: false),
                     CourierId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ProductIds = table.Column<string>(type: "jsonb", nullable: false),
                     AllowedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -149,10 +150,10 @@ namespace LocMp.Review.Infrastructure.Migrations
                 column: "CreatedAt");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Reviews_OrderId",
+                name: "IX_Reviews_OrderId_SubjectType_SubjectId",
                 schema: "reviews",
                 table: "Reviews",
-                column: "OrderId",
+                columns: new[] { "OrderId", "SubjectType", "SubjectId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(

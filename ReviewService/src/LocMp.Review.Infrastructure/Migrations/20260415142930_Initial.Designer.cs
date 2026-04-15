@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LocMp.Review.Infrastructure.Migrations
 {
     [DbContext(typeof(ReviewDbContext))]
-    [Migration("20260414221003_Initial")]
+    [Migration("20260415142930_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -40,6 +40,10 @@ namespace LocMp.Review.Infrastructure.Migrations
 
                     b.Property<Guid?>("CourierId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("ProductIds")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.Property<Guid>("SellerId")
                         .HasColumnType("uuid");
@@ -132,12 +136,12 @@ namespace LocMp.Review.Infrastructure.Migrations
 
                     b.HasIndex("CreatedAt");
 
-                    b.HasIndex("OrderId")
-                        .IsUnique();
-
                     b.HasIndex("ReviewerId");
 
                     b.HasIndex("SubjectId", "SubjectType");
+
+                    b.HasIndex("OrderId", "SubjectType", "SubjectId")
+                        .IsUnique();
 
                     b.ToTable("Reviews", "reviews");
                 });

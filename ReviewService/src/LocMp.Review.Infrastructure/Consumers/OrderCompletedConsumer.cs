@@ -16,7 +16,7 @@ public sealed class OrderCompletedConsumer(ReviewDbContext db) : IConsumer<Order
             .FirstOrDefaultAsync(ar => ar.OrderId == msg.OrderId, context.CancellationToken);
 
         if (existing is not null)
-            return; // idempotent — already unlocked
+            return;
 
         db.AllowedReviews.Add(new AllowedReview
         {
@@ -24,6 +24,7 @@ public sealed class OrderCompletedConsumer(ReviewDbContext db) : IConsumer<Order
             BuyerId = msg.BuyerId,
             SellerId = msg.SellerId,
             CourierId = msg.CourierId,
+            ProductIds = msg.ProductIds.ToList() ?? [],
             AllowedAt = msg.OccurredAt
         });
 
