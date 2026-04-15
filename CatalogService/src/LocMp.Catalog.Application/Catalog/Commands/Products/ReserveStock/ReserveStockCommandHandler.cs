@@ -25,6 +25,13 @@ public sealed class ReserveStockCommandHandler(CatalogDbContext db, IEventBus ev
             throw new ConflictException("Product is not available for reservation.");
         }
 
+        if (product.IsMadeToOrder)
+        {
+            await eventBus.PublishAsync(new StockReservedEvent(
+                product.Id, request.OrderId, request.Quantity, DateTimeOffset.UtcNow), ct);
+            return;
+        }
+
         if (product.StockQuantity < request.Quantity)
         {
             await eventBus.PublishAsync(new StockReservationFailedEvent(

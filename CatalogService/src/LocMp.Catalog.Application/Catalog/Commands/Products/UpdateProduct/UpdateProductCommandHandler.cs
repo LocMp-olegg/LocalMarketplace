@@ -33,6 +33,8 @@ public sealed class UpdateProductCommandHandler(CatalogDbContext db, IMapper map
         product.Price = request.Price;
         product.Unit = request.Unit;
         product.IsActive = request.IsActive;
+        product.IsMadeToOrder = request.IsMadeToOrder;
+        product.LeadTimeDays = request.IsMadeToOrder ? request.LeadTimeDays : null;
         product.UpdatedAt = DateTimeOffset.UtcNow;
 
         if (request.Latitude.HasValue && request.Longitude.HasValue)

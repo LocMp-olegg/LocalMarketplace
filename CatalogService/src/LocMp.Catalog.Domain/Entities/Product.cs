@@ -18,6 +18,9 @@ public class Product(Guid id) : AggregateRoot<Guid>(id)
 
     public int StockQuantity { get; set; }
 
+    public bool IsMadeToOrder { get; set; }
+    public int? LeadTimeDays { get; set; }
+
     public Point? Location { get; set; }
 
     public JsonDocument? Attributes { get; set; }

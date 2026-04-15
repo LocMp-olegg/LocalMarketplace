@@ -13,8 +13,9 @@ public sealed class UpdateStockCommandHandler(CatalogDbContext db, IEventBus eve
 {
     public async Task<int> Handle(UpdateStockCommand request, CancellationToken ct)
     {
-        var product = await db.Products.FindAsync([request.ProductId], ct)
-                      ?? throw new NotFoundException($"Product '{request.ProductId}' not found.");
+        var product = await db.Products.FindAsync([request.ProductId], ct);
+        if (product is null || product.IsDeleted)
+            throw new NotFoundException($"Product '{request.ProductId}' not found.");
 
         if (product.SellerId != request.SellerId)
             throw new ForbiddenException("You do not own this product.");

@@ -41,7 +41,8 @@ public sealed class ProductsController(ISender sender) : ControllerBase
         var viewerId = HttpContext.User.Identity?.IsAuthenticated == true
             ? HttpContext.GetUserId()
             : (Guid?)null;
-        return Ok(await sender.Send(new GetProductByIdQuery(id, viewerId), ct));
+        return Ok(await sender.Send(
+            new GetProductByIdQuery(id, viewerId, HttpContext.User.IsInRole("Admin")), ct));
     }
 
     [HttpGet("nearby")]
@@ -141,7 +142,7 @@ public sealed class ProductsController(ISender sender) : ControllerBase
     }
 
     [HttpGet("{id:guid}/stock")]
-    public async Task<ActionResult<int>> GetStock(Guid id, CancellationToken ct)
+    public async Task<ActionResult<ProductStockDto>> GetStock(Guid id, CancellationToken ct)
         => Ok(await sender.Send(new GetProductStockQuery(id), ct));
 
     [HttpGet("{id:guid}/stock/history")]
@@ -167,6 +168,8 @@ public sealed class ProductsController(ISender sender) : ControllerBase
             request.Price,
             request.Unit,
             request.InitialStock,
+            request.IsMadeToOrder,
+            request.LeadTimeDays,
             request.Latitude,
             request.Longitude
         );
@@ -187,9 +190,11 @@ public sealed class ProductsController(ISender sender) : ControllerBase
             request.Description,
             request.Price,
             request.Unit,
+            request.IsActive,
+            request.IsMadeToOrder,
+            request.LeadTimeDays,
             request.Latitude,
-            request.Longitude,
-            request.IsActive
+            request.Longitude
         );
         return Ok(await sender.Send(command, ct));
     }

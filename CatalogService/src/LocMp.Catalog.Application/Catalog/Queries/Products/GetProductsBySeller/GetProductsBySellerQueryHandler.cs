@@ -55,7 +55,9 @@ public sealed class GetProductsBySellerQueryHandler(CatalogDbContext db)
                 p.Photos.Where(ph => ph.IsMain).Select(ph => ph.StorageUrl).FirstOrDefault()
                     ?? p.Photos.OrderBy(ph => ph.SortOrder).Select(ph => ph.StorageUrl).FirstOrDefault(),
                 null,
-                p.ProductTags.Select(pt => pt.Tag.Name).ToList()
+                p.ProductTags.Select(pt => pt.Tag.Name).ToList(),
+                p.IsMadeToOrder,
+                p.LeadTimeDays
             ))
             .ToListAsync(ct);
 

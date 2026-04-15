@@ -17,7 +17,7 @@ public sealed class GetProductsByLocationQueryHandler(CatalogDbContext db)
         var radiusMeters = request.RadiusKm * 1000;
 
         var query = db.Products
-            .Where(p => p.IsActive && !p.IsDeleted && p.StockQuantity > 0);
+            .Where(p => p.IsActive && !p.IsDeleted && (p.StockQuantity > 0 || p.IsMadeToOrder));
 
         if (request.CategoryId.HasValue)
             query = query.Where(p => p.CategoryId == request.CategoryId.Value);
@@ -57,7 +57,9 @@ public sealed class GetProductsByLocationQueryHandler(CatalogDbContext db)
                 p.Photos.Where(ph => ph.IsMain).Select(ph => ph.StorageUrl).FirstOrDefault()
                     ?? p.Photos.OrderBy(ph => ph.SortOrder).Select(ph => ph.StorageUrl).FirstOrDefault(),
                 p.Location != null ? p.Location.Distance(center) : null,
-                p.ProductTags.Select(pt => pt.Tag.Name).ToList()
+                p.ProductTags.Select(pt => pt.Tag.Name).ToList(),
+                p.IsMadeToOrder,
+                p.LeadTimeDays
             ))
             .ToListAsync(ct);
 

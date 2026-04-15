@@ -14,5 +14,7 @@ public sealed record ProductSummaryDto(
     double? Longitude,
     string? MainPhotoUrl,
     double? DistanceMeters,
-    IReadOnlyList<string> Tags
+    IReadOnlyList<string> Tags,
+    bool IsMadeToOrder,
+    int? LeadTimeDays
 );

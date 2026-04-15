@@ -10,8 +10,9 @@ public sealed class DeleteProductCommandHandler(CatalogDbContext db, IDistribute
 {
     public async Task Handle(DeleteProductCommand request, CancellationToken ct)
     {
-        var product = await db.Products.FindAsync([request.Id], ct)
-                      ?? throw new NotFoundException($"Product '{request.Id}' not found.");
+        var product = await db.Products.FindAsync([request.Id], ct);
+        if (product is null || product.IsDeleted)
+            throw new NotFoundException($"Product '{request.Id}' not found.");
 
         if (product.SellerId != request.SellerId)
             throw new ForbiddenException("You do not own this product.");

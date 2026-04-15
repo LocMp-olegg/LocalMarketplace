@@ -1,4 +1,5 @@
 using LocMp.BuildingBlocks.Application.Common;
+using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Catalog.Application.DTOs;
 using LocMp.Catalog.Domain.Enums;
 using LocMp.Catalog.Infrastructure.Persistence;
@@ -13,6 +14,10 @@ public sealed class GetProductsByShopQueryHandler(CatalogDbContext db)
     public async Task<PagedResult<ProductSummaryDto>> Handle(
         GetProductsByShopQuery request, CancellationToken ct)
     {
+        var shopExists = await db.Shops.AnyAsync(s => s.Id == request.ShopId && s.IsActive, ct);
+        if (!shopExists)
+            throw new NotFoundException($"Shop '{request.ShopId}' not found.");
+
         var query = db.Products
             .Where(p => p.ShopId == request.ShopId && p.IsActive && !p.IsDeleted);
 
@@ -53,7 +58,9 @@ public sealed class GetProductsByShopQueryHandler(CatalogDbContext db)
                 p.Photos.Where(ph => ph.IsMain).Select(ph => ph.StorageUrl).FirstOrDefault()
                     ?? p.Photos.OrderBy(ph => ph.SortOrder).Select(ph => ph.StorageUrl).FirstOrDefault(),
                 null,
-                p.ProductTags.Select(pt => pt.Tag.Name).ToList()
+                p.ProductTags.Select(pt => pt.Tag.Name).ToList(),
+                p.IsMadeToOrder,
+                p.LeadTimeDays
             ))
             .ToListAsync(ct);
 

@@ -19,6 +19,16 @@ public sealed class CreateProductCommandHandler(CatalogDbContext db, IMapper map
         if (!categoryExists)
             throw new NotFoundException($"Category '{request.CategoryId}' not found.");
 
+        if (request.ShopId.HasValue)
+        {
+            var shop = await db.Shops.FirstOrDefaultAsync(s => s.Id == request.ShopId.Value, ct)
+                       ?? throw new NotFoundException($"Shop '{request.ShopId}' not found.");
+            if (shop.SellerId != request.SellerId)
+                throw new ForbiddenException("You do not own this shop.");
+            if (!shop.IsActive)
+                throw new ConflictException("Shop is not active.");
+        }
+
         Point? location = null;
         if (request.Latitude.HasValue && request.Longitude.HasValue)
             location = new Point(request.Longitude.Value, request.Latitude.Value) { SRID = 4326 };
@@ -34,6 +44,8 @@ public sealed class CreateProductCommandHandler(CatalogDbContext db, IMapper map
             Price = request.Price,
             Unit = request.Unit,
             StockQuantity = request.InitialStock,
+            IsMadeToOrder = request.IsMadeToOrder,
+            LeadTimeDays = request.IsMadeToOrder ? request.LeadTimeDays : null,
             Location = location,
             IsActive = true,
             CreatedAt = DateTimeOffset.UtcNow

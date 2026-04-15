@@ -15,7 +15,7 @@ public sealed class GetProductsByTagsQueryHandler(CatalogDbContext db)
         var normalizedTags = request.Tags.Select(t => t.ToLowerInvariant()).ToList();
 
         var query = db.Products
-            .Where(p => p.IsActive && !p.IsDeleted && p.StockQuantity > 0)
+            .Where(p => p.IsActive && !p.IsDeleted && (p.StockQuantity > 0 || p.IsMadeToOrder))
             .Where(p => p.ProductTags.Any(pt => normalizedTags.Contains(pt.Tag.Name.ToLower())));
 
         var total = await query.CountAsync(ct);
@@ -39,7 +39,9 @@ public sealed class GetProductsByTagsQueryHandler(CatalogDbContext db)
                 p.Photos.Where(ph => ph.IsMain).Select(ph => ph.StorageUrl).FirstOrDefault()
                     ?? p.Photos.OrderBy(ph => ph.SortOrder).Select(ph => ph.StorageUrl).FirstOrDefault(),
                 null,
-                p.ProductTags.Select(pt => pt.Tag.Name).ToList()
+                p.ProductTags.Select(pt => pt.Tag.Name).ToList(),
+                p.IsMadeToOrder,
+                p.LeadTimeDays
             ))
             .ToListAsync(ct);
 

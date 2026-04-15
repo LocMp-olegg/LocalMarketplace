@@ -8,6 +8,8 @@ public sealed record CreateProductRequest(
     decimal Price,
     string Unit,
     int InitialStock,
+    bool IsMadeToOrder,
+    int? LeadTimeDays,
     double? Latitude,
     double? Longitude
 );
