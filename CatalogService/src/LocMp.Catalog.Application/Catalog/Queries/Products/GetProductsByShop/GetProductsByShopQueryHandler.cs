@@ -5,38 +5,29 @@ using LocMp.Catalog.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace LocMp.Catalog.Application.Catalog.Queries.Products.SearchProducts;
+namespace LocMp.Catalog.Application.Catalog.Queries.Products.GetProductsByShop;
 
-public sealed class SearchProductsQueryHandler(CatalogDbContext db)
-    : IRequestHandler<SearchProductsQuery, PagedResult<ProductSummaryDto>>
+public sealed class GetProductsByShopQueryHandler(CatalogDbContext db)
+    : IRequestHandler<GetProductsByShopQuery, PagedResult<ProductSummaryDto>>
 {
     public async Task<PagedResult<ProductSummaryDto>> Handle(
-        SearchProductsQuery request, CancellationToken ct)
+        GetProductsByShopQuery request, CancellationToken ct)
     {
         var query = db.Products
-            .Where(p => p.IsActive && !p.IsDeleted && p.StockQuantity > 0);
-
-        if (!string.IsNullOrWhiteSpace(request.Search))
-            query = query.Where(p => EF.Functions.ILike(p.Name, $"%{request.Search}%")
-                                     || EF.Functions.ILike(p.Description ?? "", $"%{request.Search}%"));
+            .Where(p => p.ShopId == request.ShopId && p.IsActive && !p.IsDeleted);
 
         if (request.CategoryId.HasValue)
             query = query.Where(p => p.CategoryId == request.CategoryId.Value);
 
-        if (request.Tags is { Count: > 0 })
-        {
-            var normalized = request.Tags.Select(t => t.ToLowerInvariant()).ToList();
-            query = query.Where(p => p.ProductTags.Any(pt => normalized.Contains(pt.Tag.Name.ToLower())));
-        }
+        if (!string.IsNullOrWhiteSpace(request.Search))
+            query = query.Where(p => EF.Functions.ILike(p.Name, $"%{request.Search}%")
+                                     || EF.Functions.ILike(p.Description ?? "", $"%{request.Search}%"));
 
         if (request.MinPrice.HasValue)
             query = query.Where(p => p.Price >= request.MinPrice.Value);
 
         if (request.MaxPrice.HasValue)
             query = query.Where(p => p.Price <= request.MaxPrice.Value);
-
-        if (request.ShopId.HasValue)
-            query = query.Where(p => p.ShopId == request.ShopId.Value);
 
         if (request.IsInStock)
             query = query.Where(p => p.StockQuantity > 0);
@@ -45,29 +36,22 @@ public sealed class SearchProductsQueryHandler(CatalogDbContext db)
 
         query = request.Sort switch
         {
-            ProductSortBy.PriceAsc => query.OrderBy(p => p.Price),
+            ProductSortBy.PriceAsc  => query.OrderBy(p => p.Price),
             ProductSortBy.PriceDesc => query.OrderByDescending(p => p.Price),
-            ProductSortBy.NameAsc => query.OrderBy(p => p.Name),
-            _ => query.OrderByDescending(p => p.CreatedAt)
+            ProductSortBy.NameAsc   => query.OrderBy(p => p.Name),
+            _                       => query.OrderByDescending(p => p.CreatedAt)
         };
 
         var items = await query
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
             .Select(p => new ProductSummaryDto(
-                p.Id,
-                p.SellerId,
-                p.ShopId,
-                p.CategoryId,
-                p.Name,
-                p.Price,
-                p.Unit,
-                p.StockQuantity,
-                p.IsActive,
+                p.Id, p.SellerId, p.ShopId, p.CategoryId, p.Name, p.Price, p.Unit,
+                p.StockQuantity, p.IsActive,
                 p.Location != null ? p.Location.Y : null,
                 p.Location != null ? p.Location.X : null,
                 p.Photos.Where(ph => ph.IsMain).Select(ph => ph.StorageUrl).FirstOrDefault()
-                ?? p.Photos.OrderBy(ph => ph.SortOrder).Select(ph => ph.StorageUrl).FirstOrDefault(),
+                    ?? p.Photos.OrderBy(ph => ph.SortOrder).Select(ph => ph.StorageUrl).FirstOrDefault(),
                 null,
                 p.ProductTags.Select(pt => pt.Tag.Name).ToList()
             ))

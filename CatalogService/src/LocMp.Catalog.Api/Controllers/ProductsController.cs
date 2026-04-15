@@ -13,14 +13,17 @@ using LocMp.Catalog.Application.Catalog.Commands.Products.UpdateStock;
 using LocMp.Catalog.Application.Catalog.Commands.Products.SetMainProductPhoto;
 using LocMp.Catalog.Application.Catalog.Commands.Products.UploadProductPhoto;
 using LocMp.Catalog.Application.Catalog.Queries.Products.GetProductById;
+using LocMp.Catalog.Application.Catalog.Queries.Products.GetMyProducts;
 using LocMp.Catalog.Application.Catalog.Queries.Products.GetProductsByLocation;
 using LocMp.Catalog.Application.Catalog.Queries.Products.GetProductsBySeller;
+using LocMp.Catalog.Application.Catalog.Queries.Products.GetProductsByShop;
 using LocMp.Catalog.Application.Catalog.Queries.Products.GetProductsByTags;
 using LocMp.Catalog.Application.Catalog.Queries.Products.GetProductStock;
 using LocMp.Catalog.Application.Catalog.Queries.Products.GetStockHistory;
 using LocMp.Catalog.Application.Catalog.Queries.Products.SearchProducts;
 using LocMp.Catalog.Application.DTOs;
 using LocMp.Catalog.Api.Extensions;
+using LocMp.Catalog.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -48,11 +51,14 @@ public sealed class ProductsController(ISender sender) : ControllerBase
         [FromQuery] double radiusKm = 5,
         [FromQuery] Guid? categoryId = null,
         [FromQuery] string? search = null,
+        [FromQuery] decimal? minPrice = null,
+        [FromQuery] decimal? maxPrice = null,
+        [FromQuery] bool isInStock = false,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
         => Ok(await sender.Send(
-            new GetProductsByLocationQuery(lat, lon, radiusKm, categoryId, search, page, pageSize), ct));
+            new GetProductsByLocationQuery(lat, lon, radiusKm, categoryId, search, minPrice, maxPrice, isInStock, page, pageSize), ct));
 
     [HttpGet("search")]
     public async Task<ActionResult<PagedResult<ProductSummaryDto>>> Search(
@@ -61,6 +67,9 @@ public sealed class ProductsController(ISender sender) : ControllerBase
         [FromQuery] string? tags = null,
         [FromQuery] decimal? minPrice = null,
         [FromQuery] decimal? maxPrice = null,
+        [FromQuery] Guid? shopId = null,
+        [FromQuery] bool isInStock = false,
+        [FromQuery] ProductSortBy sort = ProductSortBy.Newest,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
@@ -69,17 +78,56 @@ public sealed class ProductsController(ISender sender) : ControllerBase
             ? null
             : tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         return Ok(await sender.Send(
-            new SearchProductsQuery(q, categoryId, tagList, minPrice, maxPrice, page, pageSize), ct));
+            new SearchProductsQuery(q, categoryId, tagList, minPrice, maxPrice, shopId, isInStock, sort, page, pageSize), ct));
     }
 
     [HttpGet("by-seller/{sellerId:guid}")]
     public async Task<ActionResult<PagedResult<ProductSummaryDto>>> GetBySeller(
         Guid sellerId,
+        [FromQuery] Guid? shopId = null,
+        [FromQuery] Guid? categoryId = null,
+        [FromQuery] decimal? minPrice = null,
+        [FromQuery] decimal? maxPrice = null,
+        [FromQuery] bool isInStock = false,
         [FromQuery] bool includeInactive = false,
+        [FromQuery] ProductSortBy sort = ProductSortBy.Newest,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
-        => Ok(await sender.Send(new GetProductsBySellerQuery(sellerId, includeInactive, page, pageSize), ct));
+        => Ok(await sender.Send(
+            new GetProductsBySellerQuery(sellerId, shopId, categoryId, minPrice, maxPrice, isInStock, includeInactive, sort, page, pageSize), ct));
+
+    [HttpGet("by-shop/{shopId:guid}")]
+    public async Task<ActionResult<PagedResult<ProductSummaryDto>>> GetByShop(
+        Guid shopId,
+        [FromQuery] Guid? categoryId = null,
+        [FromQuery] string? search = null,
+        [FromQuery] decimal? minPrice = null,
+        [FromQuery] decimal? maxPrice = null,
+        [FromQuery] bool isInStock = false,
+        [FromQuery] ProductSortBy sort = ProductSortBy.Newest,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
+        => Ok(await sender.Send(
+            new GetProductsByShopQuery(shopId, categoryId, search, minPrice, maxPrice, isInStock, sort, page, pageSize), ct));
+
+    [HttpGet("my")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Seller,Admin")]
+    public async Task<ActionResult<PagedResult<ProductSummaryDto>>> GetMy(
+        [FromQuery] Guid? shopId = null,
+        [FromQuery] Guid? categoryId = null,
+        [FromQuery] string? search = null,
+        [FromQuery] decimal? minPrice = null,
+        [FromQuery] decimal? maxPrice = null,
+        [FromQuery] bool? isActive = null,
+        [FromQuery] bool isInStock = false,
+        [FromQuery] ProductSortBy sort = ProductSortBy.Newest,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
+        => Ok(await sender.Send(
+            new GetMyProductsQuery(HttpContext.GetUserId(), shopId, categoryId, search, minPrice, maxPrice, isActive, isInStock, sort, page, pageSize), ct));
 
     [HttpGet("by-tags")]
     public async Task<ActionResult<PagedResult<ProductSummaryDto>>> GetByTags(

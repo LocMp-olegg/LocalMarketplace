@@ -25,6 +25,15 @@ public sealed class GetProductsByLocationQueryHandler(CatalogDbContext db)
         if (!string.IsNullOrWhiteSpace(request.Search))
             query = query.Where(p => EF.Functions.ILike(p.Name, $"%{request.Search}%"));
 
+        if (request.MinPrice.HasValue)
+            query = query.Where(p => p.Price >= request.MinPrice.Value);
+
+        if (request.MaxPrice.HasValue)
+            query = query.Where(p => p.Price <= request.MaxPrice.Value);
+
+        if (request.IsInStock)
+            query = query.Where(p => p.StockQuantity > 0);
+
         query = query.Where(p => p.Location != null && p.Location.IsWithinDistance(center, radiusMeters));
 
         var total = await query.CountAsync(ct);
@@ -43,11 +52,11 @@ public sealed class GetProductsByLocationQueryHandler(CatalogDbContext db)
                 p.Unit,
                 p.StockQuantity,
                 p.IsActive,
-                p.Location != null ? p.Location.Y : (double?)null,
-                p.Location != null ? p.Location.X : (double?)null,
+                p.Location != null ? p.Location.Y : null,
+                p.Location != null ? p.Location.X : null,
                 p.Photos.Where(ph => ph.IsMain).Select(ph => ph.StorageUrl).FirstOrDefault()
                     ?? p.Photos.OrderBy(ph => ph.SortOrder).Select(ph => ph.StorageUrl).FirstOrDefault(),
-                p.Location != null ? p.Location.Distance(center) : (double?)null,
+                p.Location != null ? p.Location.Distance(center) : null,
                 p.ProductTags.Select(pt => pt.Tag.Name).ToList()
             ))
             .ToListAsync(ct);
