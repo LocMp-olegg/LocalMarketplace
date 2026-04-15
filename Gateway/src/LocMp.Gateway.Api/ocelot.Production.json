@@ -41,6 +41,16 @@
         { "Host": "locmp-orders", "Port": 8080 }
       ],
       "SwaggerKey": "order-service"
+    },
+    {
+      "UpstreamPathTemplate": "/api/reviews/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Patch", "Delete" ],
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "locmp-reviews", "Port": 8080 }
+      ],
+      "SwaggerKey": "review-service"
     }
   ],
   "SwaggerEndPoints": [
@@ -71,6 +81,16 @@
           "Name": "OrderService API",
           "Version": "v1",
           "Url": "http://locmp-orders:8080/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "review-service",
+      "Config": [
+        {
+          "Name": "ReviewService API",
+          "Version": "v1",
+          "Url": "http://locmp-reviews:8080/swagger/v1/swagger.json"
         }
       ]
     }

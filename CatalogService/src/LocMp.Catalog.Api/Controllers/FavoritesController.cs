@@ -3,7 +3,7 @@ using LocMp.Catalog.Application.Catalog.Commands.Favorites.AddToFavorites;
 using LocMp.Catalog.Application.Catalog.Commands.Favorites.RemoveFromFavorites;
 using LocMp.Catalog.Application.Catalog.Queries.Favorites.GetFavoritesByUser;
 using LocMp.Catalog.Application.DTOs;
-using LocMp.Catalog.Infrastructure.Extensions;
+using LocMp.Catalog.Api.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;

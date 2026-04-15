@@ -7,7 +7,7 @@ using LocMp.Catalog.Application.Catalog.Commands.Shops.UploadShopPhoto;
 using LocMp.Catalog.Application.Catalog.Queries.Shops.GetShopById;
 using LocMp.Catalog.Application.Catalog.Queries.Shops.GetShopsBySeller;
 using LocMp.Catalog.Application.DTOs;
-using LocMp.Catalog.Infrastructure.Extensions;
+using LocMp.Catalog.Api.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
