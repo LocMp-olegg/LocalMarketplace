@@ -1,0 +1,8 @@
+namespace LocMp.Analytics.Domain.Enums;
+
+public enum PeriodType
+{
+    Daily = 1,
+    Weekly = 2,
+    Monthly = 3
+}
