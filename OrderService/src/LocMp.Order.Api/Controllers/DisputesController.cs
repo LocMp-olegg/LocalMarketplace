@@ -46,7 +46,7 @@ public sealed class DisputesController(ISender sender) : ControllerBase
     public async Task<IActionResult> OpenDispute(Guid id, [FromBody] OpenDisputeRequest request,
         CancellationToken ct)
     {
-        await sender.Send(new OpenDisputeCommand(id, HttpContext.GetUserId(), request.Reason), ct);
+        await sender.Send(new OpenDisputeCommand(id, HttpContext.GetUserId(), request.DisputeType, request.Reason), ct);
         return NoContent();
     }
 

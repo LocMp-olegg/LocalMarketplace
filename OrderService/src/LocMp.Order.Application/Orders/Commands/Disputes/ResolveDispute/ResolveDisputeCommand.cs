@@ -1,4 +1,4 @@
-using LocMp.Order.Domain.Enums;
+using LocMp.Contracts.Orders;
 using MediatR;
 
 namespace LocMp.Order.Application.Orders.Commands.Disputes.ResolveDispute;

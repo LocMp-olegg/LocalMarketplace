@@ -1,4 +1,4 @@
-using LocMp.Order.Domain.Enums;
+using LocMp.Contracts.Orders;
 
 namespace LocMp.Order.Api.Requests;
 

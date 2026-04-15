@@ -1,4 +1,3 @@
-using LocMp.Contracts.Dispute;
 using LocMp.Contracts.Orders;
 using LocMp.Order.Domain.Enums;
 using LocMp.Order.Infrastructure.Interfaces;
@@ -47,6 +46,8 @@ public sealed class DisputeAutoResolveBackgroundService(
             var disputes = await db.Disputes
                 .Include(d => d.Order)
                 .ThenInclude(o => o.Items)
+                .Include(d => d.Order)
+                .ThenInclude(o => o.CourierAssignment)
                 .Where(d => d.Status == DisputeStatus.Open && d.CreatedAt <= threshold)
                 .ToListAsync(ct);
 
@@ -68,8 +69,16 @@ public sealed class DisputeAutoResolveBackgroundService(
                     order.TransitionTo(OrderStatus.Cancelled, order.BuyerId, now, "Auto-resolved dispute");
                 db.OrderStatusHistory.Add(history);
 
+                var productIds = order.Items.Select(i => i.ProductId).ToList();
+                var courierId = order.CourierAssignment?.CourierId;
+                var minutesOpen = (int)(now - dispute.CreatedAt).TotalMinutes;
+
                 eventsToPublish.Add((
-                    new DisputeResolvedEvent(dispute.Id, order.Id, options.Value.AutoResolveDays * 24 * 60, now),
+                    new DisputeResolvedEvent(
+                        dispute.Id, order.Id,
+                        dispute.DisputeType, DisputeOutcome.BuyerFavored,
+                        order.BuyerId, order.SellerId,
+                        courierId, productIds, minutesOpen, now),
                     new OrderStatusChangedEvent(order.Id, order.BuyerId, order.SellerId,
                         prev.ToString(), nameof(OrderStatus.Cancelled), now)));
             }

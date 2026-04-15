@@ -1,4 +1,4 @@
-namespace LocMp.Order.Domain.Enums;
+namespace LocMp.Contracts.Orders;
 
 public enum DisputeOutcome
 {

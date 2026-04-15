@@ -1,6 +1,6 @@
 using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.BuildingBlocks.Application.Interfaces;
-using LocMp.Contracts.Dispute;
+using LocMp.Contracts.Orders;
 using LocMp.Order.Domain.Entities;
 using LocMp.Order.Domain.Enums;
 using LocMp.Order.Infrastructure.Persistence;
@@ -44,6 +44,7 @@ public sealed class OpenDisputeCommandHandler(OrderDbContext db, IEventBus event
         {
             OrderId = order.Id,
             InitiatorId = request.InitiatorId,
+            DisputeType = request.DisputeType,
             Reason = request.Reason,
             Status = DisputeStatus.Open,
             CreatedAt = now
@@ -53,6 +54,7 @@ public sealed class OpenDisputeCommandHandler(OrderDbContext db, IEventBus event
         await db.SaveChangesAsync(ct);
 
         await eventBus.PublishAsync(new DisputeOpenedEvent(
-            disputeId, order.Id, request.InitiatorId, now), ct);
+            disputeId, order.Id, request.InitiatorId,
+            request.DisputeType, now), ct);
     }
 }

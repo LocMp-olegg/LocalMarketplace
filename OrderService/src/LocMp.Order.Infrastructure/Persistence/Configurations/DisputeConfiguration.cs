@@ -11,6 +11,7 @@ public class DisputeConfiguration : IEntityTypeConfiguration<Dispute>
         builder.ToTable("Disputes");
         builder.HasKey(d => d.Id);
 
+        builder.Property(d => d.DisputeType).IsRequired();
         builder.Property(d => d.Reason).HasMaxLength(2000).IsRequired();
         builder.Property(d => d.Resolution).HasMaxLength(2000);
         builder.Property(d => d.CreatedAt).IsRequired();

@@ -3898,7 +3898,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"reason\": \"Товар не соответствует описанию\"\n}",
+                  "raw": "{\n  \"disputeType\": 3,\n  \"reason\": \"Товар не соответствует описанию\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
