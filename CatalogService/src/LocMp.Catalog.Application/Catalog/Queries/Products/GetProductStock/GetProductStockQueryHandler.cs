@@ -1,4 +1,5 @@
 using LocMp.BuildingBlocks.Application.Exceptions;
+using LocMp.Catalog.Application.DTOs;
 using LocMp.Catalog.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -6,16 +7,16 @@ using Microsoft.EntityFrameworkCore;
 namespace LocMp.Catalog.Application.Catalog.Queries.Products.GetProductStock;
 
 public sealed class GetProductStockQueryHandler(CatalogDbContext db)
-    : IRequestHandler<GetProductStockQuery, int>
+    : IRequestHandler<GetProductStockQuery, ProductStockDto>
 {
-    public async Task<int> Handle(GetProductStockQuery request, CancellationToken ct)
+    public async Task<ProductStockDto> Handle(GetProductStockQuery request, CancellationToken ct)
     {
-        var stock = await db.Products
+        var result = await db.Products
             .Where(p => p.Id == request.ProductId && !p.IsDeleted)
-            .Select(p => (int?)p.StockQuantity)
+            .Select(p => new { p.StockQuantity, p.IsMadeToOrder, p.LeadTimeDays })
             .FirstOrDefaultAsync(ct)
             ?? throw new NotFoundException($"Product '{request.ProductId}' not found.");
 
-        return stock;
+        return new ProductStockDto(result.StockQuantity, result.IsMadeToOrder, result.LeadTimeDays);
     }
 }

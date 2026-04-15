@@ -20,6 +20,9 @@ public sealed class GetProductByIdQueryHandler(CatalogDbContext db, IMapper mapp
                           .FirstOrDefaultAsync(p => p.Id == request.Id && !p.IsDeleted, ct)
                       ?? throw new NotFoundException($"Product '{request.Id}' not found.");
 
+        if (!product.IsActive && !request.IsAdmin && product.SellerId != request.ViewerId)
+            throw new NotFoundException($"Product '{request.Id}' not found.");
+
         await eventBus.PublishAsync(
             new ProductViewedEvent(product.Id, product.SellerId, request.ViewerId, DateTimeOffset.UtcNow), ct);
 

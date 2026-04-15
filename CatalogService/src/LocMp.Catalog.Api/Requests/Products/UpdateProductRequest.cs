@@ -7,6 +7,8 @@ public sealed record UpdateProductRequest(
     decimal Price,
     string Unit,
     bool IsActive,
+    bool IsMadeToOrder,
+    int? LeadTimeDays,
     double? Latitude,
     double? Longitude
 );

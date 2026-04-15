@@ -16,6 +16,8 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.Price).HasPrecision(18, 2).IsRequired();
         builder.Property(p => p.Unit).HasMaxLength(20).IsRequired();
         builder.Property(p => p.StockQuantity).IsRequired();
+        builder.Property(p => p.IsMadeToOrder).HasDefaultValue(false);
+        builder.Property(p => p.LeadTimeDays);
         builder.Property(p => p.Attributes).HasColumnType("jsonb");
         builder.Property(p => p.Location).HasColumnType("geometry(Point, 4326)");
         builder.Property(p => p.IsActive).HasDefaultValue(true);

@@ -8,4 +8,6 @@ public sealed record ProductSnapshotDto(
     decimal Price,
     int StockQuantity,
     string? MainPhotoUrl,
-    bool IsActive);
+    bool IsActive,
+    bool IsMadeToOrder = false,
+    int? LeadTimeDays = null);

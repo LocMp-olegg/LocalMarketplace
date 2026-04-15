@@ -8,6 +8,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\..\BuildingBlocks\src\LocMp.BuildingBlocks.Domain\LocMp.BuildingBlocks.Domain.csproj" />
+        <ProjectReference Include="..\..\..\Contracts\LocMp.Contracts\LocMp.Contracts.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -12,6 +12,8 @@ public sealed record CreateProductCommand(
     decimal Price,
     string Unit,
     int InitialStock,
+    bool IsMadeToOrder,
+    int? LeadTimeDays,
     double? Latitude,
     double? Longitude
 ) : IRequest<ProductDto>;

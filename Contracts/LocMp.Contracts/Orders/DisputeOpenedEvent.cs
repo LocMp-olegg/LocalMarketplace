@@ -1,7 +1,8 @@
-﻿namespace LocMp.Contracts.Dispute;
+﻿namespace LocMp.Contracts.Orders;
 
 public sealed record DisputeOpenedEvent(
     Guid DisputeId,
     Guid OrderId,
     Guid InitiatorId,
+    DisputeType DisputeType,
     DateTimeOffset OccurredAt) : IIntegrationEvent;

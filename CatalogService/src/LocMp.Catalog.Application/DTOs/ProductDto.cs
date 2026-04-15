@@ -11,6 +11,8 @@ public sealed record ProductDto
     public decimal Price { get; init; }
     public string Unit { get; init; } = null!;
     public int StockQuantity { get; init; }
+    public bool IsMadeToOrder { get; init; }
+    public int? LeadTimeDays { get; init; }
     public double? Latitude { get; init; }
     public double? Longitude { get; init; }
     public bool IsActive { get; init; }

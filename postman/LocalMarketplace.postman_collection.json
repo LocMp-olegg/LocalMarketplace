@@ -1389,6 +1389,48 @@
               "response": []
             },
             {
+              "name": "Search Products (price asc, in stock)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrlCatalog}}/api/products/search?search=хлеб&sort=1&isInStock=true&page=1&pageSize=10",
+                  "host": [
+                    "{{baseUrlCatalog}}"
+                  ],
+                  "path": [
+                    "api",
+                    "products",
+                    "search"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "хлеб"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "1",
+                      "description": "PriceAsc"
+                    },
+                    {
+                      "key": "isInStock",
+                      "value": "true"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
               "name": "Get Products by Location",
               "request": {
                 "method": "GET",
@@ -1423,6 +1465,31 @@
                     {
                       "key": "pageSize",
                       "value": "10"
+                    },
+                    {
+                      "key": "categoryId",
+                      "value": "11111111-0000-0000-0000-000000000002",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "minPrice",
+                      "value": "50",
+                      "disabled": true
+                    },
+                    {
+                      "key": "maxPrice",
+                      "value": "1000",
+                      "disabled": true
+                    },
+                    {
+                      "key": "isInStock",
+                      "value": "true",
+                      "disabled": true
                     }
                   ]
                 }
@@ -1498,6 +1565,271 @@
                     "33333333-0000-0000-0000-000000000001"
                   ],
                   "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "10"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "1",
+                      "description": "0=Newest, 1=PriceAsc, 2=PriceDesc, 3=NameAsc",
+                      "disabled": true
+                    },
+                    {
+                      "key": "isInStock",
+                      "value": "true",
+                      "disabled": true
+                    },
+                    {
+                      "key": "includeInactive",
+                      "value": "false",
+                      "disabled": true
+                    },
+                    {
+                      "key": "categoryId",
+                      "value": "11111111-0000-0000-0000-000000000002",
+                      "disabled": true
+                    },
+                    {
+                      "key": "minPrice",
+                      "value": "50",
+                      "disabled": true
+                    },
+                    {
+                      "key": "maxPrice",
+                      "value": "1000",
+                      "disabled": true
+                    },
+                    {
+                      "key": "shopId",
+                      "value": "{{testShopId}}",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Products by Shop",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrlCatalog}}/api/products/by-shop/{{testShopId}}?page=1&pageSize=10",
+                  "host": [
+                    "{{baseUrlCatalog}}"
+                  ],
+                  "path": [
+                    "api",
+                    "products",
+                    "by-shop",
+                    "{{testShopId}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "10"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "1",
+                      "description": "0=Newest, 1=PriceAsc, 2=PriceDesc, 3=NameAsc",
+                      "disabled": true
+                    },
+                    {
+                      "key": "isInStock",
+                      "value": "true",
+                      "disabled": true
+                    },
+                    {
+                      "key": "categoryId",
+                      "value": "11111111-0000-0000-0000-000000000002",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "minPrice",
+                      "value": "50",
+                      "disabled": true
+                    },
+                    {
+                      "key": "maxPrice",
+                      "value": "1000",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Products by Shop (filtered: price asc, in stock)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrlCatalog}}/api/products/by-shop/{{testShopId}}?sort=1&isInStock=true&page=1&pageSize=10",
+                  "host": [
+                    "{{baseUrlCatalog}}"
+                  ],
+                  "path": [
+                    "api",
+                    "products",
+                    "by-shop",
+                    "{{testShopId}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "sort",
+                      "value": "1",
+                      "description": "PriceAsc"
+                    },
+                    {
+                      "key": "isInStock",
+                      "value": "true"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get My Products (Seller)",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{sellerToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrlCatalog}}/api/products/my?page=1&pageSize=10",
+                  "host": [
+                    "{{baseUrlCatalog}}"
+                  ],
+                  "path": [
+                    "api",
+                    "products",
+                    "my"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "10"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "3",
+                      "description": "3=NameAsc",
+                      "disabled": true
+                    },
+                    {
+                      "key": "isActive",
+                      "value": "true",
+                      "description": "null = all (active + inactive)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "isInStock",
+                      "value": "true",
+                      "disabled": true
+                    },
+                    {
+                      "key": "shopId",
+                      "value": "{{testShopId}}",
+                      "disabled": true
+                    },
+                    {
+                      "key": "categoryId",
+                      "value": "11111111-0000-0000-0000-000000000002",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "minPrice",
+                      "value": "50",
+                      "disabled": true
+                    },
+                    {
+                      "key": "maxPrice",
+                      "value": "1000",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get My Products (inactive only)",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{sellerToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrlCatalog}}/api/products/my?isActive=false&sort=0&page=1&pageSize=10",
+                  "host": [
+                    "{{baseUrlCatalog}}"
+                  ],
+                  "path": [
+                    "api",
+                    "products",
+                    "my"
+                  ],
+                  "query": [
+                    {
+                      "key": "isActive",
+                      "value": "false"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "0",
+                      "description": "Newest"
+                    },
                     {
                       "key": "page",
                       "value": "1"
@@ -1601,7 +1933,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"shopId\": \"55555555-0000-0000-0000-000000000001\",\n  \"categoryId\": \"11111111-0000-0000-0000-000000000002\",\n  \"name\": \"Ржаной хлеб\",\n  \"description\": \"Домашний хлеб на закваске\",\n  \"price\": 150.00,\n  \"unit\": \"шт\",\n  \"initialStock\": 10,\n  \"latitude\": 55.7558,\n  \"longitude\": 37.6176\n}",
+                  "raw": "{\n  \"shopId\": \"55555555-0000-0000-0000-000000000001\",\n  \"categoryId\": \"11111111-0000-0000-0000-000000000002\",\n  \"name\": \"Ржаной хлеб\",\n  \"description\": \"Домашний хлеб на закваске\",\n  \"price\": 150.00,\n  \"unit\": \"шт\",\n  \"initialStock\": 10,\n  \"isMadeToOrder\": false,\n  \"leadTimeDays\": null,\n  \"latitude\": 55.7558,\n  \"longitude\": 37.6176\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1638,7 +1970,44 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"shopId\": null,\n  \"categoryId\": \"11111111-0000-0000-0000-000000000003\",\n  \"name\": \"Картофель молодой\",\n  \"description\": \"Сорт Беллароза\",\n  \"price\": 350.00,\n  \"unit\": \"шт\",\n  \"initialStock\": 20,\n  \"latitude\": 55.7558,\n  \"longitude\": 37.6176\n}",
+                  "raw": "{\n  \"shopId\": null,\n  \"categoryId\": \"11111111-0000-0000-0000-000000000003\",\n  \"name\": \"Картофель молодой\",\n  \"description\": \"Сорт Беллароза\",\n  \"price\": 350.00,\n  \"unit\": \"шт\",\n  \"initialStock\": 20,\n  \"isMadeToOrder\": false,\n  \"leadTimeDays\": null,\n  \"latitude\": 55.7558,\n  \"longitude\": 37.6176\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrlCatalog}}/api/products",
+                  "host": [
+                    "{{baseUrlCatalog}}"
+                  ],
+                  "path": [
+                    "api",
+                    "products"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Product (на заказ)",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{sellerToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"shopId\": \"55555555-0000-0000-0000-000000000001\",\n  \"categoryId\": \"11111111-0000-0000-0000-000000000002\",\n  \"name\": \"Торт на заказ\",\n  \"description\": \"Авторский торт по вашему дизайну\",\n  \"price\": 2500.00,\n  \"unit\": \"шт\",\n  \"initialStock\": 0,\n  \"isMadeToOrder\": true,\n  \"leadTimeDays\": 3,\n  \"latitude\": 55.7558,\n  \"longitude\": 37.6176\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1675,7 +2044,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"categoryId\": \"11111111-0000-0000-0000-000000000002\",\n  \"name\": \"Ржаной хлеб (обновлено)\",\n  \"description\": \"Новое описание\",\n  \"price\": 180.00,\n  \"unit\": \"шт\",\n  \"isActive\": true\n}",
+                  "raw": "{\n  \"categoryId\": \"11111111-0000-0000-0000-000000000002\",\n  \"name\": \"Ржаной хлеб (обновлено)\",\n  \"description\": \"Новое описание\",\n  \"price\": 180.00,\n  \"unit\": \"шт\",\n  \"isActive\": true,\n  \"isMadeToOrder\": false,\n  \"leadTimeDays\": null\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -3529,7 +3898,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"reason\": \"Товар не соответствует описанию\"\n}",
+                  "raw": "{\n  \"disputeType\": 3,\n  \"reason\": \"Товар не соответствует описанию\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"

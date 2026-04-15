@@ -1,6 +1,6 @@
 using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.BuildingBlocks.Application.Interfaces;
-using LocMp.Contracts.Dispute;
+using LocMp.Contracts.Orders;
 using LocMp.Order.Domain.Enums;
 using LocMp.Order.Infrastructure.Interfaces;
 using LocMp.Order.Infrastructure.Persistence;
@@ -20,6 +20,8 @@ public sealed class ResolveDisputeCommandHandler(
         var dispute = await db.Disputes
                           .Include(d => d.Order)
                           .ThenInclude(o => o.Items)
+                          .Include(d => d.Order)
+                          .ThenInclude(o => o.CourierAssignment)
                           .FirstOrDefaultAsync(d => d.Id == request.DisputeId, ct)
                       ?? throw new NotFoundException($"Dispute '{request.DisputeId}' not found.");
 
@@ -58,7 +60,19 @@ public sealed class ResolveDisputeCommandHandler(
         }
 
         var minutesOpen = (int)(now - dispute.CreatedAt).TotalMinutes;
+        var productIds = dispute.Order.Items.Select(i => i.ProductId).ToList();
+        var courierId = dispute.Order.CourierAssignment?.CourierId;
+
         await eventBus.PublishAsync(new DisputeResolvedEvent(
-            dispute.Id, dispute.Order.Id, minutesOpen, now), ct);
+            dispute.Id,
+            dispute.Order.Id,
+            dispute.DisputeType,
+            request.Outcome,
+            dispute.Order.BuyerId,
+            dispute.Order.SellerId,
+            courierId,
+            productIds,
+            minutesOpen,
+            now), ct);
     }
 }

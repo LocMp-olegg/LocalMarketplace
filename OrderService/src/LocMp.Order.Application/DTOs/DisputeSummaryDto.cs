@@ -1,3 +1,4 @@
+using LocMp.Contracts.Orders;
 using LocMp.Order.Domain.Enums;
 
 namespace LocMp.Order.Application.DTOs;

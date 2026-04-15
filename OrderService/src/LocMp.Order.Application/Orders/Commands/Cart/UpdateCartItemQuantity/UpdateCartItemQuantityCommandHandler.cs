@@ -31,7 +31,7 @@ public sealed class UpdateCartItemQuantityCommandHandler(
         var product = await catalogClient.GetProductAsync(item.ProductId, ct)
                       ?? throw new NotFoundException($"Product '{item.ProductId}' not found.");
 
-        if (product.StockQuantity < request.Quantity)
+        if (!product.IsMadeToOrder && product.StockQuantity < request.Quantity)
             throw new ConflictException($"Insufficient stock. Available: {product.StockQuantity}.");
 
         item.Quantity = request.Quantity;

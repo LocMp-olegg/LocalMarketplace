@@ -13,8 +13,9 @@ public sealed class AddProductTagCommandHandler(CatalogDbContext db, IDistribute
 {
     public async Task<TagDto> Handle(AddProductTagCommand request, CancellationToken ct)
     {
-        var product = await db.Products.FindAsync([request.ProductId], ct)
-                      ?? throw new NotFoundException($"Product '{request.ProductId}' not found.");
+        var product = await db.Products.FindAsync([request.ProductId], ct);
+        if (product is null || product.IsDeleted)
+            throw new NotFoundException($"Product '{request.ProductId}' not found.");
 
         if (!request.IsAdmin && product.SellerId != request.RequesterId)
             throw new ForbiddenException("You do not own this product.");
