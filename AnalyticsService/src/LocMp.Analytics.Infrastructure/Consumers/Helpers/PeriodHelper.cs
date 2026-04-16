@@ -2,7 +2,7 @@ using LocMp.Analytics.Domain.Enums;
 
 namespace LocMp.Analytics.Infrastructure.Consumers.Helpers;
 
-internal static class PeriodHelper
+public static class PeriodHelper
 {
     public static IEnumerable<PeriodType> All => Enum.GetValues<PeriodType>();
 

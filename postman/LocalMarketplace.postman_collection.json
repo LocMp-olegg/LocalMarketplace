@@ -4252,8 +4252,7 @@
           ]
         }
       ]
-    }
-    ,
+    },
     {
       "name": "ReviewService",
       "item": [
@@ -4283,13 +4282,31 @@
                 "header": [],
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews?subjectType=1&subjectId={{testUserId}}",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews"],
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews"
+                  ],
                   "query": [
-                    { "key": "subjectType", "value": "1", "description": "1=Seller, 2=Product, 3=Courier" },
-                    { "key": "subjectId", "value": "{{testUserId}}" },
-                    { "key": "page", "value": "1" },
-                    { "key": "pageSize", "value": "20" }
+                    {
+                      "key": "subjectType",
+                      "value": "1",
+                      "description": "1=Seller, 2=Product, 3=Courier"
+                    },
+                    {
+                      "key": "subjectId",
+                      "value": "{{testUserId}}"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
                   ]
                 }
               },
@@ -4313,11 +4330,24 @@
                 "header": [],
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews/rating?subjectType=1&subjectId={{testUserId}}",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews", "rating"],
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews",
+                    "rating"
+                  ],
                   "query": [
-                    { "key": "subjectType", "value": "1", "description": "1=Seller, 2=Product, 3=Courier" },
-                    { "key": "subjectId", "value": "{{testUserId}}" }
+                    {
+                      "key": "subjectType",
+                      "value": "1",
+                      "description": "1=Seller, 2=Product, 3=Courier"
+                    },
+                    {
+                      "key": "subjectId",
+                      "value": "{{testUserId}}"
+                    }
                   ]
                 }
               },
@@ -4339,14 +4369,27 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userToken}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "GET",
                 "header": [],
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews/by-order/{{testOrderId}}",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews", "by-order", "{{testOrderId}}"]
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews",
+                    "by-order",
+                    "{{testOrderId}}"
+                  ]
                 }
               },
               "response": []
@@ -4372,21 +4415,40 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userToken}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "POST",
                 "header": [
-                  { "key": "Idempotency-Key", "value": "review-create-001", "type": "text" }
+                  {
+                    "key": "Idempotency-Key",
+                    "value": "review-create-001",
+                    "type": "text"
+                  }
                 ],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderId\": \"{{testOrderId}}\",\n  \"subjectType\": {{testSubjectType}},\n  \"subjectId\": \"{{testSubjectId}}\",\n  \"rating\": 5,\n  \"comment\": \"Отличный продавец, всё быстро и качественно!\"\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews"]
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews"
+                  ]
                 }
               },
               "response": []
@@ -4407,19 +4469,35 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userToken}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "PUT",
                 "header": [],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"rating\": 4,\n  \"comment\": \"Обновлённый отзыв: всё хорошо\"\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews/{{testReviewId}}",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews", "{{testReviewId}}"]
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews",
+                    "{{testReviewId}}"
+                  ]
                 }
               },
               "response": []
@@ -4440,14 +4518,26 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userToken}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "DELETE",
                 "header": [],
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews/{{testReviewId}}",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews", "{{testReviewId}}"]
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews",
+                    "{{testReviewId}}"
+                  ]
                 }
               },
               "response": []
@@ -4468,14 +4558,26 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{adminToken}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "DELETE",
                 "header": [],
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews/{{testReviewId}}",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews", "{{testReviewId}}"]
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews",
+                    "{{testReviewId}}"
+                  ]
                 }
               },
               "response": []
@@ -4496,19 +4598,36 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{sellerToken}}", "type": "string" }]
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{sellerToken}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "POST",
                 "header": [],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"comment\": \"Спасибо за отзыв! Рады были помочь.\"\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews/{{testReviewId}}/response",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews", "{{testReviewId}}", "response"]
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews",
+                    "{{testReviewId}}",
+                    "response"
+                  ]
                 }
               },
               "response": []
@@ -4529,19 +4648,36 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{adminToken}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "POST",
                 "header": [],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"isVisible\": false\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews/{{testReviewId}}/moderate",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews", "{{testReviewId}}", "moderate"]
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews",
+                    "{{testReviewId}}",
+                    "moderate"
+                  ]
                 }
               },
               "response": []
@@ -4567,20 +4703,37 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userToken}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "POST",
                 "header": [],
                 "body": {
                   "mode": "formdata",
                   "formdata": [
-                    { "key": "images", "type": "file", "src": [] }
+                    {
+                      "key": "images",
+                      "type": "file",
+                      "src": []
+                    }
                   ]
                 },
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews/{{testReviewId}}/photos",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews", "{{testReviewId}}", "photos"]
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews",
+                    "{{testReviewId}}",
+                    "photos"
+                  ]
                 }
               },
               "response": []
@@ -4601,14 +4754,27 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userToken}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "DELETE",
                 "header": [],
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews/photos/{{testReviewPhotoId}}",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews", "photos", "{{testReviewPhotoId}}"]
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews",
+                    "photos",
+                    "{{testReviewPhotoId}}"
+                  ]
                 }
               },
               "response": []
@@ -4631,8 +4797,14 @@
                 "header": [],
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews/{{testReviewId}}",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews", "{{testReviewId}}"]
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews",
+                    "{{testReviewId}}"
+                  ]
                 }
               },
               "response": []
@@ -4653,17 +4825,35 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userToken}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "GET",
                 "header": [],
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews/my?page=1&pageSize=20",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews", "my"],
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews",
+                    "my"
+                  ],
                   "query": [
-                    { "key": "page", "value": "1" },
-                    { "key": "pageSize", "value": "20" }
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
                   ]
                 }
               },
@@ -4695,17 +4885,35 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userToken}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "GET",
                 "header": [],
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews/allowed?page=1&pageSize=20",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews", "allowed"],
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews",
+                    "allowed"
+                  ],
                   "query": [
-                    { "key": "page", "value": "1" },
-                    { "key": "pageSize", "value": "20" }
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
                   ]
                 }
               },
@@ -4727,18 +4935,40 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{adminToken}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "GET",
                 "header": [],
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews/admin?isVisible=false&page=1&pageSize=20",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews", "admin"],
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews",
+                    "admin"
+                  ],
                   "query": [
-                    { "key": "isVisible", "value": "false", "description": "true / false / omit for all" },
-                    { "key": "page", "value": "1" },
-                    { "key": "pageSize", "value": "20" }
+                    {
+                      "key": "isVisible",
+                      "value": "false",
+                      "description": "true / false / omit for all"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
                   ]
                 }
               },
@@ -4760,19 +4990,36 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{sellerToken}}", "type": "string" }]
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{sellerToken}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "PUT",
                 "header": [],
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"comment\": \"Обновлённый ответ продавца.\"\n}",
-                  "options": { "raw": { "language": "json" } }
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
                 },
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews/{{testReviewId}}/response",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews", "{{testReviewId}}", "response"]
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews",
+                    "{{testReviewId}}",
+                    "response"
+                  ]
                 }
               },
               "response": []
@@ -4793,14 +5040,27 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{sellerToken}}", "type": "string" }]
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{sellerToken}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "DELETE",
                 "header": [],
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews/{{testReviewId}}/response",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews", "{{testReviewId}}", "response"]
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews",
+                    "{{testReviewId}}",
+                    "response"
+                  ]
                 }
               },
               "response": []
@@ -4821,14 +5081,603 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{adminToken}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "DELETE",
                 "header": [],
                 "url": {
                   "raw": "{{baseUrlReview}}/api/reviews/{{testReviewId}}/response",
-                  "host": ["{{baseUrlReview}}"],
-                  "path": ["api", "reviews", "{{testReviewId}}", "response"]
+                  "host": [
+                    "{{baseUrlReview}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reviews",
+                    "{{testReviewId}}",
+                    "response"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AnalyticsService",
+      "item": [
+        {
+          "name": "SellerDashboardController",
+          "item": [
+            {
+              "name": "Get Sales (monthly)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{sellerToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrlAnalytics}}/api/seller-dashboard/sales?period=3",
+                  "host": [
+                    "{{baseUrlAnalytics}}"
+                  ],
+                  "path": [
+                    "api",
+                    "seller-dashboard",
+                    "sales"
+                  ],
+                  "query": [
+                    {
+                      "key": "period",
+                      "value": "3",
+                      "description": "1=Daily, 2=Weekly, 3=Monthly"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Top Products (weekly, top 10)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{sellerToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrlAnalytics}}/api/seller-dashboard/top-products?period=2&top=10",
+                  "host": [
+                    "{{baseUrlAnalytics}}"
+                  ],
+                  "path": [
+                    "api",
+                    "seller-dashboard",
+                    "top-products"
+                  ],
+                  "query": [
+                    {
+                      "key": "period",
+                      "value": "2",
+                      "description": "1=Daily, 2=Weekly, 3=Monthly"
+                    },
+                    {
+                      "key": "top",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Rating History (last 30 days)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{sellerToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrlAnalytics}}/api/seller-dashboard/rating-history?days=30",
+                  "host": [
+                    "{{baseUrlAnalytics}}"
+                  ],
+                  "path": [
+                    "api",
+                    "seller-dashboard",
+                    "rating-history"
+                  ],
+                  "query": [
+                    {
+                      "key": "days",
+                      "value": "30"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Stock Alerts (all)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "var json = pm.response.json();",
+                      "if (json && json.length > 0) {",
+                      "    pm.collectionVariables.set('testStockAlertId', json[0].id);",
+                      "    console.log('StockAlertId saved:', json[0].id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{sellerToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrlAnalytics}}/api/seller-dashboard/stock-alerts?onlyUnacknowledged=false",
+                  "host": [
+                    "{{baseUrlAnalytics}}"
+                  ],
+                  "path": [
+                    "api",
+                    "seller-dashboard",
+                    "stock-alerts"
+                  ],
+                  "query": [
+                    {
+                      "key": "onlyUnacknowledged",
+                      "value": "false"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Stock Alerts (unacknowledged only)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{sellerToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrlAnalytics}}/api/seller-dashboard/stock-alerts?onlyUnacknowledged=true",
+                  "host": [
+                    "{{baseUrlAnalytics}}"
+                  ],
+                  "path": [
+                    "api",
+                    "seller-dashboard",
+                    "stock-alerts"
+                  ],
+                  "query": [
+                    {
+                      "key": "onlyUnacknowledged",
+                      "value": "true"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Acknowledge Stock Alert",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{sellerToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrlAnalytics}}/api/seller-dashboard/stock-alerts/{{testStockAlertId}}/acknowledge",
+                  "host": [
+                    "{{baseUrlAnalytics}}"
+                  ],
+                  "path": [
+                    "api",
+                    "seller-dashboard",
+                    "stock-alerts",
+                    "{{testStockAlertId}}",
+                    "acknowledge"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Product Views (all)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{sellerToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrlAnalytics}}/api/seller-dashboard/product-views",
+                  "host": [
+                    "{{baseUrlAnalytics}}"
+                  ],
+                  "path": [
+                    "api",
+                    "seller-dashboard",
+                    "product-views"
+                  ],
+                  "query": []
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Product Views (by product)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{sellerToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrlAnalytics}}/api/seller-dashboard/product-views?productId={{testProductId}}",
+                  "host": [
+                    "{{baseUrlAnalytics}}"
+                  ],
+                  "path": [
+                    "api",
+                    "seller-dashboard",
+                    "product-views"
+                  ],
+                  "query": [
+                    {
+                      "key": "productId",
+                      "value": "{{testProductId}}"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "AdminDashboardController",
+          "item": [
+            {
+              "name": "Get Platform Summary",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrlAnalytics}}/api/admin-dashboard/platform?from=2026-04-01&to=2026-04-30",
+                  "host": [
+                    "{{baseUrlAnalytics}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin-dashboard",
+                    "platform"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-04-01",
+                      "description": "yyyy-MM-dd"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-04-30",
+                      "description": "yyyy-MM-dd"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Seller Leaderboard (monthly, top 10)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrlAnalytics}}/api/admin-dashboard/sellers/leaderboard?period=3&top=10",
+                  "host": [
+                    "{{baseUrlAnalytics}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin-dashboard",
+                    "sellers",
+                    "leaderboard"
+                  ],
+                  "query": [
+                    {
+                      "key": "period",
+                      "value": "3",
+                      "description": "1=Daily, 2=Weekly, 3=Monthly"
+                    },
+                    {
+                      "key": "top",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Dispute Summary",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrlAnalytics}}/api/admin-dashboard/disputes?from=2026-04-01&to=2026-04-30",
+                  "host": [
+                    "{{baseUrlAnalytics}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin-dashboard",
+                    "disputes"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-04-01",
+                      "description": "yyyy-MM-dd, optional"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-04-30",
+                      "description": "yyyy-MM-dd, optional"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Geographic Activity (monthly)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrlAnalytics}}/api/admin-dashboard/geography?period=3",
+                  "host": [
+                    "{{baseUrlAnalytics}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin-dashboard",
+                    "geography"
+                  ],
+                  "query": [
+                    {
+                      "key": "period",
+                      "value": "3",
+                      "description": "1=Daily, 2=Weekly, 3=Monthly"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Users Growth",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrlAnalytics}}/api/admin-dashboard/users/growth?from=2026-04-01&to=2026-04-30",
+                  "host": [
+                    "{{baseUrlAnalytics}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin-dashboard",
+                    "users",
+                    "growth"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-04-01",
+                      "description": "yyyy-MM-dd"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-04-30",
+                      "description": "yyyy-MM-dd"
+                    }
+                  ]
                 }
               },
               "response": []
@@ -4930,6 +5779,14 @@
     {
       "key": "testSubjectType",
       "value": "1"
+    },
+    {
+      "key": "baseUrlAnalytics",
+      "value": "http://localhost:5006"
+    },
+    {
+      "key": "testStockAlertId",
+      "value": "00000000-0000-0000-0000-000000000000"
     }
   ]
 }
