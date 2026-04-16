@@ -63,6 +63,11 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
             + AvatarUrl : string?
             + OccurredAt : DateTimeOffset
         }
+        class UserBecameSellerEvent {
+            + UserId : Guid
+            + DisplayName : string
+            + OccurredAt : DateTimeOffset
+        }
     }
 
     package "Catalog Events" #E9F7EF {
@@ -90,6 +95,25 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
             + ProductName : string
             + OccurredAt : DateTimeOffset
         }
+        class ProductViewedEvent {
+            + ProductId : Guid
+            + SellerId : Guid
+            + ViewerId : Guid?
+            + OccurredAt : DateTimeOffset
+        }
+        class ProductCreatedEvent {
+            + ProductId : Guid
+            + SellerId : Guid
+            + ProductName : string
+            + OccurredAt : DateTimeOffset
+        }
+        class FavoriteChangedEvent {
+            + ProductId : Guid
+            + SellerId : Guid
+            + UserId : Guid
+            + IsAdded : bool
+            + OccurredAt : DateTimeOffset
+        }
     }
 
     package "Order Events" #EDE7F6 {
@@ -113,6 +137,8 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
             + BuyerId : Guid
             + SellerId : Guid
             + CourierId : Guid?
+            + ProductIds : IReadOnlyList<Guid>
+            + TotalAmount : decimal
             + OccurredAt : DateTimeOffset
         }
         class StockReserveRequestEvent {
@@ -121,6 +147,39 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
             + Quantity : int
             + OccurredAt : DateTimeOffset
         }
+        class DisputeOpenedEvent {
+            + DisputeId : Guid
+            + OrderId : Guid
+            + InitiatorId : Guid
+            + DisputeType : DisputeType
+            + OccurredAt : DateTimeOffset
+        }
+        class DisputeResolvedEvent {
+            + DisputeId : Guid
+            + OrderId : Guid
+            + DisputeType : DisputeType
+            + Outcome : DisputeOutcome
+            + BuyerId : Guid
+            + SellerId : Guid
+            + CourierId : Guid?
+            + ProductIds : IReadOnlyList<Guid>
+            + ResolutionMinutes : int
+            + OccurredAt : DateTimeOffset
+        }
+        enum DisputeType {
+            NotDelivered = 1
+            WrongItem    = 2
+            DefectiveItem = 3
+            CourierIssue = 4
+            Other        = 5
+        }
+        enum DisputeOutcome {
+            BuyerFavored  = 1
+            SellerFavored = 2
+        }
+        DisputeOpenedEvent  ..> DisputeType
+        DisputeResolvedEvent ..> DisputeType
+        DisputeResolvedEvent ..> DisputeOutcome
     }
 
     package "Review Events" #FDEDEC {
@@ -131,39 +190,12 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
             + ReviewCount : int
             + OccurredAt : DateTimeOffset
         }
-    }
-
-    package "Catalog Events" #E9F7EF {
-        class ProductViewedEvent {
-            + ProductId : Guid
-            + SellerId : Guid
-            + ViewerId : Guid?
-            + OccurredAt : DateTimeOffset
-        }
-    }
-
-    package "Dispute Events" #FFF3E0 {
-        class DisputeOpenedEvent {
-            + DisputeId : Guid
-            + OrderId : Guid
-            + InitiatorId : Guid
-            + OccurredAt : DateTimeOffset
-        }
-        class DisputeResolvedEvent {
-            + DisputeId : Guid
-            + OrderId : Guid
-            + ResolutionMinutes : int
-            + OccurredAt : DateTimeOffset
-        }
-    }
-
-    package "Chat Events" #E8EAF6 {
-        class ChatMessageSentEvent {
-            + ChatId : Guid
-            + MessageId : Guid
-            + SenderId : Guid
-            + RecipientId : Guid
-            + MessagePreview : string
+        class ReviewCreatedEvent {
+            + ReviewId : Guid
+            + SubjectId : Guid
+            + SubjectType : string
+            + ReviewerId : Guid
+            + Rating : int
             + OccurredAt : DateTimeOffset
         }
     }
@@ -177,12 +209,15 @@ note as PublisherNote
                      UserBlockedEvent
                      UserUnblockedEvent
                      UserProfileUpdatedEvent
+                     UserBecameSellerEvent
   ─────────────────────────────────────────
   CatalogService   → StockReservedEvent
                      StockReservationFailedEvent
                      StockReleasedEvent
                      StockDepletedEvent
                      ProductViewedEvent
+                     ProductCreatedEvent
+                     FavoriteChangedEvent
   ─────────────────────────────────────────
   OrderService     → OrderPlacedEvent
                      OrderStatusChangedEvent
@@ -192,9 +227,7 @@ note as PublisherNote
                      DisputeResolvedEvent
   ─────────────────────────────────────────
   ReviewService    → RatingAggregateUpdatedEvent
-  ─────────────────────────────────────────
-  ChatService      → ChatMessageSentEvent
-                     (при офлайн-получателе)
+                     ReviewCreatedEvent
 end note
 
 note as ConsumerNote
@@ -203,6 +236,8 @@ note as ConsumerNote
     • StockReserveRequestEvent    → резервирует StockQuantity
     • StockReleasedEvent          → освобождает резерв
     • RatingAggregateUpdatedEvent → обновляет SellerReadModel
+    • UserProfileUpdatedEvent     → обновляет SellerReadModel
+    • UserBecameSellerEvent       → создаёт SellerReadModel
   ─────────────────────────────────────────
   OrderService:
     • StockReservedEvent          → Order → Confirmed
@@ -210,9 +245,10 @@ note as ConsumerNote
     • UserBlockedEvent            → отменяет Pending заказы
   ─────────────────────────────────────────
   ReviewService:
-    • OrderCompletedEvent → разблокирует отзыв для покупателя
+    • OrderCompletedEvent  → разблокирует отзыв для покупателя
+    • DisputeResolvedEvent → создаёт отзывы по итогам диспута
   ─────────────────────────────────────────
-  AnalyticsService (потребляет всё):
+  AnalyticsService:
     • OrderPlacedEvent            → PlatformDailySummary, GeographicActivity
     • OrderStatusChangedEvent     → SellerSalesSummary (cancelled/disputed)
     • OrderCompletedEvent         → SellerSalesSummary, TopProduct, SellerLeaderboard
@@ -220,23 +256,20 @@ note as ConsumerNote
     • RatingAggregateUpdatedEvent → SellerRatingHistory
     • UserRegisteredEvent         → PlatformDailySummary.NewRegistrations
     • UserBlockedEvent            → PlatformDailySummary.BlockedUsers
-    • ProductViewedEvent          → ProductViewCounter
+    • ProductViewedEvent          → ProductViewCounter, TopProduct.ViewCount
+    • FavoriteChangedEvent        → TopProduct.FavoriteCount
     • DisputeOpenedEvent          → DisputeSummary.OpenedCount
-    • DisputeResolvedEvent        → DisputeSummary (resolved + время решения)
+    • DisputeResolvedEvent        → DisputeSummary (outcome + время решения)
+    • ProductCreatedEvent         → PlatformDailySummary.NewProducts
+    • ReviewCreatedEvent          → PlatformDailySummary.NewReviews 
   ─────────────────────────────────────────
   NotificationService:
-    • UserRegisteredEvent         → создаёт Preference
+    • UserRegisteredEvent         → создаёт UserNotificationPreferences
     • OrderPlacedEvent            → уведомление продавцу
-    • OrderStatusChangedEvent     → уведомление покупателю
+    • OrderStatusChangedEvent     → уведомление покупателю/продавцу
     • OrderCompletedEvent         → предложение написать отзыв
     • StockDepletedEvent          → уведомление продавцу
     • RatingAggregateUpdatedEvent → уведомление о новом отзыве
-    • ChatMessageSentEvent        → push-уведомление получателю
-  ─────────────────────────────────────────
-  ChatService:
-    • OrderPlacedEvent            → создать Order-чат (BuyerId + SellerId)
-    • OrderStatusChangedEvent     → закрыть чат при Completed / Cancelled
-    • UserBlockedEvent            → закрыть все чаты пользователя
 end note
 
 @enduml

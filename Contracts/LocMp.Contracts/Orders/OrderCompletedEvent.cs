@@ -6,4 +6,5 @@ public sealed record OrderCompletedEvent(
     Guid SellerId,
     Guid? CourierId,
     IReadOnlyList<Guid> ProductIds,
+    decimal TotalAmount,
     DateTimeOffset OccurredAt) : IIntegrationEvent;
