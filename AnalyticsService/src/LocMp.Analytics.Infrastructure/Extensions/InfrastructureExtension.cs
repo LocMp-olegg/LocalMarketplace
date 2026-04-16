@@ -6,6 +6,7 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 
 namespace LocMp.Analytics.Infrastructure.Extensions;
 
@@ -46,6 +47,10 @@ public static class InfrastructureExtension
 
         var redisConnection = configuration.GetConnectionString("Redis")
                               ?? "localhost:6379";
+
+        var multiplexer = ConnectionMultiplexer.Connect(redisConnection);
+        services.AddSingleton<IConnectionMultiplexer>(multiplexer);
+
         services.AddStackExchangeRedisCache(opts =>
         {
             opts.Configuration = redisConnection;

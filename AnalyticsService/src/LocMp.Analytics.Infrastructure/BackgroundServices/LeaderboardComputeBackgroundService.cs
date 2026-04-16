@@ -69,7 +69,7 @@ public sealed class LeaderboardComputeBackgroundService(
         periodType switch
         {
             PeriodType.Daily => DateOnly.FromDateTime(now.Date),
-            PeriodType.Weekly => DateOnly.FromDateTime(now.Date.AddDays(-(int)now.DayOfWeek + 1)),
+            PeriodType.Weekly => DateOnly.FromDateTime(now.Date.AddDays(-(((int)now.DayOfWeek + 6) % 7))),
             PeriodType.Monthly => new DateOnly(now.Year, now.Month, 1),
             _ => throw new ArgumentOutOfRangeException(nameof(periodType))
         };
