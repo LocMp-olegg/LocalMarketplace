@@ -43,8 +43,12 @@ public sealed class UpdateStockCommandHandler(CatalogDbContext db, IEventBus eve
         await db.SaveChangesAsync(ct);
         await cache.RemoveAsync($"product:{product.Id}", ct);
 
+        var now = DateTimeOffset.UtcNow;
         if (newQuantity == 0)
-            await eventBus.PublishAsync(new StockDepletedEvent(product.Id, product.SellerId, product.Name, DateTimeOffset.UtcNow), ct);
+            await eventBus.PublishAsync(new StockDepletedEvent(product.Id, product.SellerId, product.Name, now), ct);
+        else if (request.QuantityDelta > 0)
+            await eventBus.PublishAsync(new StockReleasedEvent(
+                product.Id, product.SellerId, null, request.QuantityDelta, newQuantity, now), ct);
 
         return newQuantity;
     }
