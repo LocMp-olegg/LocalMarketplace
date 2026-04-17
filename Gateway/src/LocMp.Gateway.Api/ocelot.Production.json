@@ -51,6 +51,16 @@
         { "Host": "locmp-reviews", "Port": 8080 }
       ],
       "SwaggerKey": "review-service"
+    },
+    {
+      "UpstreamPathTemplate": "/api/analytics/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Patch", "Delete" ],
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "locmp-analytics", "Port": 8080 }
+      ],
+      "SwaggerKey": "analytics-service"
     }
   ],
   "SwaggerEndPoints": [
@@ -91,6 +101,16 @@
           "Name": "ReviewService API",
           "Version": "v1",
           "Url": "http://locmp-reviews:8080/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "analytics-service",
+      "Config": [
+        {
+          "Name": "AnalyticsService API",
+          "Version": "v1",
+          "Url": "http://locmp-analytics:8080/swagger/v1/swagger.json"
         }
       ]
     }

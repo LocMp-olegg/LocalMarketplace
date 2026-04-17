@@ -42,9 +42,10 @@ public sealed class CompleteOrderCommandHandler(OrderDbContext db, IEventBus eve
         await db.SaveChangesAsync(ct);
 
         await eventBus.PublishAsync(new OrderCompletedEvent(
-            order.Id, order.BuyerId, order.SellerId,
+            order.Id, order.BuyerId, order.SellerId, order.SellerName,
             order.CourierAssignment?.CourierId,
-            order.Items.Select(i => i.ProductId).ToList(),
+            order.Items.Select(i => new OrderedProductItem(i.ProductId, i.ProductName, i.Quantity, i.Subtotal, i.ShopId, i.ShopName)).ToList(),
+            order.TotalAmount,
             now), ct);
 
         await eventBus.PublishAsync(new OrderStatusChangedEvent(

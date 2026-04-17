@@ -5,4 +5,5 @@ public sealed record RatingAggregateUpdatedEvent(
     string SubjectType,
     decimal NewAverage,
     int ReviewCount,
-    DateTimeOffset OccurredAt) : IIntegrationEvent;
+    DateTimeOffset OccurredAt,
+    Guid? SellerId = null) : IIntegrationEvent;

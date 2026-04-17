@@ -302,6 +302,10 @@ namespace LocMp.Order.Infrastructure.Migrations
                     b.Property<Guid>("SellerId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("SellerName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -351,6 +355,12 @@ namespace LocMp.Order.Infrastructure.Migrations
 
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
+
+                    b.Property<Guid?>("ShopId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ShopName")
+                        .HasColumnType("text");
 
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(18, 2)

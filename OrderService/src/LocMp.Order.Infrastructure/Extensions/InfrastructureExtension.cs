@@ -32,7 +32,7 @@ public static class InfrastructureExtension
 
         services.AddMassTransit(x =>
         {
-            x.SetKebabCaseEndpointNameFormatter();
+            x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("orders", false));
 
             x.AddConsumers(typeof(InfrastructureExtension).Assembly);
 

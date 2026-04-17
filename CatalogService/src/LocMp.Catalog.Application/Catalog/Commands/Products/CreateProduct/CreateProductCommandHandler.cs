@@ -1,16 +1,18 @@
 using AutoMapper;
 using LocMp.BuildingBlocks.Application.Exceptions;
+using LocMp.BuildingBlocks.Application.Interfaces;
 using LocMp.Catalog.Application.DTOs;
 using LocMp.Catalog.Domain.Entities;
 using LocMp.Catalog.Domain.Enums;
 using LocMp.Catalog.Infrastructure.Persistence;
+using LocMp.Contracts.Catalog;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 
 namespace LocMp.Catalog.Application.Catalog.Commands.Products.CreateProduct;
 
-public sealed class CreateProductCommandHandler(CatalogDbContext db, IMapper mapper)
+public sealed class CreateProductCommandHandler(CatalogDbContext db, IMapper mapper, IEventBus eventBus)
     : IRequestHandler<CreateProductCommand, ProductDto>
 {
     public async Task<ProductDto> Handle(CreateProductCommand request, CancellationToken ct)
@@ -19,6 +21,7 @@ public sealed class CreateProductCommandHandler(CatalogDbContext db, IMapper map
         if (!categoryExists)
             throw new NotFoundException($"Category '{request.CategoryId}' not found.");
 
+        string? shopName = null;
         if (request.ShopId.HasValue)
         {
             var shop = await db.Shops.FirstOrDefaultAsync(s => s.Id == request.ShopId.Value, ct)
@@ -27,6 +30,7 @@ public sealed class CreateProductCommandHandler(CatalogDbContext db, IMapper map
                 throw new ForbiddenException("You do not own this shop.");
             if (!shop.IsActive)
                 throw new ConflictException("Shop is not active.");
+            shopName = shop.BusinessName;
         }
 
         Point? location = null;
@@ -66,6 +70,9 @@ public sealed class CreateProductCommandHandler(CatalogDbContext db, IMapper map
         }
 
         await db.SaveChangesAsync(ct);
+
+        await eventBus.PublishAsync(
+            new ProductCreatedEvent(product.Id, product.SellerId, product.Name, product.ShopId, shopName, DateTimeOffset.UtcNow), ct);
 
         return mapper.Map<ProductDto>(product);
     }
