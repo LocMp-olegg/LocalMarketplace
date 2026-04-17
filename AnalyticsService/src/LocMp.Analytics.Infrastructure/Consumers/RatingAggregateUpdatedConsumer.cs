@@ -15,16 +15,22 @@ public sealed class RatingAggregateUpdatedConsumer(
     public async Task Consume(ConsumeContext<RatingAggregateUpdatedEvent> context)
     {
         var msg = context.Message;
-
-        if (!string.Equals(msg.SubjectType, "Seller", StringComparison.OrdinalIgnoreCase))
-            return;
-
         var today = DateOnly.FromDateTime(msg.OccurredAt.UtcDateTime);
 
-        // — SellerRatingHistory —
+        if (string.Equals(msg.SubjectType, "Seller", StringComparison.OrdinalIgnoreCase))
+        {
+            await HandleSellerRating(msg, today, context.CancellationToken);
+        }
+        else if (string.Equals(msg.SubjectType, "Product", StringComparison.OrdinalIgnoreCase))
+        {
+            await HandleProductRating(msg, context.CancellationToken);
+        }
+    }
+
+    private async Task HandleSellerRating(RatingAggregateUpdatedEvent msg, DateOnly today, CancellationToken ct)
+    {
         var history = await db.SellerRatingHistory
-            .FirstOrDefaultAsync(x => x.SellerId == msg.SubjectId && x.RecordedAt == today,
-                context.CancellationToken);
+            .FirstOrDefaultAsync(x => x.SellerId == msg.SubjectId && x.RecordedAt == today, ct);
 
         if (history is null)
         {
@@ -40,14 +46,41 @@ public sealed class RatingAggregateUpdatedConsumer(
         history.ReviewCount   = msg.ReviewCount;
         history.NewReviewsToday++;
 
-        // — SellerLeaderboard.AverageRating —
         await db.SellerLeaderboards
             .Where(x => x.SellerId == msg.SubjectId)
-            .ExecuteUpdateAsync(s => s.SetProperty(x => x.AverageRating, msg.NewAverage),
-                context.CancellationToken);
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.AverageRating, msg.NewAverage), ct);
 
-        await db.SaveChangesAsync(context.CancellationToken);
-        logger.LogInformation("RatingUpdated: upserted SellerRatingHistory and refreshed SellerLeaderboard for seller {SellerId} on {Date}",
+        await db.SaveChangesAsync(ct);
+        logger.LogInformation("RatingUpdated[Seller]: upserted SellerRatingHistory for seller {SellerId} on {Date}",
             msg.SubjectId, today);
+    }
+
+    private async Task HandleProductRating(RatingAggregateUpdatedEvent msg, CancellationToken ct)
+    {
+        var summary = await db.ProductRatingSummaries
+            .FirstOrDefaultAsync(x => x.ProductId == msg.SubjectId, ct);
+
+        if (summary is null)
+        {
+            summary = new ProductRatingSummary(Guid.NewGuid())
+            {
+                ProductId   = msg.SubjectId,
+                SellerId    = msg.SellerId ?? Guid.Empty,
+                ProductName = string.Empty
+            };
+            db.ProductRatingSummaries.Add(summary);
+        }
+        else if (summary.SellerId == Guid.Empty && msg.SellerId.HasValue)
+        {
+            summary.SellerId = msg.SellerId.Value;
+        }
+
+        summary.AverageRating = msg.NewAverage;
+        summary.ReviewCount   = msg.ReviewCount;
+        summary.UpdatedAt     = msg.OccurredAt;
+
+        await db.SaveChangesAsync(ct);
+        logger.LogInformation("RatingUpdated[Product]: updated ProductRatingSummary for product {ProductId}",
+            msg.SubjectId);
     }
 }

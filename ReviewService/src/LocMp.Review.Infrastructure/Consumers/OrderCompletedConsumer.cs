@@ -24,7 +24,7 @@ public sealed class OrderCompletedConsumer(ReviewDbContext db) : IConsumer<Order
             BuyerId = msg.BuyerId,
             SellerId = msg.SellerId,
             CourierId = msg.CourierId,
-            ProductIds = msg.ProductIds.ToList() ?? [],
+            ProductIds = msg.Products.Select(p => p.ProductId).ToList(),
             AllowedAt = msg.OccurredAt
         });
 

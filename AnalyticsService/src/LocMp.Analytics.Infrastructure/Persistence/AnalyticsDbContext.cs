@@ -14,6 +14,7 @@ public class AnalyticsDbContext(DbContextOptions<AnalyticsDbContext> options) : 
     public DbSet<SellerLeaderboard> SellerLeaderboards => Set<SellerLeaderboard>();
     public DbSet<DisputeSummary> DisputeSummaries => Set<DisputeSummary>();
     public DbSet<GeographicActivity> GeographicActivities => Set<GeographicActivity>();
+    public DbSet<ProductRatingSummary> ProductRatingSummaries => Set<ProductRatingSummary>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

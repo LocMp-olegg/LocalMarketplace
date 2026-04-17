@@ -46,7 +46,7 @@ public static class InfrastructureExtension
 
         services.AddMassTransit(x =>
         {
-            x.SetKebabCaseEndpointNameFormatter();
+            x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("identity", false));
 
             x.UsingRabbitMq((ctx, cfg) =>
             {

@@ -61,4 +61,9 @@ public sealed class SellerDashboardController(ISender sender) : ControllerBase
         [FromQuery] Guid? productId = null,
         CancellationToken ct = default)
         => Ok(await sender.Send(new GetProductViewCountersQuery(HttpContext.GetUserId(), productId), ct));
+
+    /// <summary>Рейтинги продуктов продавца с агрегатом по всем товарам.</summary>
+    [HttpGet("product-ratings")]
+    public async Task<ActionResult<SellerProductRatingsDto>> GetProductRatings(CancellationToken ct)
+        => Ok(await sender.Send(new GetSellerProductRatingsQuery(HttpContext.GetUserId()), ct));
 }

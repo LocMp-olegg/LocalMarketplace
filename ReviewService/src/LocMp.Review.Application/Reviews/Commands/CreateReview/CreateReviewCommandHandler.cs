@@ -81,12 +81,17 @@ public sealed class CreateReviewCommandHandler(
 
         await cache.RemoveAsync($"rating:{request.SubjectType}:{request.SubjectId}", ct);
 
+        var sellerId = request.SubjectType == ReviewSubjectType.Product
+            ? allowed.SellerId
+            : (Guid?)null;
+
         await eventBus.PublishAsync(new RatingAggregateUpdatedEvent(
             request.SubjectId,
             request.SubjectType.ToString(),
             ratingAggregate.AverageRating,
             ratingAggregate.ReviewCount,
-            now), ct);
+            now,
+            sellerId), ct);
 
         return mapper.Map<ReviewDto>(review);
     }

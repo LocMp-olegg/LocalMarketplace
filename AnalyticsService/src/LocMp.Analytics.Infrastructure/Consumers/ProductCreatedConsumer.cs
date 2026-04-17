@@ -29,6 +29,27 @@ public sealed class ProductCreatedConsumer(
         summary.NewProducts++;
         summary.UpdatedAt = DateTimeOffset.UtcNow;
 
+        // Backfill names for TopProduct records created before ProductCreatedEvent was received
+        await db.TopProducts
+            .Where(x => x.ProductId == msg.ProductId && x.ProductName == string.Empty)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.ProductName, msg.ProductName),
+                context.CancellationToken);
+
+        // Initialize ProductRatingSummary so it's ready when reviews arrive
+        var exists = await db.ProductRatingSummaries
+            .AnyAsync(x => x.ProductId == msg.ProductId, context.CancellationToken);
+
+        if (!exists)
+        {
+            db.ProductRatingSummaries.Add(new ProductRatingSummary(Guid.NewGuid())
+            {
+                ProductId = msg.ProductId,
+                SellerId = msg.SellerId,
+                ProductName = msg.ProductName,
+                UpdatedAt = msg.OccurredAt
+            });
+        }
+
         await db.SaveChangesAsync(context.CancellationToken);
         logger.LogInformation("ProductCreated: incremented NewProducts for {Date}", today);
     }

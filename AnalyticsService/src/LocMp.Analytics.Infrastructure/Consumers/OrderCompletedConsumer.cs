@@ -71,10 +71,10 @@ public sealed class OrderCompletedConsumer(
             leaderboard.UpdatedAt = DateTimeOffset.UtcNow;
 
             // — TopProduct —
-            foreach (var productId in msg.ProductIds)
+            foreach (var item in msg.Products)
             {
                 var top = await db.TopProducts
-                    .FirstOrDefaultAsync(x => x.ProductId == productId
+                    .FirstOrDefaultAsync(x => x.ProductId == item.ProductId
                                               && x.SellerId == msg.SellerId
                                               && x.PeriodType == periodType
                                               && x.PeriodStart == periodStart,
@@ -85,17 +85,35 @@ public sealed class OrderCompletedConsumer(
                     top = new TopProduct(Guid.NewGuid())
                     {
                         SellerId = msg.SellerId,
-                        ProductId = productId,
-                        ProductName = string.Empty,
+                        ProductId = item.ProductId,
+                        ProductName = item.ProductName,
                         PeriodType = periodType,
                         PeriodStart = periodStart
                     };
                     db.TopProducts.Add(top);
                 }
+                else if (string.IsNullOrEmpty(top.ProductName))
+                {
+                    top.ProductName = item.ProductName;
+                }
 
                 top.TotalSold++;
                 top.UpdatedAt = DateTimeOffset.UtcNow;
             }
+        }
+
+        // — Backfill ProductRatingSummary names/sellerIds for products missing them —
+        foreach (var item in msg.Products)
+        {
+            await db.ProductRatingSummaries
+                .Where(x => x.ProductId == item.ProductId
+                            && (x.ProductName == string.Empty || x.SellerId == Guid.Empty))
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.ProductName,
+                        x => x.ProductName == string.Empty ? item.ProductName : x.ProductName)
+                    .SetProperty(x => x.SellerId,
+                        x => x.SellerId == Guid.Empty ? msg.SellerId : x.SellerId),
+                    context.CancellationToken);
         }
 
         // — PlatformDailySummary —

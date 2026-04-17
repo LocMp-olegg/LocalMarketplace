@@ -26,7 +26,7 @@ public static class InfrastructureExtension
 
         services.AddMassTransit(x =>
         {
-            x.SetKebabCaseEndpointNameFormatter();
+            x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("analytics", false));
 
             x.AddConsumers(typeof(InfrastructureExtension).Assembly);
 
