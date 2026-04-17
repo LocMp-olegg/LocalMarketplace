@@ -25,7 +25,7 @@ public sealed class GetProductByIdQueryHandler(CatalogDbContext db, IMapper mapp
             throw new NotFoundException($"Product '{request.Id}' not found.");
 
         await eventBus.PublishAsync(
-            new ProductViewedEvent(product.Id, product.SellerId, request.ViewerId, DateTimeOffset.UtcNow), ct);
+            new ProductViewedEvent(product.Id, product.SellerId, product.Name, request.ViewerId, DateTimeOffset.UtcNow), ct);
 
         var dto = mapper.Map<ProductDto>(product);
 

@@ -55,11 +55,15 @@ public sealed class ProductViewedConsumer(
                 {
                     ProductId   = msg.ProductId,
                     SellerId    = msg.SellerId,
-                    ProductName = string.Empty,
+                    ProductName = msg.ProductName,
                     PeriodType  = periodType,
                     PeriodStart = periodStart
                 };
                 db.TopProducts.Add(top);
+            }
+            else if (string.IsNullOrEmpty(top.ProductName))
+            {
+                top.ProductName = msg.ProductName;
             }
 
             top.ViewCount++;

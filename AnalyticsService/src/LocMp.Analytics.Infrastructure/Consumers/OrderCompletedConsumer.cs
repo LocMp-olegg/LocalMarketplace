@@ -145,27 +145,35 @@ public sealed class OrderCompletedConsumer(
             }
         }
 
-        // — Backfill ProductRatingSummary: fill empty fields from order item snapshots —
         foreach (var item in msg.Products)
         {
-            if (!string.IsNullOrEmpty(item.ProductName))
-                await db.ProductRatingSummaries
-                    .Where(x => x.ProductId == item.ProductId && x.ProductName == string.Empty)
-                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.ProductName, item.ProductName),
-                        context.CancellationToken);
+            var ratingSummary = await db.ProductRatingSummaries
+                .FirstOrDefaultAsync(x => x.ProductId == item.ProductId, context.CancellationToken);
 
-            await db.ProductRatingSummaries
-                .Where(x => x.ProductId == item.ProductId && x.SellerId == Guid.Empty)
-                .ExecuteUpdateAsync(s => s.SetProperty(x => x.SellerId, msg.SellerId),
-                    context.CancellationToken);
-
-            if (item.ShopId.HasValue)
-                await db.ProductRatingSummaries
-                    .Where(x => x.ProductId == item.ProductId && x.ShopId == null)
-                    .ExecuteUpdateAsync(s => s
-                        .SetProperty(x => x.ShopId, item.ShopId)
-                        .SetProperty(x => x.ShopName, item.ShopName),
-                        context.CancellationToken);
+            if (ratingSummary is null)
+            {
+                db.ProductRatingSummaries.Add(new ProductRatingSummary(Guid.NewGuid())
+                {
+                    ProductId   = item.ProductId,
+                    SellerId    = msg.SellerId,
+                    ProductName = item.ProductName,
+                    ShopId      = item.ShopId,
+                    ShopName    = item.ShopName,
+                    UpdatedAt   = msg.OccurredAt
+                });
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(ratingSummary.ProductName) && !string.IsNullOrEmpty(item.ProductName))
+                    ratingSummary.ProductName = item.ProductName;
+                if (ratingSummary.SellerId == Guid.Empty)
+                    ratingSummary.SellerId = msg.SellerId;
+                if (ratingSummary.ShopId == null && item.ShopId.HasValue)
+                {
+                    ratingSummary.ShopId  = item.ShopId;
+                    ratingSummary.ShopName = item.ShopName;
+                }
+            }
         }
 
         // — PlatformDailySummary —
