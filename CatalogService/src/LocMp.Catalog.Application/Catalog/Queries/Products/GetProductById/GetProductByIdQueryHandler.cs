@@ -1,15 +1,13 @@
 using AutoMapper;
 using LocMp.BuildingBlocks.Application.Exceptions;
-using LocMp.BuildingBlocks.Application.Interfaces;
 using LocMp.Catalog.Application.DTOs;
 using LocMp.Catalog.Infrastructure.Persistence;
-using LocMp.Contracts.Catalog;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace LocMp.Catalog.Application.Catalog.Queries.Products.GetProductById;
 
-public sealed class GetProductByIdQueryHandler(CatalogDbContext db, IMapper mapper, IEventBus eventBus)
+public sealed class GetProductByIdQueryHandler(CatalogDbContext db, IMapper mapper)
     : IRequestHandler<GetProductByIdQuery, ProductDto>
 {
     public async Task<ProductDto> Handle(GetProductByIdQuery request, CancellationToken ct)
@@ -23,9 +21,6 @@ public sealed class GetProductByIdQueryHandler(CatalogDbContext db, IMapper mapp
 
         if (!product.IsActive && !request.IsAdmin && product.SellerId != request.ViewerId)
             throw new NotFoundException($"Product '{request.Id}' not found.");
-
-        await eventBus.PublishAsync(
-            new ProductViewedEvent(product.Id, product.SellerId, product.Name, request.ViewerId, DateTimeOffset.UtcNow), ct);
 
         var dto = mapper.Map<ProductDto>(product);
 
