@@ -17,6 +17,7 @@ public class Order(Guid id) : AggregateRoot<Guid>(id)
 
     public Guid BuyerId { get; set; }
     public Guid SellerId { get; set; }
+    public string SellerName { get; set; } = string.Empty;
 
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
     public DeliveryType DeliveryType { get; set; }

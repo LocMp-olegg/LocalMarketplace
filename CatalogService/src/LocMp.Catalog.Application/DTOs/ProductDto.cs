@@ -5,6 +5,8 @@ public sealed record ProductDto
     public Guid Id { get; init; }
     public Guid SellerId { get; init; }
     public Guid? ShopId { get; init; }
+    public string? ShopName { get; init; }
+    public string? SellerName { get; init; }
     public Guid CategoryId { get; init; }
     public string Name { get; init; } = null!;
     public string? Description { get; init; }

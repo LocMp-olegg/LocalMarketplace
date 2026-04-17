@@ -16,6 +16,7 @@ public sealed class GetProductByIdQueryHandler(CatalogDbContext db, IMapper mapp
     {
         var product = await db.Products
                           .Include(p => p.Photos)
+                          .Include(p => p.Shop)
                           .Include(p => p.ProductTags).ThenInclude(pt => pt.Tag)
                           .FirstOrDefaultAsync(p => p.Id == request.Id && !p.IsDeleted, ct)
                       ?? throw new NotFoundException($"Product '{request.Id}' not found.");
@@ -26,6 +27,13 @@ public sealed class GetProductByIdQueryHandler(CatalogDbContext db, IMapper mapp
         await eventBus.PublishAsync(
             new ProductViewedEvent(product.Id, product.SellerId, request.ViewerId, DateTimeOffset.UtcNow), ct);
 
-        return mapper.Map<ProductDto>(product);
+        var dto = mapper.Map<ProductDto>(product);
+
+        var sellerName = await db.SellerReadModels
+            .Where(s => s.Id == product.SellerId)
+            .Select(s => s.DisplayName)
+            .FirstOrDefaultAsync(ct);
+
+        return dto with { SellerName = sellerName };
     }
 }

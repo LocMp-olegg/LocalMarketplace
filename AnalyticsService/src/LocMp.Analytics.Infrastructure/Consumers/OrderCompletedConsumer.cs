@@ -19,6 +19,11 @@ public sealed class OrderCompletedConsumer(
         var now = msg.OccurredAt;
         var today = DateOnly.FromDateTime(now.UtcDateTime);
 
+        var shopGroups = msg.Products
+            .Where(p => p.ShopId.HasValue)
+            .GroupBy(p => new { p.ShopId, p.ShopName })
+            .ToList();
+
         foreach (var periodType in PeriodHelper.All)
         {
             var periodStart = PeriodHelper.GetPeriodStart(periodType, now);
@@ -47,9 +52,10 @@ public sealed class OrderCompletedConsumer(
             sales.AverageOrderValue = sales.TotalRevenue / sales.OrderCount;
             sales.UpdatedAt = DateTimeOffset.UtcNow;
 
-            // — SellerLeaderboard —
+            // — SellerLeaderboard: seller-level aggregate (ShopId = null) —
             var leaderboard = await db.SellerLeaderboards
                 .FirstOrDefaultAsync(x => x.SellerId == msg.SellerId
+                                          && x.ShopId == null
                                           && x.PeriodType == periodType
                                           && x.PeriodStart == periodStart,
                     context.CancellationToken);
@@ -59,16 +65,52 @@ public sealed class OrderCompletedConsumer(
                 leaderboard = new SellerLeaderboard(Guid.NewGuid())
                 {
                     SellerId = msg.SellerId,
-                    SellerName = string.Empty,
+                    SellerName = msg.SellerName,
+                    ShopId = null,
+                    ShopName = null,
                     PeriodType = periodType,
                     PeriodStart = periodStart
                 };
                 db.SellerLeaderboards.Add(leaderboard);
             }
+            else if (string.IsNullOrEmpty(leaderboard.SellerName))
+            {
+                leaderboard.SellerName = msg.SellerName;
+            }
 
             leaderboard.TotalRevenue += msg.TotalAmount;
             leaderboard.OrderCount++;
             leaderboard.UpdatedAt = DateTimeOffset.UtcNow;
+
+            // — SellerLeaderboard: shop-level aggregates —
+            foreach (var shopGroup in shopGroups)
+            {
+                var shopRevenue = shopGroup.Sum(p => p.Subtotal);
+                var shopLeaderboard = await db.SellerLeaderboards
+                    .FirstOrDefaultAsync(x => x.SellerId == msg.SellerId
+                                              && x.ShopId == shopGroup.Key.ShopId
+                                              && x.PeriodType == periodType
+                                              && x.PeriodStart == periodStart,
+                        context.CancellationToken);
+
+                if (shopLeaderboard is null)
+                {
+                    shopLeaderboard = new SellerLeaderboard(Guid.NewGuid())
+                    {
+                        SellerId = msg.SellerId,
+                        SellerName = msg.SellerName,
+                        ShopId = shopGroup.Key.ShopId,
+                        ShopName = shopGroup.Key.ShopName,
+                        PeriodType = periodType,
+                        PeriodStart = periodStart
+                    };
+                    db.SellerLeaderboards.Add(shopLeaderboard);
+                }
+
+                shopLeaderboard.TotalRevenue += shopRevenue;
+                shopLeaderboard.OrderCount++;
+                shopLeaderboard.UpdatedAt = DateTimeOffset.UtcNow;
+            }
 
             // — TopProduct —
             foreach (var item in msg.Products)
@@ -97,23 +139,33 @@ public sealed class OrderCompletedConsumer(
                     top.ProductName = item.ProductName;
                 }
 
-                top.TotalSold++;
+                top.TotalSold += item.Quantity;
+                top.TotalRevenue += item.Subtotal;
                 top.UpdatedAt = DateTimeOffset.UtcNow;
             }
         }
 
-        // — Backfill ProductRatingSummary names/sellerIds for products missing them —
+        // — Backfill ProductRatingSummary: fill empty fields from order item snapshots —
         foreach (var item in msg.Products)
         {
+            if (!string.IsNullOrEmpty(item.ProductName))
+                await db.ProductRatingSummaries
+                    .Where(x => x.ProductId == item.ProductId && x.ProductName == string.Empty)
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.ProductName, item.ProductName),
+                        context.CancellationToken);
+
             await db.ProductRatingSummaries
-                .Where(x => x.ProductId == item.ProductId
-                            && (x.ProductName == string.Empty || x.SellerId == Guid.Empty))
-                .ExecuteUpdateAsync(s => s
-                    .SetProperty(x => x.ProductName,
-                        x => x.ProductName == string.Empty ? item.ProductName : x.ProductName)
-                    .SetProperty(x => x.SellerId,
-                        x => x.SellerId == Guid.Empty ? msg.SellerId : x.SellerId),
+                .Where(x => x.ProductId == item.ProductId && x.SellerId == Guid.Empty)
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.SellerId, msg.SellerId),
                     context.CancellationToken);
+
+            if (item.ShopId.HasValue)
+                await db.ProductRatingSummaries
+                    .Where(x => x.ProductId == item.ProductId && x.ShopId == null)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(x => x.ShopId, item.ShopId)
+                        .SetProperty(x => x.ShopName, item.ShopName),
+                        context.CancellationToken);
         }
 
         // — PlatformDailySummary —

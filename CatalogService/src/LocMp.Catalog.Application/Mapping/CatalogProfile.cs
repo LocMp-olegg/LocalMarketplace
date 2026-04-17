@@ -20,6 +20,8 @@ public sealed class CatalogProfile : Profile
         CreateMap<Product, ProductDto>()
             .ForMember(d => d.Latitude, o => o.MapFrom(s => s.Location != null ? s.Location.Y : (double?)null))
             .ForMember(d => d.Longitude, o => o.MapFrom(s => s.Location != null ? s.Location.X : (double?)null))
+            .ForMember(d => d.ShopName, o => o.MapFrom(s => s.Shop != null ? s.Shop.BusinessName : null))
+            .ForMember(d => d.SellerName, o => o.Ignore())
             .ForMember(d => d.MainPhotoUrl, o => o.MapFrom(s =>
                 s.Photos.FirstOrDefault(ph => ph.IsMain)!.StorageUrl
                 ?? s.Photos.OrderBy(ph => ph.SortOrder).FirstOrDefault()!.StorageUrl))

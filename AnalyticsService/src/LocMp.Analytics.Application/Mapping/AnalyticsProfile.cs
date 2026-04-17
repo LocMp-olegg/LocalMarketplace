@@ -14,7 +14,6 @@ public sealed class AnalyticsProfile : Profile
         CreateMap<StockAlert, StockAlertDto>();
         CreateMap<ProductViewCounter, ProductViewCounterDto>();
         CreateMap<PlatformDailySummary, PlatformDailySummaryDto>();
-        CreateMap<SellerLeaderboard, SellerLeaderboardDto>();
         CreateMap<DisputeSummary, DisputeSummaryDto>();
         CreateMap<GeographicActivity, GeographicActivityDto>();
         CreateMap<ProductRatingSummary, ProductRatingSummaryDto>();

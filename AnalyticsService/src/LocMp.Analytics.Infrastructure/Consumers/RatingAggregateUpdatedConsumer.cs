@@ -47,7 +47,7 @@ public sealed class RatingAggregateUpdatedConsumer(
         history.NewReviewsToday++;
 
         await db.SellerLeaderboards
-            .Where(x => x.SellerId == msg.SubjectId)
+            .Where(x => x.SellerId == msg.SubjectId && x.ShopId == null)
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.AverageRating, msg.NewAverage), ct);
 
         await db.SaveChangesAsync(ct);

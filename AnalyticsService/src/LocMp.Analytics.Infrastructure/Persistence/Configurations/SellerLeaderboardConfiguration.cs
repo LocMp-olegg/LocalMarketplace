@@ -12,12 +12,13 @@ public class SellerLeaderboardConfiguration : IEntityTypeConfiguration<SellerLea
         builder.HasKey(x => x.Id);
 
         builder.Property(x => x.SellerName).HasMaxLength(200).IsRequired();
+        builder.Property(x => x.ShopName).HasMaxLength(200);
         builder.Property(x => x.TotalRevenue).HasPrecision(18, 2);
         builder.Property(x => x.AverageRating).HasPrecision(3, 2);
         builder.Property(x => x.UpdatedAt).IsRequired();
 
-        // уникальный продавец в рамках периода
-        builder.HasIndex(x => new { x.SellerId, x.PeriodType, x.PeriodStart }).IsUnique();
+        // уникальная запись: продавец + магазин (null = общий агрегат по продавцу) + период
+        builder.HasIndex(x => new { x.SellerId, x.ShopId, x.PeriodType, x.PeriodStart }).IsUnique();
         // для сортировки leaderboard по рангу
         builder.HasIndex(x => new { x.PeriodType, x.PeriodStart, x.RevenueRank });
     }

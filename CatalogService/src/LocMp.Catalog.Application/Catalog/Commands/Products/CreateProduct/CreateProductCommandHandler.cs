@@ -21,6 +21,7 @@ public sealed class CreateProductCommandHandler(CatalogDbContext db, IMapper map
         if (!categoryExists)
             throw new NotFoundException($"Category '{request.CategoryId}' not found.");
 
+        string? shopName = null;
         if (request.ShopId.HasValue)
         {
             var shop = await db.Shops.FirstOrDefaultAsync(s => s.Id == request.ShopId.Value, ct)
@@ -29,6 +30,7 @@ public sealed class CreateProductCommandHandler(CatalogDbContext db, IMapper map
                 throw new ForbiddenException("You do not own this shop.");
             if (!shop.IsActive)
                 throw new ConflictException("Shop is not active.");
+            shopName = shop.BusinessName;
         }
 
         Point? location = null;
@@ -70,7 +72,7 @@ public sealed class CreateProductCommandHandler(CatalogDbContext db, IMapper map
         await db.SaveChangesAsync(ct);
 
         await eventBus.PublishAsync(
-            new ProductCreatedEvent(product.Id, product.SellerId, product.Name, DateTimeOffset.UtcNow), ct);
+            new ProductCreatedEvent(product.Id, product.SellerId, product.Name, product.ShopId, shopName, DateTimeOffset.UtcNow), ct);
 
         return mapper.Map<ProductDto>(product);
     }

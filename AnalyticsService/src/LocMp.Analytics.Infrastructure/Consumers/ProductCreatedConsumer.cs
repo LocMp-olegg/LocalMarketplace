@@ -35,19 +35,31 @@ public sealed class ProductCreatedConsumer(
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.ProductName, msg.ProductName),
                 context.CancellationToken);
 
-        // Initialize ProductRatingSummary so it's ready when reviews arrive
-        var exists = await db.ProductRatingSummaries
-            .AnyAsync(x => x.ProductId == msg.ProductId, context.CancellationToken);
+        // Upsert ProductRatingSummary: create if missing, fill empty fields if already exists
+        var ratingSummary = await db.ProductRatingSummaries
+            .FirstOrDefaultAsync(x => x.ProductId == msg.ProductId, context.CancellationToken);
 
-        if (!exists)
+        if (ratingSummary is null)
         {
             db.ProductRatingSummaries.Add(new ProductRatingSummary(Guid.NewGuid())
             {
                 ProductId = msg.ProductId,
                 SellerId = msg.SellerId,
                 ProductName = msg.ProductName,
+                ShopId = msg.ShopId,
+                ShopName = msg.ShopName,
                 UpdatedAt = msg.OccurredAt
             });
+        }
+        else
+        {
+            if (string.IsNullOrEmpty(ratingSummary.ProductName)) ratingSummary.ProductName = msg.ProductName;
+            if (ratingSummary.SellerId == Guid.Empty) ratingSummary.SellerId = msg.SellerId;
+            if (ratingSummary.ShopId == null && msg.ShopId.HasValue)
+            {
+                ratingSummary.ShopId = msg.ShopId;
+                ratingSummary.ShopName = msg.ShopName;
+            }
         }
 
         await db.SaveChangesAsync(context.CancellationToken);

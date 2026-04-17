@@ -1,6 +1,13 @@
 namespace LocMp.Analytics.Application.DTOs;
 
+public sealed record ShopRatingsDto(
+    Guid? ShopId,
+    string? ShopName,
+    decimal ShopAverageRating,
+    int ShopReviewCount,
+    IReadOnlyList<ProductRatingSummaryDto> Products);
+
 public sealed record SellerProductRatingsDto(
-    IReadOnlyList<ProductRatingSummaryDto> Products,
     decimal OverallAverageRating,
-    int TotalReviewCount);
+    int TotalReviewCount,
+    IReadOnlyList<ShopRatingsDto> Shops);

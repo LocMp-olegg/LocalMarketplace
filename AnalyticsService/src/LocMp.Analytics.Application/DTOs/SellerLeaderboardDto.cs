@@ -2,6 +2,12 @@ using LocMp.Analytics.Domain.Enums;
 
 namespace LocMp.Analytics.Application.DTOs;
 
+public sealed record ShopLeaderboardDto(
+    Guid ShopId,
+    string ShopName,
+    decimal TotalRevenue,
+    int OrderCount);
+
 public sealed record SellerLeaderboardDto(
     Guid SellerId,
     string SellerName,
@@ -12,4 +18,5 @@ public sealed record SellerLeaderboardDto(
     decimal AverageRating,
     int RevenueRank,
     int OrderCountRank,
-    DateTimeOffset? RanksComputedAt);
+    DateTimeOffset? RanksComputedAt,
+    IReadOnlyList<ShopLeaderboardDto> Shops);

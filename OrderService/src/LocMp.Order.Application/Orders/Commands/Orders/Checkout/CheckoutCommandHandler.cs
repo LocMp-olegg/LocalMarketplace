@@ -64,10 +64,13 @@ public sealed class CheckoutCommandHandler(
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
 
+        var sellerName = snapshots.Values.First().SellerName ?? string.Empty;
+
         var order = new OrderEntity(orderId)
         {
             BuyerId = request.UserId,
             SellerId = sellerId,
+            SellerName = sellerName,
             DeliveryType = request.DeliveryType,
             BuyerComment = request.BuyerComment,
             CreatedAt = now
@@ -83,6 +86,8 @@ public sealed class CheckoutCommandHandler(
                 ProductName = snap.Name,
                 ProductDescription = snap.Description,
                 MainPhotoUrl = snap.MainPhotoUrl,
+                ShopId = snap.ShopId,
+                ShopName = snap.ShopName,
                 UnitPrice = snap.Price,
                 Quantity = cartItem.Quantity,
                 Subtotal = snap.Price * cartItem.Quantity
