@@ -5,7 +5,7 @@ using LocMp.Identity.Application.Identity.Commands.UserProfile.UpdateUserProfile
 using LocMp.Identity.Application.Identity.Commands.UserProfile.UploadUserPhoto;
 using LocMp.Identity.Application.Identity.Queries.UserProfile.GetUserPhoto;
 using LocMp.Identity.Application.Identity.Queries.UserProfile.GetUserProfile;
-using LocMp.Identity.Infrastructure.Extensions;
+using LocMp.BuildingBlocks.Infrastructure.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;

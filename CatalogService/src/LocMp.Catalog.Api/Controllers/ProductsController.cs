@@ -23,7 +23,7 @@ using LocMp.Catalog.Application.Catalog.Queries.Products.GetProductStock;
 using LocMp.Catalog.Application.Catalog.Queries.Products.GetStockHistory;
 using LocMp.Catalog.Application.Catalog.Queries.Products.SearchProducts;
 using LocMp.Catalog.Application.DTOs;
-using LocMp.Catalog.Api.Extensions;
+using LocMp.BuildingBlocks.Infrastructure.Extensions;
 using LocMp.Catalog.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

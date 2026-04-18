@@ -32,7 +32,7 @@ public class RolesController(ISender sender) : ControllerBase
     public async Task<ActionResult<RoleDto>> Create([FromBody] CreateRoleCommand command, CancellationToken ct)
     {
         var result = await sender.Send(command, ct);
-        return Ok(result);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
     [HttpPut("{id:guid}")]

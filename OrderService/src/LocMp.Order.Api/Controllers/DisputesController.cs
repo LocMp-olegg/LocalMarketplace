@@ -1,5 +1,5 @@
 using LocMp.BuildingBlocks.Application.Common;
-using LocMp.Order.Api.Extensions;
+using LocMp.BuildingBlocks.Infrastructure.Extensions;
 using LocMp.Order.Api.Requests;
 using LocMp.Order.Application.DTOs;
 using LocMp.Order.Application.Orders.Commands.Disputes.DeleteDisputePhoto;

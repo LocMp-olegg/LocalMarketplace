@@ -1,4 +1,4 @@
-using LocMp.Order.Api.Extensions;
+using LocMp.BuildingBlocks.Infrastructure.Extensions;
 using LocMp.Order.Application.DTOs;
 using LocMp.Order.Application.Orders.Commands.Orders.MarkOrderDelivered;
 using LocMp.Order.Application.Orders.Commands.Orders.MarkOrderPickedUp;

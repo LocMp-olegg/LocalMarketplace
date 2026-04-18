@@ -1,5 +1,5 @@
 using LocMp.BuildingBlocks.Application.Common;
-using LocMp.Review.Api.Extensions;
+using LocMp.BuildingBlocks.Infrastructure.Extensions;
 using LocMp.Review.Api.Requests;
 using LocMp.Review.Application.DTOs;
 using LocMp.Review.Application.Reviews.Commands.CreateReview;
