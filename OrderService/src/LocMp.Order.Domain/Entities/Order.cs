@@ -15,9 +15,13 @@ public class Order(Guid id) : AggregateRoot<Guid>(id)
         [OrderStatus.Disputed] = [OrderStatus.Cancelled, OrderStatus.Completed],
     };
 
+    public Guid? CheckoutId { get; set; }
+
     public Guid BuyerId { get; set; }
     public Guid SellerId { get; set; }
     public string SellerName { get; set; } = string.Empty;
+    public Guid? ShopId { get; set; }
+    public string? ShopName { get; set; }
 
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
     public DeliveryType DeliveryType { get; set; }

@@ -8,17 +8,22 @@ public sealed class CheckoutCommandValidator : AbstractValidator<CheckoutCommand
     public CheckoutCommandValidator()
     {
         RuleFor(x => x.UserId).NotEmpty();
+        RuleFor(x => x.Groups).NotEmpty().WithMessage("At least one group must be specified for checkout.");
 
-        When(x => x.DeliveryType == DeliveryType.NeighborCourier, () =>
+        RuleForEach(x => x.Groups).ChildRules(group =>
         {
-            RuleFor(x => x.DeliveryAddress).NotNull()
-                .WithMessage("Delivery address is required for courier delivery.");
+            group.RuleFor(g => g.SellerId).NotEmpty();
 
-            RuleFor(x => x.DeliveryAddress!.City).NotEmpty().MaximumLength(100);
-            RuleFor(x => x.DeliveryAddress!.Street).NotEmpty().MaximumLength(200);
-            RuleFor(x => x.DeliveryAddress!.HouseNumber).NotEmpty().MaximumLength(20);
-            RuleFor(x => x.DeliveryAddress!.RecipientName).NotEmpty().MaximumLength(200);
-            RuleFor(x => x.DeliveryAddress!.RecipientPhone).NotEmpty().MaximumLength(20);
+            group.When(g => g.DeliveryType == DeliveryType.NeighborCourier, () =>
+            {
+                group.RuleFor(g => g.DeliveryAddress).NotNull()
+                    .WithMessage("Delivery address is required for courier delivery.");
+                group.RuleFor(g => g.DeliveryAddress!.City).NotEmpty().MaximumLength(100);
+                group.RuleFor(g => g.DeliveryAddress!.Street).NotEmpty().MaximumLength(200);
+                group.RuleFor(g => g.DeliveryAddress!.HouseNumber).NotEmpty().MaximumLength(20);
+                group.RuleFor(g => g.DeliveryAddress!.RecipientName).NotEmpty().MaximumLength(200);
+                group.RuleFor(g => g.DeliveryAddress!.RecipientPhone).NotEmpty().MaximumLength(20);
+            });
         });
     }
 }

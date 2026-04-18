@@ -58,17 +58,22 @@ public sealed class CartsController(ISender sender) : ControllerBase
     }
 
     [HttpPost("checkout")]
-    public async Task<ActionResult<OrderDto>> Checkout([FromBody] CheckoutRequest request, CancellationToken ct)
+    public async Task<ActionResult<IReadOnlyList<OrderDto>>> Checkout(
+        [FromBody] CheckoutRequest request, CancellationToken ct)
     {
-        DeliveryAddressData? address = null;
-        if (request.DeliveryAddress is { } da)
-            address = new DeliveryAddressData(
-                da.City, da.Street, da.HouseNumber, da.Apartment,
-                da.Entrance, da.Floor, da.Latitude, da.Longitude,
-                da.RecipientName, da.RecipientPhone);
+        var groups = request.Groups.Select(g =>
+        {
+            DeliveryAddressData? addr = null;
+            if (g.DeliveryAddress is { } da)
+                addr = new DeliveryAddressData(
+                    da.City, da.Street, da.HouseNumber, da.Apartment,
+                    da.Entrance, da.Floor, da.Latitude, da.Longitude,
+                    da.RecipientName, da.RecipientPhone);
+            return new GroupDeliverySettings(g.SellerId, g.ShopId, g.DeliveryType, addr, g.SelectedItemIds);
+        }).ToList();
 
         var result = await sender.Send(
-            new CheckoutCommand(HttpContext.GetUserId(), request.DeliveryType, request.BuyerComment, address), ct);
-        return CreatedAtAction(nameof(OrdersController.GetById), "Orders", new { id = result.Id }, result);
+            new CheckoutCommand(HttpContext.GetUserId(), request.BuyerComment, groups), ct);
+        return Ok(result);
     }
 }

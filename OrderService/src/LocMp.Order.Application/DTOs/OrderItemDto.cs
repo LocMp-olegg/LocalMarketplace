@@ -6,6 +6,8 @@ public sealed record OrderItemDto(
     string ProductName,
     string? ProductDescription,
     string? MainPhotoUrl,
+    Guid? ShopId,
+    string? ShopName,
     decimal UnitPrice,
     int Quantity,
     decimal Subtotal);

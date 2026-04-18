@@ -2811,19 +2811,23 @@
               "response": []
             },
             {
-              "name": "Checkout (Pickup)",
+              "name": "Checkout (Pickup — single seller/shop)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "exec": [
-                      "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
                       "var json = pm.response.json();",
-                      "pm.test('Order is Pending', () => pm.expect(json.status).to.equal(1));",
-                      "pm.test('DeliveryType is Pickup', () => pm.expect(json.deliveryType).to.equal(1));",
-                      "if (json.id) {",
-                      "    pm.collectionVariables.set('testOrderId', json.id);",
-                      "    console.log('OrderId saved:', json.id);",
+                      "pm.test('Returns array', () => pm.expect(json).to.be.an('array'));",
+                      "pm.test('Order is Pending', () => pm.expect(json[0].status).to.equal(1));",
+                      "pm.test('DeliveryType is Pickup', () => pm.expect(json[0].deliveryType).to.equal(1));",
+                      "if (json[0] && json[0].id) {",
+                      "    pm.collectionVariables.set('testOrderId', json[0].id);",
+                      "    console.log('OrderId saved:', json[0].id);",
+                      "}",
+                      "if (json[0] && json[0].checkoutId) {",
+                      "    pm.collectionVariables.set('testCheckoutId', json[0].checkoutId);",
                       "}"
                     ],
                     "type": "text/javascript",
@@ -2847,7 +2851,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"deliveryType\": 1,\n  \"buyerComment\": \"Тест самовывоза\",\n  \"deliveryAddress\": null\n}",
+                  "raw": "{\n  \"buyerComment\": \"Тест самовывоза\",\n  \"groups\": [\n    {\n      \"sellerId\": \"{{testSellerId}}\",\n      \"shopId\": null,\n      \"deliveryType\": 1,\n      \"deliveryAddress\": null,\n      \"selectedItemIds\": null\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2869,19 +2873,20 @@
               "response": []
             },
             {
-              "name": "Checkout (Courier Delivery)",
+              "name": "Checkout (Courier Delivery — single seller/shop)",
               "event": [
                 {
                   "listen": "test",
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
                       "var json = pm.response.json();",
-                      "pm.test('Order is Pending', () => pm.expect(json.status).to.equal(1));",
-                      "pm.test('DeliveryType is NeighborCourier', () => pm.expect(json.deliveryType).to.equal(2));",
-                      "pm.test('DeliveryAddress present', () => pm.expect(json.deliveryAddress).to.not.be.null);",
-                      "if (json.id) pm.collectionVariables.set('testOrderId', json.id);"
+                      "pm.test('Returns array', () => pm.expect(json).to.be.an('array'));",
+                      "pm.test('Order is Pending', () => pm.expect(json[0].status).to.equal(1));",
+                      "pm.test('DeliveryType is NeighborCourier', () => pm.expect(json[0].deliveryType).to.equal(2));",
+                      "pm.test('DeliveryAddress present', () => pm.expect(json[0].deliveryAddress).to.not.be.null);",
+                      "if (json[0] && json[0].id) pm.collectionVariables.set('testOrderId', json[0].id);"
                     ]
                   }
                 }
@@ -2901,7 +2906,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"deliveryType\": 2,\n  \"buyerComment\": \"Тест курьерской доставки\",\n  \"deliveryAddress\": {\n    \"city\": \"Москва\",\n    \"street\": \"Ленина\",\n    \"houseNumber\": \"10\",\n    \"apartment\": \"42\",\n    \"entrance\": \"3\",\n    \"floor\": 5,\n    \"latitude\": 55.7558,\n    \"longitude\": 37.6176,\n    \"recipientName\": \"Иван Петров\",\n    \"recipientPhone\": \"+79991234567\"\n  }\n}",
+                  "raw": "{\n  \"buyerComment\": \"Тест курьерской доставки\",\n  \"groups\": [\n    {\n      \"sellerId\": \"{{testSellerId}}\",\n      \"shopId\": null,\n      \"deliveryType\": 2,\n      \"deliveryAddress\": {\n        \"city\": \"Москва\",\n        \"street\": \"Ленина\",\n        \"houseNumber\": \"10\",\n        \"apartment\": \"42\",\n        \"entrance\": \"3\",\n        \"floor\": 5,\n        \"latitude\": 55.7558,\n        \"longitude\": 37.6176,\n        \"recipientName\": \"Иван Петров\",\n        \"recipientPhone\": \"+79991234567\"\n      },\n      \"selectedItemIds\": null\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2909,13 +2914,66 @@
                   }
                 },
                 "url": {
-                  "raw": "{{baseUrlOrder}}/api/cart/checkout",
+                  "raw": "{{baseUrlOrder}}/api/carts/checkout",
                   "host": [
                     "{{baseUrlOrder}}"
                   ],
                   "path": [
                     "api",
-                    "cart",
+                    "carts",
+                    "checkout"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Checkout (Multi-group — 2 sellers/shops)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "var json = pm.response.json();",
+                      "pm.test('Returns 2 orders', () => pm.expect(json.length).to.equal(2));",
+                      "pm.test('Same checkoutId', () => pm.expect(json[0].checkoutId).to.equal(json[1].checkoutId));",
+                      "if (json[0] && json[0].id) pm.collectionVariables.set('testOrderId', json[0].id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"buyerComment\": \"Мульти-группа\",\n  \"groups\": [\n    {\n      \"sellerId\": \"{{testSellerId}}\",\n      \"shopId\": \"{{testShopId}}\",\n      \"deliveryType\": 1,\n      \"deliveryAddress\": null,\n      \"selectedItemIds\": [\n        \"{{cartItemId1}}\"\n      ]\n    },\n    {\n      \"sellerId\": \"{{testSellerId2}}\",\n      \"shopId\": null,\n      \"deliveryType\": 2,\n      \"deliveryAddress\": {\n        \"city\": \"Москва\",\n        \"street\": \"Ленина\",\n        \"houseNumber\": \"10\",\n        \"recipientName\": \"Иван Петров\",\n        \"recipientPhone\": \"+79991234567\"\n      },\n      \"selectedItemIds\": null\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrlOrder}}/api/carts/checkout",
+                  "host": [
+                    "{{baseUrlOrder}}"
+                  ],
+                  "path": [
+                    "api",
+                    "carts",
                     "checkout"
                   ]
                 }
@@ -5787,6 +5845,12 @@
     {
       "key": "testStockAlertId",
       "value": "00000000-0000-0000-0000-000000000000"
+    },
+    {
+      "key": "cartItemId1",
+      "value": "",
+      "type": "string",
+      "description": "ID of specific cart item to checkout (optional)"
     }
   ]
 }

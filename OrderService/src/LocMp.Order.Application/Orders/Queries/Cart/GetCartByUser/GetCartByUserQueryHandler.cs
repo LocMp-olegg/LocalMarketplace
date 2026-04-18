@@ -1,12 +1,12 @@
-using AutoMapper;
 using LocMp.Order.Application.DTOs;
+using LocMp.Order.Application.Mapping;
 using LocMp.Order.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace LocMp.Order.Application.Orders.Queries.Cart.GetCartByUser;
 
-public sealed class GetCartByUserQueryHandler(OrderDbContext db, IMapper mapper)
+public sealed class GetCartByUserQueryHandler(OrderDbContext db)
     : IRequestHandler<GetCartByUserQuery, CartDto?>
 {
     public async Task<CartDto?> Handle(GetCartByUserQuery request, CancellationToken ct)
@@ -15,6 +15,6 @@ public sealed class GetCartByUserQueryHandler(OrderDbContext db, IMapper mapper)
             .Include(c => c.Items)
             .FirstOrDefaultAsync(c => c.UserId == request.UserId && c.ExpiresAt > DateTimeOffset.UtcNow, ct);
 
-        return cart is null ? null : mapper.Map<CartDto>(cart);
+        return cart is null ? null : CartMapper.ToDto(cart);
     }
 }

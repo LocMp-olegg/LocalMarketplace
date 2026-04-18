@@ -9,13 +9,6 @@ public sealed class OrderProfile : Profile
 {
     public OrderProfile()
     {
-        CreateMap<CartItem, CartItemDto>()
-            .ForCtorParam(nameof(CartItemDto.Subtotal), o => o.MapFrom(s => s.Price * s.Quantity));
-
-        CreateMap<Cart, CartDto>()
-            .ForCtorParam(nameof(CartDto.Items), o => o.MapFrom(s => s.Items.ToList()))
-            .ForCtorParam(nameof(CartDto.TotalAmount), o => o.MapFrom(s => s.Items.Sum(i => i.Price * i.Quantity)));
-
         CreateMap<OrderItem, OrderItemDto>();
 
         CreateMap<OrderStatusHistory, OrderStatusHistoryDto>();
@@ -39,6 +32,10 @@ public sealed class OrderProfile : Profile
             .ForCtorParam(nameof(OrderDto.Items), o => o.MapFrom(s => s.Items.ToList()))
             .ForCtorParam(nameof(OrderDto.StatusHistory),
                 o => o.MapFrom(s => s.StatusHistory.OrderBy(h => h.ChangedAt).ToList()))
-            .ForCtorParam(nameof(OrderDto.Photos), o => o.MapFrom(s => s.Photos.OrderBy(p => p.SortOrder).ToList()));
+            .ForCtorParam(nameof(OrderDto.Photos), o => o.MapFrom(s => s.Photos.OrderBy(p => p.SortOrder).ToList()))
+            .ForCtorParam(nameof(OrderDto.SellerName), o => o.MapFrom(s => s.SellerName))
+            .ForCtorParam(nameof(OrderDto.CheckoutId), o => o.MapFrom(s => s.CheckoutId))
+            .ForCtorParam(nameof(OrderDto.ShopId), o => o.MapFrom(s => s.ShopId))
+            .ForCtorParam(nameof(OrderDto.ShopName), o => o.MapFrom(s => s.ShopName));
     }
 }

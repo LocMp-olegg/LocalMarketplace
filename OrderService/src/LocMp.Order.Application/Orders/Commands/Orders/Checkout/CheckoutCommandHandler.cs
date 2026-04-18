@@ -3,10 +3,10 @@ using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.BuildingBlocks.Application.Interfaces;
 using LocMp.Contracts.Orders;
 using LocMp.Order.Application.DTOs;
-using LocMp.Order.Infrastructure.DTOs;
-using LocMp.Order.Infrastructure.Interfaces;
 using LocMp.Order.Domain.Entities;
 using LocMp.Order.Domain.Enums;
+using LocMp.Order.Infrastructure.DTOs;
+using LocMp.Order.Infrastructure.Interfaces;
 using LocMp.Order.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -20,9 +20,9 @@ public sealed class CheckoutCommandHandler(
     ICatalogClient catalogClient,
     IEventBus eventBus,
     IMapper mapper)
-    : IRequestHandler<CheckoutCommand, OrderDto>
+    : IRequestHandler<CheckoutCommand, IReadOnlyList<OrderDto>>
 {
-    public async Task<OrderDto> Handle(CheckoutCommand request, CancellationToken ct)
+    public async Task<IReadOnlyList<OrderDto>> Handle(CheckoutCommand request, CancellationToken ct)
     {
         var cart = await db.Carts
                        .Include(c => c.Items)
@@ -32,14 +32,44 @@ public sealed class CheckoutCommandHandler(
         if (!cart.Items.Any())
             throw new ConflictException("Cart is empty.");
 
-        // Fetch all products in parallel instead of sequential HTTP calls
-        var productResults = await Task.WhenAll(
-            cart.Items.Select(item => catalogClient.GetProductAsync(item.ProductId, ct)));
-
-        var snapshots = new Dictionary<Guid, ProductSnapshotDto>(cart.Items.Count);
-        for (var i = 0; i < cart.Items.Count; i++)
+        // Collect items that will actually be checked out
+        var allSelectedItems = new List<CartItem>();
+        foreach (var groupSettings in request.Groups)
         {
-            var cartItem = cart.Items.ElementAt(i);
+            var groupKey = (groupSettings.SellerId, groupSettings.ShopId);
+            var groupItems = cart.Items
+                .Where(i => i.SellerId == groupSettings.SellerId && i.ShopId == groupSettings.ShopId)
+                .ToList();
+
+            if (!groupItems.Any())
+                throw new ConflictException(
+                    $"No cart items found for seller '{groupSettings.SellerId}' / shop '{groupSettings.ShopId}'.");
+
+            if (groupSettings.SelectedItemIds is { Count: > 0 })
+            {
+                var selectedSet = groupSettings.SelectedItemIds.ToHashSet();
+                groupItems = groupItems.Where(i => selectedSet.Contains(i.Id)).ToList();
+                if (!groupItems.Any())
+                    throw new ConflictException(
+                        $"None of the selected items belong to seller '{groupSettings.SellerId}' / shop '{groupSettings.ShopId}'.");
+            }
+
+            allSelectedItems.AddRange(groupItems);
+        }
+
+        // Detect duplicate groups in request
+        var requestedKeys = request.Groups.Select(g => (g.SellerId, g.ShopId)).ToList();
+        if (requestedKeys.Distinct().Count() != request.Groups.Count)
+            throw new ConflictException("Duplicate seller/shop groups in checkout request.");
+
+        // Fetch product snapshots only for items being checked out
+        var productResults = await Task.WhenAll(
+            allSelectedItems.Select(item => catalogClient.GetProductAsync(item.ProductId, ct)));
+
+        var snapshots = new Dictionary<Guid, ProductSnapshotDto>(allSelectedItems.Count);
+        for (var i = 0; i < allSelectedItems.Count; i++)
+        {
+            var cartItem = allSelectedItems[i];
             var product = productResults[i]
                           ?? throw new ConflictException($"Product '{cartItem.ProductId}' is no longer available.");
 
@@ -53,106 +83,125 @@ public sealed class CheckoutCommandHandler(
             snapshots[cartItem.ProductId] = product;
         }
 
-        // All sellers must be the same (one order per seller)
-        var sellerIds = snapshots.Values.Select(p => p.SellerId).Distinct().ToList();
-        if (sellerIds.Count > 1)
-            throw new ConflictException("Cart contains products from multiple sellers. Please checkout separately.");
+        // Group cart items by (SellerId, ShopId) — now directly from CartItem fields
+        var cartGroups = allSelectedItems
+            .GroupBy(item => (item.SellerId, item.ShopId))
+            .ToDictionary(g => g.Key, g => g.ToList());
 
-        var sellerId = sellerIds[0];
-        var orderId = Guid.NewGuid();
+        var checkoutId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
 
-        var sellerName = snapshots.Values.First().SellerName ?? string.Empty;
+        var createdOrders = new List<OrderEntity>(request.Groups.Count);
+        var allItemsForReservation = new List<(Guid ProductId, int Quantity, Guid OrderId)>();
+        var checkedOutCartItemIds = allSelectedItems.Select(i => i.Id).ToHashSet();
 
-        var order = new OrderEntity(orderId)
+        foreach (var groupSettings in request.Groups)
         {
-            BuyerId = request.UserId,
-            SellerId = sellerId,
-            SellerName = sellerName,
-            DeliveryType = request.DeliveryType,
-            BuyerComment = request.BuyerComment,
-            CreatedAt = now
-        };
+            var groupKey = (groupSettings.SellerId, groupSettings.ShopId);
+            var groupCartItems = cartGroups[groupKey];
+            var orderId = Guid.NewGuid();
 
-        var items = cart.Items.Select(cartItem =>
-        {
-            var snap = snapshots[cartItem.ProductId];
-            return new OrderItem(Guid.NewGuid())
+            var firstItem = groupCartItems[0];
+
+            var order = new OrderEntity(orderId)
             {
-                OrderId = orderId,
-                ProductId = cartItem.ProductId,
-                ProductName = snap.Name,
-                ProductDescription = snap.Description,
-                MainPhotoUrl = snap.MainPhotoUrl,
-                ShopId = snap.ShopId,
-                ShopName = snap.ShopName,
-                UnitPrice = snap.Price,
-                Quantity = cartItem.Quantity,
-                Subtotal = snap.Price * cartItem.Quantity
+                CheckoutId   = checkoutId,
+                BuyerId      = request.UserId,
+                SellerId     = groupSettings.SellerId,
+                SellerName   = firstItem.SellerName,
+                ShopId       = groupSettings.ShopId,
+                ShopName     = firstItem.ShopName,
+                DeliveryType = groupSettings.DeliveryType,
+                BuyerComment = request.BuyerComment,
+                CreatedAt    = now
             };
-        }).ToList();
 
-        order.TotalAmount = items.Sum(i => i.Subtotal);
-
-        var statusEntry = new OrderStatusHistory(Guid.NewGuid())
-        {
-            OrderId = orderId,
-            FromStatus = null,
-            ToStatus = OrderStatus.Pending,
-            ChangedById = request.UserId,
-            ChangedAt = now
-        };
-
-        if (request.DeliveryType == DeliveryType.NeighborCourier && request.DeliveryAddress is { } addr)
-        {
-            Point? location = null;
-            if (addr.Latitude.HasValue && addr.Longitude.HasValue)
-                location = new Point(addr.Longitude.Value, addr.Latitude.Value) { SRID = 4326 };
-
-            order.DeliveryAddress = new DeliveryAddress(Guid.NewGuid())
+            var orderItems = groupCartItems.Select(cartItem =>
             {
-                OrderId = orderId,
-                City = addr.City,
-                Street = addr.Street,
-                HouseNumber = addr.HouseNumber,
-                Apartment = addr.Apartment,
-                Entrance = addr.Entrance,
-                Floor = addr.Floor,
-                Location = location,
-                RecipientName = addr.RecipientName,
-                RecipientPhone = addr.RecipientPhone
+                var snap = snapshots[cartItem.ProductId];
+                return new OrderItem(Guid.NewGuid())
+                {
+                    OrderId            = orderId,
+                    ProductId          = cartItem.ProductId,
+                    ProductName        = snap.Name,
+                    ProductDescription = snap.Description,
+                    MainPhotoUrl       = snap.MainPhotoUrl,
+                    ShopId             = snap.ShopId,
+                    ShopName           = snap.ShopName,
+                    UnitPrice          = snap.Price,
+                    Quantity           = cartItem.Quantity,
+                    Subtotal           = snap.Price * cartItem.Quantity
+                };
+            }).ToList();
+
+            order.TotalAmount = orderItems.Sum(i => i.Subtotal);
+
+            var statusEntry = new OrderStatusHistory(Guid.NewGuid())
+            {
+                OrderId     = orderId,
+                FromStatus  = null,
+                ToStatus    = OrderStatus.Pending,
+                ChangedById = request.UserId,
+                ChangedAt   = now
             };
+
+            if (groupSettings.DeliveryType == DeliveryType.NeighborCourier &&
+                groupSettings.DeliveryAddress is { } addr)
+            {
+                Point? location = null;
+                if (addr.Latitude.HasValue && addr.Longitude.HasValue)
+                    location = new Point(addr.Longitude.Value, addr.Latitude.Value) { SRID = 4326 };
+
+                order.DeliveryAddress = new DeliveryAddress(Guid.NewGuid())
+                {
+                    OrderId       = orderId,
+                    City          = addr.City,
+                    Street        = addr.Street,
+                    HouseNumber   = addr.HouseNumber,
+                    Apartment     = addr.Apartment,
+                    Entrance      = addr.Entrance,
+                    Floor         = addr.Floor,
+                    Location      = location,
+                    RecipientName = addr.RecipientName,
+                    RecipientPhone = addr.RecipientPhone
+                };
+            }
+
+            db.Orders.Add(order);
+            db.OrderItems.AddRange(orderItems);
+            db.OrderStatusHistory.Add(statusEntry);
+
+            createdOrders.Add(order);
+            allItemsForReservation.AddRange(
+                groupCartItems.Select(i => (i.ProductId, i.Quantity, orderId)));
         }
 
-        var cartItemsForReservation = cart.Items
-            .Select(i => (i.ProductId, i.Quantity))
-            .ToList();
-
-        db.Orders.Add(order);
-        db.OrderItems.AddRange(items);
-        db.OrderStatusHistory.Add(statusEntry);
-        db.CartItems.RemoveRange(cart.Items);
-        db.Carts.Remove(cart);
+        // Remove only checked-out items (partial checkout support)
+        var itemsToRemove = cart.Items.Where(i => checkedOutCartItemIds.Contains(i.Id)).ToList();
+        db.CartItems.RemoveRange(itemsToRemove);
+        if (cart.Items.All(i => checkedOutCartItemIds.Contains(i.Id)))
+            db.Carts.Remove(cart);
 
         await db.SaveChangesAsync(ct);
 
-        var reserved = new List<(Guid ProductId, int Quantity)>(cartItemsForReservation.Count);
+        // Reserve stock for all orders; rollback everything on failure
+        var reserved = new List<(Guid ProductId, int Quantity, Guid OrderId)>(allItemsForReservation.Count);
         try
         {
-            foreach (var (productId, quantity) in cartItemsForReservation)
+            foreach (var (productId, quantity, orderId) in allItemsForReservation)
             {
                 await catalogClient.ReserveStockAsync(productId, quantity, orderId, ct);
-                reserved.Add((productId, quantity));
+                reserved.Add((productId, quantity, orderId));
             }
         }
         catch
         {
-            foreach (var (productId, quantity) in reserved)
+            foreach (var (productId, quantity, orderId) in reserved)
             {
                 try { await catalogClient.ReleaseStockAsync(productId, quantity, orderId, CancellationToken.None); }
-                catch { /* best-effort: stock will reconcile via StockReservationFailedConsumer */ }
+                catch { /* best-effort */ }
             }
 
             await transaction.RollbackAsync(ct);
@@ -161,18 +210,23 @@ public sealed class CheckoutCommandHandler(
 
         await transaction.CommitAsync(ct);
 
-        await eventBus.PublishAsync(new OrderPlacedEvent(
-            orderId, request.UserId, sellerId, order.TotalAmount, now), ct);
+        foreach (var order in createdOrders)
+        {
+            await eventBus.PublishAsync(
+                new OrderPlacedEvent(order.Id, request.UserId, order.SellerId, order.TotalAmount, now), ct);
+        }
 
-        var created = await db.Orders
+        var orderIds = createdOrders.Select(o => o.Id).ToList();
+        var result = await db.Orders
             .Include(o => o.Items)
             .Include(o => o.StatusHistory)
             .Include(o => o.Photos)
             .Include(o => o.DeliveryAddress)
             .Include(o => o.CourierAssignment)
             .Include(o => o.Dispute)
-            .FirstAsync(o => o.Id == orderId, ct);
+            .Where(o => orderIds.Contains(o.Id))
+            .ToListAsync(ct);
 
-        return mapper.Map<OrderDto>(created);
+        return result.Select(mapper.Map<OrderDto>).ToList();
     }
 }
