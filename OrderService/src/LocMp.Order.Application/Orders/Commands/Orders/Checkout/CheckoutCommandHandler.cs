@@ -83,6 +83,24 @@ public sealed class CheckoutCommandHandler(
             snapshots[cartItem.ProductId] = product;
         }
 
+        // Validate courier delivery is allowed for shops that requested NeighborCourier
+        var courierGroups = request.Groups
+            .Where(g => g.DeliveryType == DeliveryType.NeighborCourier && g.ShopId.HasValue)
+            .ToList();
+
+        if (courierGroups.Count > 0)
+        {
+            var shopSettings = await Task.WhenAll(
+                courierGroups.Select(g => catalogClient.GetShopDeliverySettingsAsync(g.ShopId!.Value, ct)));
+
+            for (var i = 0; i < courierGroups.Count; i++)
+            {
+                if (shopSettings[i] is { AllowCourierDelivery: false })
+                    throw new ConflictException(
+                        $"Shop '{courierGroups[i].ShopId}' does not allow courier delivery.");
+            }
+        }
+
         // Group cart items by (SellerId, ShopId) — now directly from CartItem fields
         var cartGroups = allSelectedItems
             .GroupBy(item => (item.SellerId, item.ShopId))

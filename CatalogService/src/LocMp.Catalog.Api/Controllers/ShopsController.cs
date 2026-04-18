@@ -1,6 +1,7 @@
 using LocMp.Catalog.Api.Requests.Shops;
 using LocMp.Catalog.Application.Catalog.Commands.Shops.CreateShop;
 using LocMp.Catalog.Application.Catalog.Commands.Shops.DeleteShopPhoto;
+using LocMp.Catalog.Application.Catalog.Commands.Shops.SetCourierDelivery;
 using LocMp.Catalog.Application.Catalog.Commands.Shops.UpdateShop;
 using LocMp.Catalog.Application.Catalog.Commands.Shops.UploadShopAvatar;
 using LocMp.Catalog.Application.Catalog.Commands.Shops.UploadShopPhoto;
@@ -94,6 +95,15 @@ public sealed class ShopsController(ISender sender) : ControllerBase
         var result = await sender.Send(new UploadShopPhotoCommand(
             id, HttpContext.GetUserId(), HttpContext.User.IsInRole("Admin"), images.ToList()), ct);
         return CreatedAtAction(nameof(GetById), new { id }, result);
+    }
+
+    [HttpPatch("{id:guid}/courier-delivery")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Seller,Admin")]
+    public async Task<IActionResult> SetCourierDelivery(Guid id, [FromBody] bool allow, CancellationToken ct)
+    {
+        await sender.Send(new SetCourierDeliveryCommand(
+            id, HttpContext.GetUserId(), HttpContext.User.IsInRole("Admin"), allow), ct);
+        return NoContent();
     }
 
     [HttpDelete("{shopId:guid}/photos/{photoId:guid}")]
