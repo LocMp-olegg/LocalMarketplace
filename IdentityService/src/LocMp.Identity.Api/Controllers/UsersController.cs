@@ -14,12 +14,15 @@ using LocMp.Identity.Application.Identity.Queries.Users.GetUserByUsername;
 using LocMp.Identity.Application.Identity.Queries.Users.GetUsersByRoleId;
 using LocMp.Identity.Application.Identity.Queries.Users.GetUsersPaged;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LocMp.Identity.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
 public class UsersController(ISender sender) : ControllerBase
 {
     [HttpGet]
@@ -68,10 +71,11 @@ public class UsersController(ISender sender) : ControllerBase
     }
 
     [HttpPost]
+    [AllowAnonymous]
     public async Task<ActionResult<UserDto>> Register([FromBody] RegisterUserCommand command, CancellationToken ct)
     {
         var result = await sender.Send(command, ct);
-        return Ok(result);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
     [HttpPut("{id:guid}")]

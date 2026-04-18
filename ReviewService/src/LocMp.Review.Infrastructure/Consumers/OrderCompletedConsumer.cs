@@ -12,20 +12,17 @@ public sealed class OrderCompletedConsumer(ReviewDbContext db) : IConsumer<Order
     {
         var msg = context.Message;
 
-        var existing = await db.AllowedReviews
-            .FirstOrDefaultAsync(ar => ar.OrderId == msg.OrderId, context.CancellationToken);
-
-        if (existing is not null)
+        if (await db.AllowedReviews.AnyAsync(ar => ar.OrderId == msg.OrderId, context.CancellationToken))
             return;
 
         db.AllowedReviews.Add(new AllowedReview
         {
-            OrderId = msg.OrderId,
-            BuyerId = msg.BuyerId,
-            SellerId = msg.SellerId,
-            CourierId = msg.CourierId,
+            OrderId    = msg.OrderId,
+            BuyerId    = msg.BuyerId,
+            SellerId   = msg.SellerId,
+            CourierId  = msg.CourierId,
             ProductIds = msg.Products.Select(p => p.ProductId).ToList(),
-            AllowedAt = msg.OccurredAt
+            AllowedAt  = msg.OccurredAt
         });
 
         await db.SaveChangesAsync(context.CancellationToken);

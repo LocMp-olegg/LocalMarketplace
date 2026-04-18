@@ -28,7 +28,14 @@ public sealed class UpdateUserProfileCommandHandler(
         if (request.LastName is not null) user.LastName = request.LastName;
         if (request.Gender.HasValue) user.Gender = (int)request.Gender.Value;
         if (request.BirthDate.HasValue) user.BirthDate = request.BirthDate.Value;
-        if (request.PhoneNumber is not null) user.PhoneNumber = request.PhoneNumber;
+        if (request.PhoneNumber is not null)
+        {
+            var phoneTaken = await userManager.Users
+                .AnyAsync(u => u.PhoneNumber == request.PhoneNumber && u.Id != request.UserId, ct);
+            if (phoneTaken)
+                throw new ConflictException("Phone number is already in use.");
+            user.PhoneNumber = request.PhoneNumber;
+        }
 
         var result = await userManager.UpdateAsync(user);
         if (!result.Succeeded)

@@ -284,6 +284,11 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("AllowCourierDelivery")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
                     b.Property<string>("AvatarObjectKey")
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");
@@ -328,6 +333,9 @@ namespace LocMp.Catalog.Infrastructure.Migrations
 
                     b.Property<Point>("Location")
                         .HasColumnType("geometry(Point, 4326)");
+
+                    b.Property<int?>("MaxCourierDistanceMeters")
+                        .HasColumnType("integer");
 
                     b.Property<string>("PhoneNumber")
                         .IsRequired()

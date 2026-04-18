@@ -22,6 +22,8 @@ public class ShopConfiguration : IEntityTypeConfiguration<Shop>
         builder.Property(s => s.Location).HasColumnType("geometry(Point, 4326)");
         builder.Property(s => s.AvatarUrl).HasMaxLength(1024);
         builder.Property(s => s.AvatarObjectKey).HasMaxLength(512);
+        builder.Property(s => s.AllowCourierDelivery).HasDefaultValue(true);
+        builder.Property(s => s.MaxCourierDistanceMeters);
         builder.Property(s => s.IsVerified).HasDefaultValue(true);
         builder.Property(s => s.IsActive).HasDefaultValue(true);
         builder.Property(s => s.CreatedAt).IsRequired();

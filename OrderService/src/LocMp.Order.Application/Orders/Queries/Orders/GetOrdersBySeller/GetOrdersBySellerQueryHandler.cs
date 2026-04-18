@@ -1,5 +1,7 @@
 using LocMp.BuildingBlocks.Application.Common;
 using LocMp.Order.Application.DTOs;
+using LocMp.Order.Domain.Enums;
+using OrderEntity = LocMp.Order.Domain.Entities.Order;
 using LocMp.Order.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -13,26 +15,57 @@ public sealed class GetOrdersBySellerQueryHandler(OrderDbContext db)
     {
         var query = db.Orders
             .Include(o => o.Items)
-            .Where(o => o.SellerId == request.SellerId);
+            .Where(o => o.SellerId == request.SellerId)
+            .AsQueryable();
 
-        if (request.StatusFilter.HasValue)
-            query = query.Where(o => o.Status == request.StatusFilter.Value);
+        if (request.ShopId.HasValue)
+            query = query.Where(o => o.ShopId == request.ShopId.Value);
+
+        if (request.Statuses is { Count: > 0 })
+            query = query.Where(o => request.Statuses.Contains(o.Status));
+
+        if (request.From.HasValue)
+            query = query.Where(o => o.CreatedAt >= request.From.Value);
+
+        if (request.To.HasValue)
+            query = query.Where(o => o.CreatedAt <= request.To.Value);
+
+        if (request.DeliveryType.HasValue)
+            query = query.Where(o => o.DeliveryType == request.DeliveryType.Value);
 
         var total = await query.CountAsync(ct);
 
-        var orders = await query
-            .OrderByDescending(o => o.CreatedAt)
+        IOrderedQueryable<OrderEntity> sorted = request.SortBy switch
+        {
+            OrderSortField.Date => request.Descending
+                ? query.OrderByDescending(o => o.CreatedAt)
+                : query.OrderBy(o => o.CreatedAt),
+
+            OrderSortField.Amount => request.Descending
+                ? query.OrderByDescending(o => o.TotalAmount)
+                : query.OrderBy(o => o.TotalAmount),
+
+            OrderSortField.Status => query
+                .OrderBy(o => (int)o.Status)
+                .ThenByDescending(o => o.CreatedAt),
+
+            _ => query
+                .OrderBy(o => o.Status == OrderStatus.Pending ? 0 : 1)
+                .ThenBy(o => (int)o.Status)
+                .ThenByDescending(o => o.CreatedAt)
+        };
+
+        var orders = await sorted
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
             .ToListAsync(ct);
 
         var items = orders.Select(o => new OrderSummaryDto(
-            o.Id, o.BuyerId, o.SellerId,
-            o.Status, o.DeliveryType, o.PaymentStatus,
-            o.TotalAmount,
+            o.Id, o.CheckoutId, o.BuyerId, o.SellerId, o.SellerName, o.ShopId, o.ShopName,
+            o.Status, o.DeliveryType, o.PaymentStatus, o.TotalAmount,
             o.Items.Select(i => new OrderItemDto(
                 i.Id, i.ProductId, i.ProductName, i.ProductDescription,
-                i.MainPhotoUrl, i.UnitPrice, i.Quantity, i.Subtotal)).ToList(),
+                i.MainPhotoUrl, i.ShopId, i.ShopName, i.UnitPrice, i.Quantity, i.Subtotal)).ToList(),
             o.CreatedAt, o.CompletedAt)).ToList();
 
         return new PagedResult<OrderSummaryDto>(items, total, request.PageNumber, request.PageSize);

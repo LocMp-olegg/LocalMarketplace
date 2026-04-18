@@ -1,6 +1,6 @@
-using AutoMapper;
 using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Order.Application.DTOs;
+using LocMp.Order.Application.Mapping;
 using LocMp.Order.Infrastructure.Interfaces;
 using LocMp.Order.Domain.Entities;
 using LocMp.Order.Infrastructure.Persistence;
@@ -12,8 +12,7 @@ namespace LocMp.Order.Application.Orders.Commands.Cart.AddToCart;
 
 public sealed class AddToCartCommandHandler(
     OrderDbContext db,
-    ICatalogClient catalogClient,
-    IMapper mapper)
+    ICatalogClient catalogClient)
     : IRequestHandler<AddToCartCommand, CartDto>
 {
     public async Task<CartDto> Handle(AddToCartCommand request, CancellationToken ct)
@@ -59,6 +58,10 @@ public sealed class AddToCartCommandHandler(
                 CartId = cart.Id,
                 ProductId = product.Id,
                 ProductName = product.Name,
+                SellerId = product.SellerId,
+                SellerName = product.SellerName ?? string.Empty,
+                ShopId = product.ShopId,
+                ShopName = product.ShopName,
                 Price = product.Price,
                 Quantity = request.Quantity
             };
@@ -68,6 +71,6 @@ public sealed class AddToCartCommandHandler(
         cart.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
 
-        return mapper.Map<CartDto>(cart);
+        return CartMapper.ToDto(cart);
     }
 }

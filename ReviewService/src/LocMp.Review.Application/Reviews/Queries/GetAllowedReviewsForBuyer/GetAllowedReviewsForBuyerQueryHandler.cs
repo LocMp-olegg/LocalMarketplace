@@ -1,5 +1,6 @@
 using LocMp.BuildingBlocks.Application.Common;
 using LocMp.Review.Application.DTOs;
+using LocMp.Review.Domain.Entities;
 using LocMp.Review.Domain.Enums;
 using LocMp.Review.Infrastructure.Persistence;
 using MediatR;
@@ -21,34 +22,24 @@ public sealed class GetAllowedReviewsForBuyerQueryHandler(ReviewDbContext db)
         if (allowedReviews.Count == 0)
             return new PagedResult<PendingReviewSubjectDto>([], 0, request.Page, request.PageSize);
 
-        var orderIds = allowedReviews.Select(ar => ar.OrderId).ToList();
-
-        // Load all subjects already reviewed for these orders
-        var reviewedKeys = await db.Reviews
-            .Where(r => orderIds.Contains(r.OrderId))
-            .Select(r => new { r.OrderId, r.SubjectType, r.SubjectId })
-            .ToListAsync(ct);
-
-        var reviewedSet = reviewedKeys
-            .Select(r => (r.OrderId, r.SubjectType, r.SubjectId))
+        var reviewedSet = (await db.Reviews
+                .Where(r => r.ReviewerId == request.BuyerId)
+                .Select(r => new { r.SubjectType, r.SubjectId })
+                .ToListAsync(ct))
+            .Select(r => (r.SubjectType, r.SubjectId))
             .ToHashSet();
 
-        // Expand each AllowedReview into individual subjects, filter out already reviewed
         var pending = new List<PendingReviewSubjectDto>();
+        var seen = new HashSet<(ReviewSubjectType, Guid)>();
+
         foreach (var ar in allowedReviews)
         {
-            if (!reviewedSet.Contains((ar.OrderId, ReviewSubjectType.Seller, ar.SellerId)))
-                pending.Add(new PendingReviewSubjectDto(ar.OrderId, ReviewSubjectType.Seller, ar.SellerId, ar.AllowedAt));
-
-            if (ar.CourierId.HasValue &&
-                !reviewedSet.Contains((ar.OrderId, ReviewSubjectType.Courier, ar.CourierId.Value)))
-                pending.Add(new PendingReviewSubjectDto(ar.OrderId, ReviewSubjectType.Courier, ar.CourierId.Value, ar.AllowedAt));
-
+            if (ar.SellerId != Guid.Empty)
+                TryAdd(ReviewSubjectType.Seller, ar.SellerId, ar);
+            if (ar.CourierId.HasValue)
+                TryAdd(ReviewSubjectType.Courier, ar.CourierId.Value, ar);
             foreach (var productId in ar.ProductIds)
-            {
-                if (!reviewedSet.Contains((ar.OrderId, ReviewSubjectType.Product, productId)))
-                    pending.Add(new PendingReviewSubjectDto(ar.OrderId, ReviewSubjectType.Product, productId, ar.AllowedAt));
-            }
+                TryAdd(ReviewSubjectType.Product, productId, ar);
         }
 
         var total = pending.Count;
@@ -58,5 +49,11 @@ public sealed class GetAllowedReviewsForBuyerQueryHandler(ReviewDbContext db)
             .ToList();
 
         return new PagedResult<PendingReviewSubjectDto>(items, total, request.Page, request.PageSize);
+
+        void TryAdd(ReviewSubjectType type, Guid subjectId, AllowedReview ar)
+        {
+            if (!reviewedSet.Contains((type, subjectId)) && seen.Add((type, subjectId)))
+                pending.Add(new PendingReviewSubjectDto(ar.OrderId, type, subjectId, ar.AllowedAt));
+        }
     }
 }

@@ -8,6 +8,7 @@ using LocMp.Identity.Domain.Enums;
 using LocMp.Identity.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 
 namespace LocMp.Identity.Application.Identity.Commands.Users.RegisterUser;
@@ -22,6 +23,10 @@ public sealed class RegisterUserCommandHandler(
     public async Task<UserDto> Handle(RegisterUserCommand request, CancellationToken ct)
     {
         const string defaultRole = nameof(UserRole.User);
+
+        if (!string.IsNullOrEmpty(request.PhoneNumber) &&
+            await userManager.Users.AnyAsync(u => u.PhoneNumber == request.PhoneNumber, ct))
+            throw new ConflictException("Phone number is already in use.");
 
         var user = new ApplicationUser
         {
@@ -40,8 +45,13 @@ public sealed class RegisterUserCommandHandler(
         var result = await userManager.CreateAsync(user, request.Password).ConfigureAwait(false);
         if (!result.Succeeded)
         {
-            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            throw new ConflictException($"Failed to register user '{request.Email}': {errors}");
+            var errors = string.Join(", ", result.Errors.Select(e => e.Code switch
+            {
+                "DuplicateEmail" => "Email is already in use.",
+                "DuplicateUserName" => "Username is already taken.",
+                _ => e.Description
+            }));
+            throw new ConflictException($"Registration failed: {errors}");
         }
 
         var roleResult = await userManager.AddToRoleAsync(user, defaultRole).ConfigureAwait(false);
@@ -70,7 +80,7 @@ public sealed class RegisterUserCommandHandler(
         }
 
         await eventBus.PublishAsync(
-            new UserRegisteredEvent(user.Id, user.Email!, $"{user.FirstName} {user.LastName}".Trim(),
+            new UserRegisteredEvent(user.Id, user.Email, $"{user.FirstName} {user.LastName}".Trim(),
                 user.RegisteredAt), ct);
 
         if (request.IsSeller)

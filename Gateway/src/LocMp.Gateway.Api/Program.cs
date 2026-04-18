@@ -1,4 +1,5 @@
 using LocMp.Gateway.Api.Extensions;
+using Microsoft.Extensions.Caching.Distributed;
 using Ocelot.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,6 +18,7 @@ builder.Services.AddCorsConfiguration();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddSwaggerGen();
 builder.Services.AddGateway(builder.Configuration);
+builder.Services.AddRedisBlocklist(builder.Configuration);
 
 var app = builder.Build();
 
@@ -39,6 +41,26 @@ app.Use(async (context, next) =>
 {
     var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     context.Request.Headers.TryAdd("X-User-IP", ip);
+    await next();
+});
+
+app.Use(async (context, next) =>
+{
+    if (context.User.Identity?.IsAuthenticated == true)
+    {
+        var userId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                     ?? context.User.FindFirst("sub")?.Value;
+        if (userId is not null)
+        {
+            var cache = context.RequestServices.GetRequiredService<IDistributedCache>();
+            var blocked = await cache.GetAsync($"locmp:blocked:{userId}", context.RequestAborted);
+            if (blocked is not null)
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return;
+            }
+        }
+    }
     await next();
 });
 

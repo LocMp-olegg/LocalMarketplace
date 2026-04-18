@@ -40,11 +40,11 @@ public sealed class CreateReviewCommandHandler(
             throw new ForbiddenException("SubjectId does not match the order data.");
 
         var alreadyExists = await db.Reviews.AnyAsync(r =>
-            r.OrderId == request.OrderId &&
+            r.ReviewerId == request.ReviewerId &&
             r.SubjectType == request.SubjectType &&
             r.SubjectId == request.SubjectId, ct);
         if (alreadyExists)
-            throw new ConflictException("A review for this subject and order already exists.");
+            throw new ConflictException("You have already reviewed this subject.");
 
         var now = DateTimeOffset.UtcNow;
         var review = new ReviewEntity(Guid.NewGuid())

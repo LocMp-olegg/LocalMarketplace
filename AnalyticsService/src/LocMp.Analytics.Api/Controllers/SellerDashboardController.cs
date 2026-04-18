@@ -1,4 +1,4 @@
-using LocMp.Analytics.Api.Extensions;
+using LocMp.BuildingBlocks.Infrastructure.Extensions;
 using LocMp.Analytics.Application.Analytics.Commands;
 using LocMp.Analytics.Application.Analytics.Queries.Seller;
 using LocMp.Analytics.Application.DTOs;

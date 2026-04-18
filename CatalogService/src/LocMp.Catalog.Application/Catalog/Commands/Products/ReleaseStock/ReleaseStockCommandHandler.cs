@@ -35,6 +35,6 @@ public sealed class ReleaseStockCommandHandler(CatalogDbContext db, IEventBus ev
         await cache.RemoveAsync($"product:{request.ProductId}", ct);
 
         await eventBus.PublishAsync(new StockReleasedEvent(
-            product.Id, request.OrderId, request.Quantity, DateTimeOffset.UtcNow), ct);
+            product.Id, product.SellerId, request.OrderId, request.Quantity, newStock, DateTimeOffset.UtcNow), ct);
     }
 }

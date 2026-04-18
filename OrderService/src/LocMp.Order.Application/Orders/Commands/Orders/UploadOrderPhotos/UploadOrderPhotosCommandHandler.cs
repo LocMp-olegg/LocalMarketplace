@@ -6,6 +6,7 @@ using LocMp.Order.Domain.Entities;
 using LocMp.Order.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 using SixLabors.ImageSharp;
 
 namespace LocMp.Order.Application.Orders.Commands.Orders.UploadOrderPhotos;
@@ -31,37 +32,23 @@ public sealed class UploadOrderPhotosCommandHandler(
             throw new ForbiddenException("You are not a participant in this order.");
 
         var existingCount = await db.OrderPhotos.CountAsync(p => p.OrderId == request.OrderId, ct);
-        var available = MaxPhotosPerOrder - existingCount;
+        ValidatePhotoLimits(request.Images.Count, existingCount, MaxPhotosPerOrder, MaxPhotosPerRequest);
 
-        if (available <= 0)
-            throw new ConflictException($"Order already has {MaxPhotosPerOrder} photos.");
+        var added = await UploadPhotosAsync(request, existingCount, ct);
 
-        if (request.Images.Count > MaxPhotosPerRequest)
-            throw new ConflictException($"Cannot upload more than {MaxPhotosPerRequest} photos per request.");
+        await db.SaveChangesAsync(ct);
+        return added.Select(mapper.Map<OrderPhotoDto>).ToList();
+    }
 
-        if (request.Images.Count > available)
-            throw new ConflictException($"Cannot upload {request.Images.Count} photos: only {available} slot(s) left.");
-
-        var nextSortOrder = existingCount;
+    private async Task<List<OrderPhoto>> UploadPhotosAsync(
+        UploadOrderPhotosCommand request, int nextSortOrder, CancellationToken ct)
+    {
         var added = new List<OrderPhoto>(request.Images.Count);
 
         for (var i = 0; i < request.Images.Count; i++)
         {
             var file = request.Images[i];
-
-            ProcessedImage processed;
-            try
-            {
-                processed = await imageProcessor.ProcessAsync(file.OpenReadStream(), MaxWidth, MaxHeight, ct);
-            }
-            catch (UnknownImageFormatException)
-            {
-                throw new ConflictException($"File '{file.FileName}' is not a supported image format.");
-            }
-            catch (Exception ex) when (ex is InvalidImageContentException or ImageFormatException)
-            {
-                throw new ConflictException($"File '{file.FileName}' is corrupted or has invalid content.");
-            }
+            var processed = await ProcessImageAsync(file, ct);
 
             var photoId = Guid.NewGuid();
             var objectKey = $"orders/{request.OrderId}/photos/{photoId}.webp";
@@ -84,7 +71,36 @@ public sealed class UploadOrderPhotosCommandHandler(
             added.Add(photo);
         }
 
-        await db.SaveChangesAsync(ct);
-        return added.Select(mapper.Map<OrderPhotoDto>).ToList();
+        return added;
+    }
+
+    private async Task<ProcessedImage> ProcessImageAsync(IFormFile file, CancellationToken ct)
+    {
+        try
+        {
+            return await imageProcessor.ProcessAsync(file.OpenReadStream(), MaxWidth, MaxHeight, ct);
+        }
+        catch (UnknownImageFormatException)
+        {
+            throw new ConflictException($"File '{file.FileName}' is not a supported image format.");
+        }
+        catch (Exception ex) when (ex is InvalidImageContentException or ImageFormatException)
+        {
+            throw new ConflictException($"File '{file.FileName}' is corrupted or has invalid content.");
+        }
+    }
+
+    private static void ValidatePhotoLimits(int incoming, int existing, int maxTotal, int maxPerRequest)
+    {
+        var available = maxTotal - existing;
+
+        if (available <= 0)
+            throw new ConflictException($"Order already has {maxTotal} photos.");
+
+        if (incoming > maxPerRequest)
+            throw new ConflictException($"Cannot upload more than {maxPerRequest} photos per request.");
+
+        if (incoming > available)
+            throw new ConflictException($"Cannot upload {incoming} photos: only {available} slot(s) left.");
     }
 }

@@ -1,6 +1,6 @@
-using AutoMapper;
 using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Order.Application.DTOs;
+using LocMp.Order.Application.Mapping;
 using LocMp.Order.Infrastructure.Interfaces;
 using LocMp.Order.Infrastructure.Persistence;
 using MediatR;
@@ -10,17 +10,16 @@ namespace LocMp.Order.Application.Orders.Commands.Cart.UpdateCartItemQuantity;
 
 public sealed class UpdateCartItemQuantityCommandHandler(
     OrderDbContext db,
-    ICatalogClient catalogClient,
-    IMapper mapper)
+    ICatalogClient catalogClient)
     : IRequestHandler<UpdateCartItemQuantityCommand, CartDto>
 {
     public async Task<CartDto> Handle(UpdateCartItemQuantityCommand request, CancellationToken ct)
     {
         var item = await db.CartItems
-            .Include(i => i.Cart)
-            .ThenInclude(c => c.Items)
-            .FirstOrDefaultAsync(i => i.Id == request.CartItemId, ct)
-            ?? throw new NotFoundException($"Cart item '{request.CartItemId}' not found.");
+                       .Include(i => i.Cart)
+                       .ThenInclude(c => c.Items)
+                       .FirstOrDefaultAsync(i => i.Id == request.CartItemId, ct)
+                   ?? throw new NotFoundException($"Cart item '{request.CartItemId}' not found.");
 
         if (item.Cart.UserId != request.UserId)
             throw new ForbiddenException("You can only update items in your own cart.");
@@ -41,6 +40,6 @@ public sealed class UpdateCartItemQuantityCommandHandler(
 
         await db.SaveChangesAsync(ct);
 
-        return mapper.Map<CartDto>(item.Cart);
+        return CartMapper.ToDto(item.Cart);
     }
 }

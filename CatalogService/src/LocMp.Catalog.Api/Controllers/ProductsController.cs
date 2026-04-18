@@ -12,6 +12,7 @@ using LocMp.Catalog.Application.Catalog.Commands.Products.UpdateProduct;
 using LocMp.Catalog.Application.Catalog.Commands.Products.UpdateStock;
 using LocMp.Catalog.Application.Catalog.Commands.Products.SetMainProductPhoto;
 using LocMp.Catalog.Application.Catalog.Commands.Products.UploadProductPhoto;
+using LocMp.Catalog.Application.Catalog.Commands.Products.TrackProductView;
 using LocMp.Catalog.Application.Catalog.Queries.Products.GetProductById;
 using LocMp.Catalog.Application.Catalog.Queries.Products.GetMyProducts;
 using LocMp.Catalog.Application.Catalog.Queries.Products.GetProductsByLocation;
@@ -22,7 +23,7 @@ using LocMp.Catalog.Application.Catalog.Queries.Products.GetProductStock;
 using LocMp.Catalog.Application.Catalog.Queries.Products.GetStockHistory;
 using LocMp.Catalog.Application.Catalog.Queries.Products.SearchProducts;
 using LocMp.Catalog.Application.DTOs;
-using LocMp.Catalog.Api.Extensions;
+using LocMp.BuildingBlocks.Infrastructure.Extensions;
 using LocMp.Catalog.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -41,8 +42,12 @@ public sealed class ProductsController(ISender sender) : ControllerBase
         var viewerId = HttpContext.User.Identity?.IsAuthenticated == true
             ? HttpContext.GetUserId()
             : (Guid?)null;
-        return Ok(await sender.Send(
-            new GetProductByIdQuery(id, viewerId, HttpContext.User.IsInRole("Admin")), ct));
+
+        var product = await sender.Send(new GetProductByIdQuery(id, viewerId, HttpContext.User.IsInRole("Admin")), ct);
+
+        _ = sender.Send(new TrackProductViewCommand(product.Id, product.SellerId, product.Name, viewerId), CancellationToken.None);
+
+        return Ok(product);
     }
 
     [HttpGet("nearby")]

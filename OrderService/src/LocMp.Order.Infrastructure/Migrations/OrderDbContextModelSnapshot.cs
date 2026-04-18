@@ -76,6 +76,21 @@ namespace LocMp.Order.Infrastructure.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("SellerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SellerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid?>("ShopId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ShopName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -287,6 +302,9 @@ namespace LocMp.Order.Infrastructure.Migrations
                     b.Property<Guid>("BuyerId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("CheckoutId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset?>("CompletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -304,6 +322,12 @@ namespace LocMp.Order.Infrastructure.Migrations
 
                     b.Property<string>("SellerName")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("ShopId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ShopName")
                         .HasColumnType("text");
 
                     b.Property<int>("Status")
