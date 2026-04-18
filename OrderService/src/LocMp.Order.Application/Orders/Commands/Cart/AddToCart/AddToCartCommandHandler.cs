@@ -55,15 +55,15 @@ public sealed class AddToCartCommandHandler(
         {
             var item = new CartItem(Guid.NewGuid())
             {
-                CartId      = cart.Id,
-                ProductId   = product.Id,
+                CartId = cart.Id,
+                ProductId = product.Id,
                 ProductName = product.Name,
-                SellerId    = product.SellerId,
-                SellerName  = product.SellerName ?? string.Empty,
-                ShopId      = product.ShopId,
-                ShopName    = product.ShopName,
-                Price       = product.Price,
-                Quantity    = request.Quantity
+                SellerId = product.SellerId,
+                SellerName = product.SellerName ?? string.Empty,
+                ShopId = product.ShopId,
+                ShopName = product.ShopName,
+                Price = product.Price,
+                Quantity = request.Quantity
             };
             db.CartItems.Add(item);
         }

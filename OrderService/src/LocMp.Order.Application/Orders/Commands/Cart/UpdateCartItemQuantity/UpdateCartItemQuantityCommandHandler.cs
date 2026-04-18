@@ -16,10 +16,10 @@ public sealed class UpdateCartItemQuantityCommandHandler(
     public async Task<CartDto> Handle(UpdateCartItemQuantityCommand request, CancellationToken ct)
     {
         var item = await db.CartItems
-            .Include(i => i.Cart)
-            .ThenInclude(c => c.Items)
-            .FirstOrDefaultAsync(i => i.Id == request.CartItemId, ct)
-            ?? throw new NotFoundException($"Cart item '{request.CartItemId}' not found.");
+                       .Include(i => i.Cart)
+                       .ThenInclude(c => c.Items)
+                       .FirstOrDefaultAsync(i => i.Id == request.CartItemId, ct)
+                   ?? throw new NotFoundException($"Cart item '{request.CartItemId}' not found.");
 
         if (item.Cart.UserId != request.UserId)
             throw new ForbiddenException("You can only update items in your own cart.");
