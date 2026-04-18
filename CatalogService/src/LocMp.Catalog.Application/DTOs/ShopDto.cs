@@ -18,6 +18,7 @@ public sealed record ShopDto
     public double? Longitude { get; init; }
     public string? AvatarUrl { get; init; }
     public bool AllowCourierDelivery { get; init; }
+    public int? MaxCourierDistanceMeters { get; init; }
     public bool IsVerified { get; init; }
     public bool IsActive { get; init; }
     public DateTimeOffset CreatedAt { get; init; }

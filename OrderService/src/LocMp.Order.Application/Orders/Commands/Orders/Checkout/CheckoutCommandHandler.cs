@@ -130,11 +130,40 @@ public sealed class CheckoutCommandHandler(
 
         for (var i = 0; i < courierGroups.Count; i++)
         {
-            if (shopSettings[i] is { AllowCourierDelivery: false })
-                throw new ConflictException(
-                    $"Shop '{courierGroups[i].ShopId}' does not allow courier delivery.");
+            var group = courierGroups[i];
+            var settings = shopSettings[i];
+
+            if (settings is { AllowCourierDelivery: false })
+                throw new ConflictException($"Shop '{group.ShopId}' does not allow courier delivery.");
+
+            if (settings is { MaxCourierDistanceMeters: not null, Latitude: not null, Longitude: not null }
+                && group.DeliveryAddress is { Latitude: not null, Longitude: not null })
+            {
+                var distanceMeters = CalculateDistanceMeters(
+                    settings.Latitude.Value, settings.Longitude.Value,
+                    group.DeliveryAddress.Latitude.Value, group.DeliveryAddress.Longitude.Value);
+
+                if (distanceMeters > settings.MaxCourierDistanceMeters.Value)
+                    throw new ConflictException(
+                        $"Delivery address is {(int)distanceMeters / 1000.0:F1} km away. " +
+                        $"Shop '{group.ShopId}' only delivers within {settings.MaxCourierDistanceMeters.Value / 1000.0:F1} km.");
+            }
         }
     }
+
+    private static double CalculateDistanceMeters(
+        double lat1, double lon1, double lat2, double lon2)
+    {
+        const double earthRadiusMeters = 6_371_000;
+        var dLat = ToRad(lat2 - lat1);
+        var dLon = ToRad(lon2 - lon1);
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2)
+              + Math.Cos(ToRad(lat1)) * Math.Cos(ToRad(lat2))
+              * Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        return earthRadiusMeters * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+    }
+
+    private static double ToRad(double degrees) => degrees * Math.PI / 180;
 
     private async Task<List<OrderEntity>> CreateOrdersInTransactionAsync(
         CheckoutCommand request,

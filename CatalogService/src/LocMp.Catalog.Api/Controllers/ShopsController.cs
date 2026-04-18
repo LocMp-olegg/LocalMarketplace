@@ -99,10 +99,12 @@ public sealed class ShopsController(ISender sender) : ControllerBase
 
     [HttpPatch("{id:guid}/courier-delivery")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Seller,Admin")]
-    public async Task<IActionResult> SetCourierDelivery(Guid id, [FromBody] bool allow, CancellationToken ct)
+    public async Task<IActionResult> SetCourierDelivery(
+        Guid id, [FromBody] SetCourierDeliveryRequest request, CancellationToken ct)
     {
         await sender.Send(new SetCourierDeliveryCommand(
-            id, HttpContext.GetUserId(), HttpContext.User.IsInRole("Admin"), allow), ct);
+            id, HttpContext.GetUserId(), HttpContext.User.IsInRole("Admin"),
+            request.Allow, request.MaxDistanceMeters), ct);
         return NoContent();
     }
 

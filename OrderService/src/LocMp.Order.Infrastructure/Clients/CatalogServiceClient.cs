@@ -12,10 +12,20 @@ public sealed class CatalogServiceClient(HttpClient http) : ICatalogClient
     public async Task<ShopDeliverySettingsDto?> GetShopDeliverySettingsAsync(Guid shopId, CancellationToken ct = default)
     {
         var shop = await http.GetFromJsonAsync<ShopSettingsResponse>($"api/shops/{shopId}", ct);
-        return shop is null ? null : new ShopDeliverySettingsDto(shop.AllowCourierDelivery);
+        return shop is null
+            ? null
+            : new ShopDeliverySettingsDto(
+                shop.AllowCourierDelivery,
+                shop.MaxCourierDistanceMeters,
+                shop.Latitude,
+                shop.Longitude);
     }
 
-    private sealed record ShopSettingsResponse(bool AllowCourierDelivery);
+    private sealed record ShopSettingsResponse(
+        bool AllowCourierDelivery,
+        int? MaxCourierDistanceMeters,
+        double? Latitude,
+        double? Longitude);
 
     public async Task ReserveStockAsync(Guid productId, int quantity, Guid orderId, CancellationToken ct = default)
     {
