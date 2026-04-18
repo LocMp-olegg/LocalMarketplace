@@ -60,6 +60,10 @@ public static class InfrastructureExtension
         services.AddScoped<IEventBus, MassTransitEventBus>();
         services.AddScoped<ISessionService, SessionService>();
 
+        var redisConnection = configuration.GetConnectionString("Redis")
+                              ?? throw new InvalidOperationException("Connection string 'Redis' not found.");
+        services.AddStackExchangeRedisCache(o => o.Configuration = redisConnection);
+
         // MinIO
         services.Configure<MinioOptions>(configuration.GetSection("Minio"));
         var minioOpts = configuration.GetSection("Minio").Get<MinioOptions>()

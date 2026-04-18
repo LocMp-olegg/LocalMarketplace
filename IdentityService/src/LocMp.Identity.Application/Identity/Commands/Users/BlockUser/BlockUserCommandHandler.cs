@@ -4,12 +4,14 @@ using LocMp.Contracts.Identity;
 using LocMp.Identity.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace LocMp.Identity.Application.Identity.Commands.Users.BlockUser;
 
 public sealed class BlockUserCommandHandler(
     UserManager<ApplicationUser> userManager,
-    IEventBus eventBus
+    IEventBus eventBus,
+    IDistributedCache cache
 ) : IRequestHandler<BlockUserCommand, Unit>
 {
     public async Task<Unit> Handle(BlockUserCommand request, CancellationToken ct)
@@ -25,6 +27,12 @@ public sealed class BlockUserCommandHandler(
 
         user.Active = false;
         await userManager.UpdateAsync(user);
+
+        await cache.SetAsync(
+            $"locmp:blocked:{user.Id}",
+            [1],
+            new DistributedCacheEntryOptions { AbsoluteExpiration = blockedUntil },
+            ct);
 
         await eventBus.PublishAsync(
             new UserBlockedEvent(user.Id, blockedUntil, DateTimeOffset.UtcNow), ct);
