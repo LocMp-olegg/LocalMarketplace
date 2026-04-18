@@ -6,12 +6,15 @@ using LocMp.Identity.Application.Identity.Commands.Roles.DeleteRole;
 using LocMp.Identity.Application.Identity.Queries.Roles.GetRoleById;
 using LocMp.Identity.Application.Identity.Queries.Roles.GetRoles;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LocMp.Identity.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
 public class RolesController(ISender sender) : ControllerBase
 {
     [HttpGet]

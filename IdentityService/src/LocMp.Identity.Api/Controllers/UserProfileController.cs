@@ -1,6 +1,7 @@
 using LocMp.Identity.Api.Requests.UserProfile;
 using LocMp.Identity.Application.DTOs.UserProfile;
 using LocMp.Identity.Application.Identity.Commands.UserProfile.DeleteUserPhoto;
+using LocMp.Identity.Application.Identity.Commands.UserProfile.LogoutAllDevices;
 using LocMp.Identity.Application.Identity.Commands.UserProfile.UpdateUserProfile;
 using LocMp.Identity.Application.Identity.Commands.UserProfile.UploadUserPhoto;
 using LocMp.Identity.Application.Identity.Queries.UserProfile.GetUserPhoto;
@@ -62,6 +63,13 @@ public class UserProfileController(ISender sender) : ControllerBase
     public async Task<IActionResult> DeletePhoto(CancellationToken ct)
     {
         await sender.Send(new DeleteUserPhotoCommand(HttpContext.GetUserId()), ct);
+        return NoContent();
+    }
+
+    [HttpPost("logout-all")]
+    public async Task<IActionResult> LogoutAllDevices(CancellationToken ct)
+    {
+        await sender.Send(new LogoutAllDevicesCommand(HttpContext.GetUserId()), ct);
         return NoContent();
     }
 }

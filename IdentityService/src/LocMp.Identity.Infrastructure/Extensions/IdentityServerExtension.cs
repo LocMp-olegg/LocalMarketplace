@@ -32,7 +32,7 @@ public static class IdentityServerExtension
                 AllowOfflineAccess = c.AllowOfflineAccess,
                 AlwaysIncludeUserClaimsInIdToken = true,
                 AccessTokenLifetime = c.AccessTokenLifetime,
-                RefreshTokenUsage = TokenUsage.ReUse,
+                RefreshTokenUsage = TokenUsage.OneTimeOnly,
                 RefreshTokenExpiration = TokenExpiration.Sliding
             }).ToList())
             .AddInMemoryIdentityResources(new List<IdentityResource>

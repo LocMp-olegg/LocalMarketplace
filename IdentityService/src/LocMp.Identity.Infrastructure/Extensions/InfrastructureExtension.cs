@@ -5,6 +5,7 @@ using LocMp.BuildingBlocks.Infrastructure.Storage;
 using LocMp.Identity.Infrastructure.BackgroundServices;
 using LocMp.Identity.Infrastructure.Options;
 using LocMp.Identity.Infrastructure.Persistence;
+using LocMp.Identity.Infrastructure.Services;
 using MassTransit;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
@@ -57,6 +58,7 @@ public static class InfrastructureExtension
         });
 
         services.AddScoped<IEventBus, MassTransitEventBus>();
+        services.AddScoped<ISessionService, SessionService>();
 
         // MinIO
         services.Configure<MinioOptions>(configuration.GetSection("Minio"));
