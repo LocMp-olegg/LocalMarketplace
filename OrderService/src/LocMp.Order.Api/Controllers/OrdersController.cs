@@ -51,13 +51,21 @@ public sealed class OrdersController(ISender sender) : ControllerBase
     [HttpGet("my-sales")]
     [Authorize(Roles = "Seller,Admin")]
     public async Task<ActionResult<PagedResult<OrderSummaryDto>>> GetMySales(
-        [FromQuery] OrderStatus? status,
+        [FromQuery] Guid? shopId,
+        [FromQuery] OrderStatus[]? statuses,
+        [FromQuery] DateTimeOffset? from,
+        [FromQuery] DateTimeOffset? to,
+        [FromQuery] DeliveryType? deliveryType,
+        [FromQuery] OrderSortField sortBy = OrderSortField.Default,
+        [FromQuery] bool descending = true,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
     {
         var result = await sender.Send(
-            new GetOrdersBySellerQuery(HttpContext.GetUserId(), status, page, pageSize), ct);
+            new GetOrdersBySellerQuery(
+                HttpContext.GetUserId(), shopId, statuses, from, to, deliveryType, sortBy, descending, page, pageSize),
+            ct);
         return Ok(result);
     }
 
@@ -65,12 +73,21 @@ public sealed class OrdersController(ISender sender) : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<PagedResult<OrderSummaryDto>>> GetBySeller(
         Guid sellerId,
-        [FromQuery] OrderStatus? status,
+        [FromQuery] Guid? shopId,
+        [FromQuery] OrderStatus[]? statuses,
+        [FromQuery] DateTimeOffset? from,
+        [FromQuery] DateTimeOffset? to,
+        [FromQuery] DeliveryType? deliveryType,
+        [FromQuery] OrderSortField sortBy = OrderSortField.Default,
+        [FromQuery] bool descending = true,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
     {
-        var result = await sender.Send(new GetOrdersBySellerQuery(sellerId, status, page, pageSize), ct);
+        var result = await sender.Send(
+            new GetOrdersBySellerQuery(
+                sellerId, shopId, statuses, from, to, deliveryType, sortBy, descending, page, pageSize),
+            ct);
         return Ok(result);
     }
 

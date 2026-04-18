@@ -7,6 +7,12 @@ namespace LocMp.Order.Application.Orders.Queries.Orders.GetOrdersBySeller;
 
 public sealed record GetOrdersBySellerQuery(
     Guid SellerId,
-    OrderStatus? StatusFilter,
+    Guid? ShopId = null,
+    IReadOnlyList<OrderStatus>? Statuses = null,
+    DateTimeOffset? From = null,
+    DateTimeOffset? To = null,
+    DeliveryType? DeliveryType = null,
+    OrderSortField SortBy = OrderSortField.Default,
+    bool Descending = true,
     int PageNumber = 1,
     int PageSize = 20) : IRequest<PagedResult<OrderSummaryDto>>;
