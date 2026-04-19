@@ -105,6 +105,8 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
             + ProductId : Guid
             + SellerId : Guid
             + ProductName : string
+            + ShopId : Guid?
+            + ShopName : string?
             + OccurredAt : DateTimeOffset
         }
         class FavoriteChangedEvent {
@@ -132,12 +134,21 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
             + ToStatus : string
             + OccurredAt : DateTimeOffset
         }
+        class OrderedProductItem {
+            + ProductId : Guid
+            + ProductName : string
+            + Quantity : int
+            + Subtotal : decimal
+            + ShopId : Guid?
+            + ShopName : string?
+        }
         class OrderCompletedEvent {
             + OrderId : Guid
             + BuyerId : Guid
             + SellerId : Guid
+            + SellerName : string
             + CourierId : Guid?
-            + ProductIds : IReadOnlyList<Guid>
+            + Products : IReadOnlyList<OrderedProductItem>
             + TotalAmount : decimal
             + OccurredAt : DateTimeOffset
         }
@@ -177,6 +188,7 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
             BuyerFavored  = 1
             SellerFavored = 2
         }
+        OrderCompletedEvent ..> OrderedProductItem
         DisputeOpenedEvent  ..> DisputeType
         DisputeResolvedEvent ..> DisputeType
         DisputeResolvedEvent ..> DisputeOutcome
@@ -222,7 +234,6 @@ note as PublisherNote
   OrderService     → OrderPlacedEvent
                      OrderStatusChangedEvent
                      OrderCompletedEvent
-                     StockReserveRequestEvent
                      DisputeOpenedEvent
                      DisputeResolvedEvent
   ─────────────────────────────────────────
@@ -233,16 +244,13 @@ end note
 note as ConsumerNote
   <b>Кто потребляет:</b>
   CatalogService:
-    • StockReserveRequestEvent    → резервирует StockQuantity
-    • StockReleasedEvent          → освобождает резерв
     • RatingAggregateUpdatedEvent → обновляет SellerReadModel
     • UserProfileUpdatedEvent     → обновляет SellerReadModel
     • UserBecameSellerEvent       → создаёт SellerReadModel
   ─────────────────────────────────────────
   OrderService:
-    • StockReservedEvent          → Order → Confirmed
-    • StockReservationFailedEvent → Order → Cancelled
     • UserBlockedEvent            → отменяет Pending заказы
+    (резервирование стока — синхронный HTTP, не событие)
   ─────────────────────────────────────────
   ReviewService:
     • OrderCompletedEvent  → разблокирует отзыв для покупателя

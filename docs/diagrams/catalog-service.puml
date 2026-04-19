@@ -70,6 +70,8 @@ class Shop {
     + Location : Point? <<geometry(Point,4326)>>
     + AvatarUrl : string?
     + AvatarObjectKey : string?
+    + AllowCourierDelivery : bool
+    + MaxCourierDistanceMeters : int?
     + IsVerified : bool
     + VerifiedAt : DateTimeOffset?
     + IsActive : bool
@@ -107,7 +109,7 @@ class Category {
 class Product <<aggregate root>> {
     + Id : Guid <<PK>>
     + SellerId : Guid <<logical ref: Identity>>
-    + ShopId : Guid? <<FK>>
+    + ShopId : Guid <<FK>>
     + CategoryId : Guid <<FK>>
     ..описание..
     + Name : string
@@ -117,6 +119,8 @@ class Product <<aggregate root>> {
     + Unit : string
     ..управление остатком..
     + StockQuantity : int
+    + IsMadeToOrder : bool
+    + LeadTimeDays : int?
     ..геолокация точки продажи..
     + Location : Point <<geometry(Point,4326)>>
     ..произвольные метаданные..
@@ -189,7 +193,7 @@ class Favorite {
 Category "0..1" -right- "0..*" Category : parent >
 
 Shop "1" *-down- "0..*" ShopPhoto : фото магазина >
-Shop "1" -right- "0..*" Product : товары >
+Shop "1" *-right- "1..*" Product : товары >
 Shop ..> BusinessType : использует
 
 Product "0..*" -up-> "1" Category : принадлежит >
@@ -247,7 +251,7 @@ end note
 legend bottom
   <b>Таблицы сервиса (schema: catalog)</b>
   |= Класс C# |= Таблица в БД |= Описание |
-  | Shop | Shops | Магазин продавца с геолокацией и бизнес-типом |
+  | Shop | Shops | Магазин продавца с геолокацией, бизнес-типом и настройками курьерской доставки |
   | ShopPhoto | ShopPhotos | Фото магазина (StorageUrl → MinIO bucket: catalog-media) |
   | Category | Categories | Дерево категорий товаров (self-referencing) |
   | Product | Products | Товар продавца с геолокацией и JSONB-атрибутами |

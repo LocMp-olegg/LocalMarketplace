@@ -89,6 +89,10 @@ class CartItem {
     ..snapshot на момент добавления..
     + ProductId : Guid <<logical ref: Catalog>>
     + ProductName : string <<snapshot>>
+    + SellerId : Guid <<logical ref: Identity>>
+    + SellerName : string <<snapshot>>
+    + ShopId : Guid? <<logical ref: Catalog>>
+    + ShopName : string? <<snapshot>>
     + Price : decimal <<snapshot>>
     + Quantity : int
     + UpdatedAt : DateTimeOffset?
@@ -98,9 +102,13 @@ class CartItem {
 
 class Order <<aggregate root>> {
     + Id : Guid <<PK>>
+    + CheckoutId : Guid? <<группирует заказы одного checkout>>
     ..участники — только Guid, нет FK..
     + BuyerId : Guid <<logical ref: Identity>>
     + SellerId : Guid <<logical ref: Identity>>
+    + SellerName : string <<snapshot>>
+    + ShopId : Guid? <<logical ref: Catalog>>
+    + ShopName : string? <<snapshot>>
     ..статус и тип..
     + Status : OrderStatus
     + DeliveryType : DeliveryType
@@ -122,6 +130,8 @@ class OrderItem {
     + ProductName : string <<snapshot>>
     + ProductDescription : string? <<snapshot>>
     + MainPhotoUrl : string? <<snapshot>>
+    + ShopId : Guid? <<logical ref: Catalog>>
+    + ShopName : string? <<snapshot>>
     + UnitPrice : decimal <<snapshot>>
     + Quantity : int
     + Subtotal : decimal
@@ -231,6 +241,11 @@ note right of OrderItem
 end note
 
 note right of Order
+  CheckoutId объединяет несколько заказов
+  (от разных продавцов), созданных за один
+  Checkout — для корзины с товарами нескольких
+  продавцов.
+
   Конечный автомат статусов:
 
   Pending ──► Confirmed
