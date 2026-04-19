@@ -6,6 +6,7 @@ public sealed class CreateProductCommandValidator : AbstractValidator<CreateProd
 {
     public CreateProductCommandValidator()
     {
+        RuleFor(x => x.ShopId).NotEmpty();
         RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
         RuleFor(x => x.Description).MaximumLength(4000).When(x => x.Description is not null);
         RuleFor(x => x.Price).GreaterThan(0);

@@ -7,7 +7,7 @@ namespace LocMp.Catalog.Domain.Entities;
 public class Product(Guid id) : AggregateRoot<Guid>(id)
 {
     public Guid SellerId { get; set; }
-    public Guid? ShopId { get; set; }
+    public Guid ShopId { get; set; }
     public Guid CategoryId { get; set; }
 
     public string Name { get; set; } = null!;
@@ -60,7 +60,7 @@ public class Product(Guid id) : AggregateRoot<Guid>(id)
         return newQuantity;
     }
 
-    public virtual Shop? Shop { get; set; }
+    public virtual Shop Shop { get; set; } = null!;
     public virtual Category Category { get; set; } = null!;
     public virtual ICollection<ProductPhoto> Photos { get; set; } = [];
     public virtual ICollection<StockHistory> StockHistory { get; set; } = [];

@@ -24,6 +24,12 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.IsDeleted).HasDefaultValue(false);
         builder.Property(p => p.CreatedAt).IsRequired();
 
+        builder.HasOne(p => p.Shop)
+            .WithMany(s => s.Products)
+            .HasForeignKey(p => p.ShopId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasOne(p => p.Category)
             .WithMany(c => c.Products)
             .HasForeignKey(p => p.CategoryId)

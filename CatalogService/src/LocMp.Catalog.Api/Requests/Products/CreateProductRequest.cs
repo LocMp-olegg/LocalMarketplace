@@ -1,7 +1,7 @@
 namespace LocMp.Catalog.Api.Requests.Products;
 
 public sealed record CreateProductRequest(
-    Guid? ShopId,
+    Guid ShopId,
     Guid CategoryId,
     string Name,
     string? Description,

@@ -28,12 +28,6 @@ public class ShopConfiguration : IEntityTypeConfiguration<Shop>
         builder.Property(s => s.IsActive).HasDefaultValue(true);
         builder.Property(s => s.CreatedAt).IsRequired();
 
-        builder.HasMany(s => s.Products)
-            .WithOne(p => p.Shop)
-            .HasForeignKey(p => p.ShopId)
-            .IsRequired(false)
-            .OnDelete(DeleteBehavior.SetNull);
-
         builder.HasIndex(s => s.SellerId);
     }
 }
