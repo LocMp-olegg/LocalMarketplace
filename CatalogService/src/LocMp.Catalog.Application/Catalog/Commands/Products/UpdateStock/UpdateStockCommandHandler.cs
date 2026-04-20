@@ -4,6 +4,7 @@ using LocMp.Catalog.Domain.Entities;
 using LocMp.Catalog.Infrastructure.Persistence;
 using LocMp.Contracts.Catalog;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 
 namespace LocMp.Catalog.Application.Catalog.Commands.Products.UpdateStock;
@@ -19,6 +20,8 @@ public sealed class UpdateStockCommandHandler(CatalogDbContext db, IEventBus eve
 
         if (product.SellerId != request.SellerId)
             throw new ForbiddenException("You do not own this product.");
+
+        var previousQuantity = product.StockQuantity;
 
         int newQuantity;
         try
@@ -47,8 +50,22 @@ public sealed class UpdateStockCommandHandler(CatalogDbContext db, IEventBus eve
         if (newQuantity == 0)
             await eventBus.PublishAsync(new StockDepletedEvent(product.Id, product.SellerId, product.Name, now), ct);
         else if (request.QuantityDelta > 0)
+        {
             await eventBus.PublishAsync(new StockReleasedEvent(
                 product.Id, product.SellerId, null, request.QuantityDelta, newQuantity, now), ct);
+
+            if (previousQuantity == 0)
+            {
+                var favoritedByUserIds = await db.Favorites
+                    .Where(f => f.ProductId == product.Id)
+                    .Select(f => f.UserId)
+                    .ToListAsync(ct);
+
+                await eventBus.PublishAsync(new ProductRestockedEvent(
+                    product.Id, product.SellerId, product.Name, product.ShopId,
+                    newQuantity, favoritedByUserIds, now), ct);
+            }
+        }
 
         return newQuantity;
     }

@@ -1,10 +1,10 @@
 {
   "info": {
-    "_postman_id": "3d01391b-e4a9-4c7f-9bc4-06e3b6a5ff81",
+    "_postman_id": "655caa78-4a47-4f3b-afd6-a0b03b207198",
     "name": "LocalMarketplace",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "26200637",
-    "_collection_link": "https://go.postman.co/collection/26200637-3d01391b-e4a9-4c7f-9bc4-06e3b6a5ff81?source=collection_link"
+    "_collection_link": "https://go.postman.co/collection/26200637-655caa78-4a47-4f3b-afd6-a0b03b207198?source=collection_link"
   },
   "item": [
     {
@@ -19,14 +19,16 @@
                 {
                   "listen": "test",
                   "script": {
-                    "type": "text/javascript",
                     "exec": [
                       "var json = pm.response.json();",
                       "if (json.access_token) {",
                       "    pm.collectionVariables.set('adminToken', json.access_token);",
                       "    console.log('Admin token saved');",
                       "}"
-                    ]
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
@@ -135,14 +137,16 @@
                 {
                   "listen": "test",
                   "script": {
-                    "type": "text/javascript",
                     "exec": [
                       "var json = pm.response.json();",
                       "if (json.access_token) {",
                       "    pm.collectionVariables.set('sellerToken', json.access_token);",
                       "    console.log('Seller token saved');",
                       "}"
-                    ]
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
@@ -158,11 +162,11 @@
                     },
                     {
                       "key": "username",
-                      "value": "seller@local.test"
+                      "value": "newseller"
                     },
                     {
                       "key": "password",
-                      "value": "Seller123!"
+                      "value": "String123!"
                     },
                     {
                       "key": "client_id",
@@ -256,11 +260,13 @@
                 {
                   "listen": "test",
                   "script": {
-                    "type": "text/javascript",
                     "exec": [
                       "var json = pm.response.json();",
                       "if (json.id) pm.collectionVariables.set('testUserId', json.id);"
-                    ]
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
@@ -269,7 +275,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"userName\": \"newbuyer\",\n  \"email\": \"newbuyer@local.test\",\n  \"password\": \"String123!\",\n  \"firstName\": \"Иван\",\n  \"lastName\": \"Петров\",\n  \"phoneNumber\": \"+79991234567\",\n  \"isSeller\": false\n}",
+                  "raw": "{\n  \"userName\": \"челик1\",\n  \"email\": \"bu1@local.test\",\n  \"password\": \"Balls\",\n  \"firstName\": \"Иван\",\n  \"lastName\": \"Петров\",\n  \"phoneNumber\": \"9811224567\",\n  \"isSeller\": false\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -412,7 +418,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"durationInMinutes\": 60\n}",
+                  "raw": "{\n  \"durationInMinutes\": 2\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -735,6 +741,35 @@
                 }
               },
               "response": []
+            },
+            {
+              "name": "Log Out From All Devices",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrlIdentity}}/api/profile/logout-all",
+                  "host": [
+                    "{{baseUrlIdentity}}"
+                  ],
+                  "path": [
+                    "api",
+                    "profile",
+                    "logout-all"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         }
@@ -820,11 +855,13 @@
                 {
                   "listen": "test",
                   "script": {
-                    "type": "text/javascript",
                     "exec": [
                       "var json = pm.response.json();",
                       "if (json.id) pm.collectionVariables.set('testShopId', json.id);"
-                    ]
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
@@ -843,7 +880,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"businessName\": \"Пироги от Марины\",\n  \"phoneNumber\": \"+79991234567\",\n  \"email\": \"marina-pies@local.test\",\n  \"description\": \"Домашняя выпечка на заказ. Доставка по корпусам 1–5.\",\n  \"inn\": null,\n  \"businessType\": 1,\n  \"workingHours\": \"Пн–Пт 9:00–18:00\",\n  \"serviceRadiusMeters\": 500,\n  \"latitude\": 55.7558,\n  \"longitude\": 37.6176\n}",
+                  "raw": "{\n  \"businessName\": \"ЫУУДУДУДУДУ\",\n  \"phoneNumber\": \"8991234567\",\n  \"email\": \"bababa@local.test\",\n  \"description\": \"Домашняя выпечка на заказ. Доставка по корпусам 1–5.\",\n  \"inn\": null,\n  \"businessType\": 1,\n  \"workingHours\": \"Пн–Пт 9:00–18:00\",\n  \"serviceRadiusMeters\": 500,\n  \"latitude\": 55.7558,\n  \"longitude\": 37.6176\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1071,6 +1108,48 @@
                 }
               },
               "response": []
+            },
+            {
+              "name": "courier-delivery",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{sellerToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"allow\": true,\r\n    \"maxDistanceMeters\": 2000\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:5000/api/catalog/shops/a2a2d0e6-6631-46f5-89c4-68458efc8ee9/courier-delivery",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "5000",
+                  "path": [
+                    "api",
+                    "catalog",
+                    "shops",
+                    "a2a2d0e6-6631-46f5-89c4-68458efc8ee9",
+                    "courier-delivery"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         },
@@ -1291,7 +1370,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrlCatalog}}/api/products/search?search=хлеб&page=1&pageSize=10",
+                  "raw": "{{baseUrlCatalog}}/api/products/search?page=1&pageSize=10",
                   "host": [
                     "{{baseUrlCatalog}}"
                   ],
@@ -1303,7 +1382,8 @@
                   "query": [
                     {
                       "key": "search",
-                      "value": "хлеб"
+                      "value": "хлеб",
+                      "disabled": true
                     },
                     {
                       "key": "page",
@@ -1620,7 +1700,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrlCatalog}}/api/products/by-shop/{{testShopId}}?page=1&pageSize=10",
+                  "raw": "{{baseUrlCatalog}}/api/products/by-shop/{{testShopId}}?page=1&pageSize=10&search=2",
                   "host": [
                     "{{baseUrlCatalog}}"
                   ],
@@ -1657,8 +1737,7 @@
                     },
                     {
                       "key": "search",
-                      "value": "",
-                      "disabled": true
+                      "value": "2"
                     },
                     {
                       "key": "minPrice",
@@ -1910,11 +1989,13 @@
                 {
                   "listen": "test",
                   "script": {
-                    "type": "text/javascript",
                     "exec": [
                       "var json = pm.response.json();",
                       "if (json.id) pm.collectionVariables.set('testProductId', json.id);"
-                    ]
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
@@ -1933,7 +2014,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"shopId\": \"55555555-0000-0000-0000-000000000001\",\n  \"categoryId\": \"11111111-0000-0000-0000-000000000002\",\n  \"name\": \"Ржаной хлеб\",\n  \"description\": \"Домашний хлеб на закваске\",\n  \"price\": 150.00,\n  \"unit\": \"шт\",\n  \"initialStock\": 10,\n  \"isMadeToOrder\": false,\n  \"leadTimeDays\": null,\n  \"latitude\": 55.7558,\n  \"longitude\": 37.6176\n}",
+                  "raw": "{\n  \"shopId\": \"ca490369-0de9-46ba-a597-0a6da337c537\",\n  \"categoryId\": \"11111111-0000-0000-0000-000000000003\",\n  \"name\": \"Ляляляля\",\n  \"description\": \"улулулу\",\n  \"price\": 1250.00,\n  \"unit\": \"шт\",\n  \"initialStock\": 10,  \n  \"isMadeToOrder\": false,\n  \"leadTimeDays\": null,\n  \"latitude\": null,\n  \"longitude\": null\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1970,7 +2051,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"shopId\": null,\n  \"categoryId\": \"11111111-0000-0000-0000-000000000003\",\n  \"name\": \"Картофель молодой\",\n  \"description\": \"Сорт Беллароза\",\n  \"price\": 350.00,\n  \"unit\": \"шт\",\n  \"initialStock\": 20,\n  \"isMadeToOrder\": false,\n  \"leadTimeDays\": null,\n  \"latitude\": 55.7558,\n  \"longitude\": 37.6176\n}",
+                  "raw": "{\n  \"shopId\": \"55555555-0000-0000-0000-000000000001\",\n  \"categoryId\": \"11111111-0000-0000-0000-000000000003\",\n  \"name\": \"Картофель молодой\",\n  \"description\": \"Сорт Беллароза\",\n  \"price\": 350.00,\n  \"unit\": \"шт\",\n  \"initialStock\": 20,\n  \"isMadeToOrder\": false,\n  \"leadTimeDays\": null,\n  \"latitude\": 55.7558,\n  \"longitude\": 37.6176\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2656,7 +2737,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"productId\": \"{{testProductId}}\",\n  \"quantity\": 7\n}",
+                  "raw": "{\n  \"productId\": \"{{testProductId}}\",\n  \"quantity\": 2\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2851,7 +2932,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"buyerComment\": \"Тест самовывоза\",\n  \"groups\": [\n    {\n      \"sellerId\": \"{{testSellerId}}\",\n      \"shopId\": null,\n      \"deliveryType\": 1,\n      \"deliveryAddress\": null,\n      \"selectedItemIds\": null\n    }\n  ]\n}",
+                  "raw": "{\n  \"buyerComment\": \"Тест самовывоза\",\n  \"groups\": [\n    {\n      \"sellerId\": \"{{testSellerId}}\",\n      \"shopId\": \"a2a2d0e6-6631-46f5-89c4-68458efc8ee9\",\n      \"deliveryType\": 1,\n      \"deliveryAddress\": null,\n      \"selectedItemIds\": null\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2878,7 +2959,6 @@
                 {
                   "listen": "test",
                   "script": {
-                    "type": "text/javascript",
                     "exec": [
                       "pm.test('Status 200', () => pm.response.to.have.status(200));",
                       "var json = pm.response.json();",
@@ -2887,7 +2967,10 @@
                       "pm.test('DeliveryType is NeighborCourier', () => pm.expect(json[0].deliveryType).to.equal(2));",
                       "pm.test('DeliveryAddress present', () => pm.expect(json[0].deliveryAddress).to.not.be.null);",
                       "if (json[0] && json[0].id) pm.collectionVariables.set('testOrderId', json[0].id);"
-                    ]
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
@@ -2906,7 +2989,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"buyerComment\": \"Тест курьерской доставки\",\n  \"groups\": [\n    {\n      \"sellerId\": \"{{testSellerId}}\",\n      \"shopId\": null,\n      \"deliveryType\": 2,\n      \"deliveryAddress\": {\n        \"city\": \"Москва\",\n        \"street\": \"Ленина\",\n        \"houseNumber\": \"10\",\n        \"apartment\": \"42\",\n        \"entrance\": \"3\",\n        \"floor\": 5,\n        \"latitude\": 55.7558,\n        \"longitude\": 37.6176,\n        \"recipientName\": \"Иван Петров\",\n        \"recipientPhone\": \"+79991234567\"\n      },\n      \"selectedItemIds\": null\n    }\n  ]\n}",
+                  "raw": "{\n  \"buyerComment\": \"Тест курьерской доставки\",\n  \"groups\": [\n    {\n      \"sellerId\": \"{{testSellerId}}\",\n      \"shopId\": \"a2a2d0e6-6631-46f5-89c4-68458efc8ee9\",\n      \"deliveryType\": 2,\n      \"deliveryAddress\": {\n        \"city\": \"Москва\",\n        \"street\": \"Ленина\",\n        \"houseNumber\": \"10\",\n        \"apartment\": \"42\",\n        \"entrance\": \"3\",\n        \"floor\": 5,\n        \"latitude\": 55.7558,\n        \"longitude\": 37.6176,\n        \"recipientName\": \"Иван Петров\",\n        \"recipientPhone\": \"9991234567\"\n      },\n      \"selectedItemIds\": null\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2933,14 +3016,16 @@
                 {
                   "listen": "test",
                   "script": {
-                    "type": "text/javascript",
                     "exec": [
                       "pm.test('Status 200', () => pm.response.to.have.status(200));",
                       "var json = pm.response.json();",
                       "pm.test('Returns 2 orders', () => pm.expect(json.length).to.equal(2));",
                       "pm.test('Same checkoutId', () => pm.expect(json[0].checkoutId).to.equal(json[1].checkoutId));",
                       "if (json[0] && json[0].id) pm.collectionVariables.set('testOrderId', json[0].id);"
-                    ]
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
@@ -2959,7 +3044,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"buyerComment\": \"Мульти-группа\",\n  \"groups\": [\n    {\n      \"sellerId\": \"{{testSellerId}}\",\n      \"shopId\": \"{{testShopId}}\",\n      \"deliveryType\": 1,\n      \"deliveryAddress\": null,\n      \"selectedItemIds\": [\n        \"{{cartItemId1}}\"\n      ]\n    },\n    {\n      \"sellerId\": \"{{testSellerId2}}\",\n      \"shopId\": null,\n      \"deliveryType\": 2,\n      \"deliveryAddress\": {\n        \"city\": \"Москва\",\n        \"street\": \"Ленина\",\n        \"houseNumber\": \"10\",\n        \"recipientName\": \"Иван Петров\",\n        \"recipientPhone\": \"+79991234567\"\n      },\n      \"selectedItemIds\": null\n    }\n  ]\n}",
+                  "raw": "{\n    \"buyerComment\": \"Мульти-группа\",\n    \"groups\": [\n        {\n            \"sellerId\": \"019d86f2-9d2a-7b5f-a198-2f70b5316d46\",\n            \"shopId\": \"9f46ccfe-75dd-459c-8ac9-c96486de6f2b\",\n            \"deliveryType\": 1,\n            \"deliveryAddress\": null,\n            \"selectedItemIds\": null\n        },\n        {\n            \"sellerId\": \"019d86f2-9d2a-7b5f-a198-2f70b5316d46\",\n            \"shopId\": null,\n            \"deliveryType\": 1,\n            \"deliveryAddress\": null,\n            \"selectedItemIds\": null\n        },\n        {\n            \"sellerId\": \"019d86f2-9d2a-7b5f-a198-2f70b5316d46\",\n            \"shopId\": \"a2a2d0e6-6631-46f5-89c4-68458efc8ee9\",\n            \"deliveryType\": 1,\n            \"deliveryAddress\": null,\n            \"selectedItemIds\": null\n        },\n        {\n            \"sellerId\": \"019d9ac2-9ee9-7276-8acd-c36ecdc05ab6\",\n            \"shopId\": null,\n            \"deliveryType\": 1,\n            \"deliveryAddress\": null,\n            \"selectedItemIds\": null\n        }\n    ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -3172,10 +3257,12 @@
                 {
                   "listen": "test",
                   "script": {
-                    "type": "text/javascript",
                     "exec": [
                       "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                    ]
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
@@ -3262,12 +3349,14 @@
                 {
                   "listen": "test",
                   "script": {
-                    "type": "text/javascript",
                     "exec": [
                       "pm.test('Status 200', () => pm.response.to.have.status(200));",
                       "var json = pm.response.json();",
                       "pm.test('PagedResult', () => pm.expect(json.items).to.be.an('array'));"
-                    ]
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
@@ -3324,7 +3413,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrlOrder}}/api/orders/all?status=2&minAmount=100&maxAmount=5000&page=1&pageSize=20",
+                  "raw": "{{baseUrlOrder}}/api/orders/all?status=Pending&page=1&pageSize=20",
                   "host": [
                     "{{baseUrlOrder}}"
                   ],
@@ -3336,15 +3425,17 @@
                   "query": [
                     {
                       "key": "status",
-                      "value": "2"
+                      "value": "Pending"
                     },
                     {
                       "key": "minAmount",
-                      "value": "100"
+                      "value": "100",
+                      "disabled": true
                     },
                     {
                       "key": "maxAmount",
-                      "value": "5000"
+                      "value": "5000",
+                      "disabled": true
                     },
                     {
                       "key": "page",
@@ -3714,6 +3805,59 @@
                     "orders",
                     "photos",
                     "{{testOrderPhotoId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "New Request",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{sellerToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:5000/api/orders/orders/my-sales?statuses=Disputed",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "5000",
+                  "path": [
+                    "api",
+                    "orders",
+                    "orders",
+                    "my-sales"
+                  ],
+                  "query": [
+                    {
+                      "key": "shopId",
+                      "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "Amount",
+                      "disabled": true
+                    },
+                    {
+                      "key": "descending",
+                      "value": "true",
+                      "disabled": true
+                    },
+                    {
+                      "key": "statuses",
+                      "value": "Disputed"
+                    }
                   ]
                 }
               },
@@ -4339,7 +4483,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrlReview}}/api/reviews?subjectType=1&subjectId={{testUserId}}",
+                  "raw": "{{baseUrlReview}}/api/reviews?subjectType=1&subjectId={{testUserId}}&page=1&pageSize=20",
                   "host": [
                     "{{baseUrlReview}}"
                   ],
@@ -4777,7 +4921,7 @@
                     {
                       "key": "images",
                       "type": "file",
-                      "src": []
+                      "value": null
                     }
                   ]
                 },
@@ -5169,6 +5313,290 @@
       ]
     },
     {
+      "name": "NotificationService",
+      "item": [
+        {
+          "name": "NotificationsController",
+          "item": [
+            {
+              "name": "Get Notifications",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "var json = pm.response.json();",
+                      "pm.test('PagedResult structure', () => {",
+                      "    pm.expect(json.items).to.be.an('array');",
+                      "    pm.expect(json.totalCount).to.be.a('number');",
+                      "});",
+                      "if (json.items && json.items.length > 0) {",
+                      "    pm.collectionVariables.set('testNotificationId', json.items[0].id);",
+                      "    console.log('NotificationId saved:', json.items[0].id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [{"key": "token", "value": "{{userToken}}", "type": "string"}]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrlNotification}}/api/notifications?page=1&pageSize=20",
+                  "host": ["{{baseUrlNotification}}"],
+                  "path": ["api", "notifications"],
+                  "query": [
+                    {"key": "page", "value": "1"},
+                    {"key": "pageSize", "value": "20"},
+                    {"key": "onlyUnread", "value": "true", "disabled": true}
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Notifications (unread only)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "var json = pm.response.json();",
+                      "pm.test('All items are unread', () => {",
+                      "    json.items.forEach(n => pm.expect(n.isRead).to.be.false);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [{"key": "token", "value": "{{userToken}}", "type": "string"}]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrlNotification}}/api/notifications?onlyUnread=true&page=1&pageSize=20",
+                  "host": ["{{baseUrlNotification}}"],
+                  "path": ["api", "notifications"],
+                  "query": [
+                    {"key": "onlyUnread", "value": "true"},
+                    {"key": "page", "value": "1"},
+                    {"key": "pageSize", "value": "20"}
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Unread Count",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Returns a number', () => pm.expect(pm.response.json()).to.be.a('number'));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [{"key": "token", "value": "{{userToken}}", "type": "string"}]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrlNotification}}/api/notifications/unread-count",
+                  "host": ["{{baseUrlNotification}}"],
+                  "path": ["api", "notifications", "unread-count"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Mark Notification Read",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [{"key": "token", "value": "{{userToken}}", "type": "string"}]
+                },
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrlNotification}}/api/notifications/{{testNotificationId}}/read",
+                  "host": ["{{baseUrlNotification}}"],
+                  "path": ["api", "notifications", "{{testNotificationId}}", "read"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Mark All Notifications Read",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [{"key": "token", "value": "{{userToken}}", "type": "string"}]
+                },
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrlNotification}}/api/notifications/read-all",
+                  "host": ["{{baseUrlNotification}}"],
+                  "path": ["api", "notifications", "read-all"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Preferences",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "var json = pm.response.json();",
+                      "pm.test('Has all preference fields', () => {",
+                      "    pm.expect(json).to.have.property('orderUpdates');",
+                      "    pm.expect(json).to.have.property('reviewReplies');",
+                      "    pm.expect(json).to.have.property('systemAlerts');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [{"key": "token", "value": "{{userToken}}", "type": "string"}]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrlNotification}}/api/notifications/preferences",
+                  "host": ["{{baseUrlNotification}}"],
+                  "path": ["api", "notifications", "preferences"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Preferences",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "var json = pm.response.json();",
+                      "pm.test('OrderUpdates is false', () => pm.expect(json.orderUpdates).to.be.false);",
+                      "pm.test('ReviewReplies is true', () => pm.expect(json.reviewReplies).to.be.true);",
+                      "pm.test('SystemAlerts is true', () => pm.expect(json.systemAlerts).to.be.true);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [{"key": "token", "value": "{{userToken}}", "type": "string"}]
+                },
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"orderUpdates\": false,\n  \"reviewReplies\": true,\n  \"systemAlerts\": true\n}",
+                  "options": {"raw": {"language": "json"}}
+                },
+                "url": {
+                  "raw": "{{baseUrlNotification}}/api/notifications/preferences",
+                  "host": ["{{baseUrlNotification}}"],
+                  "path": ["api", "notifications", "preferences"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Restore Preferences (all true)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "var json = pm.response.json();",
+                      "pm.test('All preferences true', () => {",
+                      "    pm.expect(json.orderUpdates).to.be.true;",
+                      "    pm.expect(json.reviewReplies).to.be.true;",
+                      "    pm.expect(json.systemAlerts).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [{"key": "token", "value": "{{userToken}}", "type": "string"}]
+                },
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"orderUpdates\": true,\n  \"reviewReplies\": true,\n  \"systemAlerts\": true\n}",
+                  "options": {"raw": {"language": "json"}}
+                },
+                "url": {
+                  "raw": "{{baseUrlNotification}}/api/notifications/preferences",
+                  "host": ["{{baseUrlNotification}}"],
+                  "path": ["api", "notifications", "preferences"]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "AnalyticsService",
       "item": [
         {
@@ -5457,8 +5885,7 @@
                     "api",
                     "seller-dashboard",
                     "product-views"
-                  ],
-                  "query": []
+                  ]
                 }
               },
               "response": []
@@ -5745,6 +6172,30 @@
       ]
     }
   ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
   "variable": [
     {
       "key": "baseUrlIdentity",
@@ -5849,8 +6300,23 @@
     {
       "key": "cartItemId1",
       "value": "",
-      "type": "string",
       "description": "ID of specific cart item to checkout (optional)"
+    },
+    {
+      "key": "testCheckoutId",
+      "value": ""
+    },
+    {
+      "key": "gatewayIdentity",
+      "value": ""
+    },
+    {
+      "key": "baseUrlNotification",
+      "value": "http://localhost:5005"
+    },
+    {
+      "key": "testNotificationId",
+      "value": "00000000-0000-0000-0000-000000000000"
     }
   ]
 }

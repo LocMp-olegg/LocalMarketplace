@@ -116,6 +116,14 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
             + IsAdded : bool
             + OccurredAt : DateTimeOffset
         }
+        class ProductRestockedEvent {
+            + ProductId : Guid
+            + SellerId : Guid
+            + ProductName : string
+            + ShopId : Guid
+            + NewStock : int
+            + OccurredAt : DateTimeOffset
+        }
     }
 
     package "Order Events" #EDE7F6 {
@@ -229,6 +237,7 @@ note as PublisherNote
                      StockDepletedEvent
                      ProductViewedEvent
                      ProductCreatedEvent
+                     ProductRestockedEvent
                      FavoriteChangedEvent
   ─────────────────────────────────────────
   OrderService     → OrderPlacedEvent
@@ -273,11 +282,17 @@ note as ConsumerNote
   ─────────────────────────────────────────
   NotificationService:
     • UserRegisteredEvent         → создаёт UserNotificationPreferences
+    • UserBecameSellerEvent       → приветственное уведомление новому продавцу
+    • UserBlockedEvent            → уведомление пользователю о блокировке
+    • UserUnblockedEvent          → уведомление пользователю о разблокировке
     • OrderPlacedEvent            → уведомление продавцу
     • OrderStatusChangedEvent     → уведомление покупателю/продавцу
-    • OrderCompletedEvent         → предложение написать отзыв
+    • OrderCompletedEvent         → предложение написать отзыв покупателю
     • StockDepletedEvent          → уведомление продавцу
-    • RatingAggregateUpdatedEvent → уведомление о новом отзыве
+    • ProductRestockedEvent       → уведомление пользователям у которых товар в избранном
+    • ReviewCreatedEvent          → уведомление продавцу о новом отзыве
+    • DisputeOpenedEvent          → уведомление покупателю и продавцу
+    • DisputeResolvedEvent        → уведомление о решении покупателю и продавцу
 end note
 
 @enduml

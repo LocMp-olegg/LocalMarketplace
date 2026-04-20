@@ -93,6 +93,15 @@ public sealed class CreateReviewCommandHandler(
             now,
             sellerId), ct);
 
+        await eventBus.PublishAsync(new ReviewCreatedEvent(
+            review.Id,
+            request.SubjectId,
+            request.SubjectType.ToString(),
+            request.ReviewerId,
+            allowed.SellerId,
+            request.Rating,
+            now), ct);
+
         return mapper.Map<ReviewDto>(review);
     }
 }

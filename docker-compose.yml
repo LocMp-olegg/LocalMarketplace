@@ -58,6 +58,14 @@ services:
       timeout: 5s
       retries: 5
 
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: locmp-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+
   redis:
     image: redis:7-alpine
     container_name: locmp-redis
@@ -205,6 +213,37 @@ services:
       identity:
         condition: service_started
 
+  notifications:
+    build:
+      context: .
+      dockerfile: NotificationService/Dockerfile
+    image: locmp-notifications:latest
+    container_name: locmp-notifications
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__LocalMarketplaceDb: "Host=locmp-postgres;Port=5430;Database=LocalMarketplaceDb;Username=postgres;Password=123Qq123"
+      ConnectionStrings__RabbitMq: "amqp://guest:guest@locmp-rabbitmq:5672"
+      ConnectionStrings__Redis: "locmp-redis:6379"
+      JwtAuthenticationOptions__Authority: "http://locmp-identity:8080"
+      Smtp__Host: "locmp-mailhog"
+      Smtp__Port: "1025"
+      Smtp__FromAddress: "noreply@localmarketplace.local"
+      Smtp__FromName: "Районный Маркетплейс"
+    ports:
+      - "5005:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+      identity:
+        condition: service_started
+
   analytics:
     build:
       context: .
@@ -254,6 +293,8 @@ services:
       orders:
         condition: service_started
       reviews:
+        condition: service_started
+      notifications:
         condition: service_started
       analytics:
         condition: service_started
