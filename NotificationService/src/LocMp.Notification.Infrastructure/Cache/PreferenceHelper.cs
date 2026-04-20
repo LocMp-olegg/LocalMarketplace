@@ -24,7 +24,9 @@ internal static class PreferenceHelper
 
         var result = prefs is null
             ? CachedPreference.Default
-            : new CachedPreference(prefs.OrderUpdates, prefs.ReviewReplies, prefs.SystemAlerts);
+            : new CachedPreference(
+                prefs.OrderUpdates, prefs.ReviewReplies, prefs.SystemAlerts,
+                prefs.Email, prefs.EmailEnabled, prefs.EmailOrderUpdates, prefs.EmailReviewReplies);
 
         await cache.SetStringAsync(key, JsonSerializer.Serialize(result), PrefsTtl, ct);
         return result;

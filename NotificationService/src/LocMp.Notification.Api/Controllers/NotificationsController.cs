@@ -55,6 +55,7 @@ public sealed class NotificationsController(ISender sender) : ControllerBase
         [FromBody] UpdatePreferencesRequest request,
         CancellationToken ct)
         => Ok(await sender.Send(
-            new UpdatePreferencesCommand(HttpContext.GetUserId(), request.OrderUpdates, request.ReviewReplies, request.SystemAlerts),
+            new UpdatePreferencesCommand(HttpContext.GetUserId(), request.OrderUpdates, request.ReviewReplies,
+                request.SystemAlerts, request.EmailEnabled, request.EmailOrderUpdates, request.EmailReviewReplies),
             ct));
 }

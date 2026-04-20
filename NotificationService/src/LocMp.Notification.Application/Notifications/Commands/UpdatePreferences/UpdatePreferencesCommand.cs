@@ -7,4 +7,7 @@ public sealed record UpdatePreferencesCommand(
     Guid UserId,
     bool OrderUpdates,
     bool ReviewReplies,
-    bool SystemAlerts) : IRequest<NotificationPreferenceDto>;
+    bool SystemAlerts,
+    bool EmailEnabled,
+    bool EmailOrderUpdates,
+    bool EmailReviewReplies) : IRequest<NotificationPreferenceDto>;

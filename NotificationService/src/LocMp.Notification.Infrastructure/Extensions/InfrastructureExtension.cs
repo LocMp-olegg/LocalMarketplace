@@ -1,6 +1,8 @@
 using LocMp.BuildingBlocks.Application.Interfaces;
 using LocMp.BuildingBlocks.Infrastructure.Events;
+using LocMp.Notification.Infrastructure.Options;
 using LocMp.Notification.Infrastructure.Persistence;
+using LocMp.Notification.Infrastructure.Services;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -43,5 +45,8 @@ public static class InfrastructureExtension
         });
 
         services.AddScoped<IEventBus, MassTransitEventBus>();
+
+        services.Configure<SmtpOptions>(configuration.GetSection("Smtp"));
+        services.AddScoped<IEmailService, SmtpEmailService>();
     }
 }

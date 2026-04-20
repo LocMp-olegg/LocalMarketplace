@@ -11,11 +11,22 @@ public sealed class UserRegisteredConsumer(NotificationDbContext db) : IConsumer
     public async Task Consume(ConsumeContext<UserRegisteredEvent> ctx)
     {
         var msg = ctx.Message;
-        var exists = await db.UserNotificationPreferences.AnyAsync(p => p.UserId == msg.UserId, ctx.CancellationToken);
-        if (!exists)
+        var prefs = await db.UserNotificationPreferences
+            .FirstOrDefaultAsync(p => p.UserId == msg.UserId, ctx.CancellationToken);
+
+        if (prefs is null)
         {
-            db.UserNotificationPreferences.Add(new UserNotificationPreference { UserId = msg.UserId });
-            await db.SaveChangesAsync(ctx.CancellationToken);
+            db.UserNotificationPreferences.Add(new UserNotificationPreference
+            {
+                UserId = msg.UserId,
+                Email = msg.Email
+            });
         }
+        else if (prefs.Email is null)
+        {
+            prefs.Email = msg.Email;
+        }
+
+        await db.SaveChangesAsync(ctx.CancellationToken);
     }
 }

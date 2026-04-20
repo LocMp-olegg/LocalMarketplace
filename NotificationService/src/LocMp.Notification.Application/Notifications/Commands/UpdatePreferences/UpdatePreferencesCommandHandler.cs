@@ -24,11 +24,16 @@ public sealed class UpdatePreferencesCommandHandler(NotificationDbContext db, ID
         prefs.OrderUpdates = request.OrderUpdates;
         prefs.ReviewReplies = request.ReviewReplies;
         prefs.SystemAlerts = request.SystemAlerts;
+        prefs.EmailEnabled = request.EmailEnabled;
+        prefs.EmailOrderUpdates = request.EmailOrderUpdates;
+        prefs.EmailReviewReplies = request.EmailReviewReplies;
         prefs.UpdatedAt = DateTimeOffset.UtcNow;
 
         await db.SaveChangesAsync(ct);
         await cache.RemoveAsync($"notif:prefs:{request.UserId}", ct);
 
-        return new NotificationPreferenceDto(prefs.OrderUpdates, prefs.ReviewReplies, prefs.SystemAlerts);
+        return new NotificationPreferenceDto(
+            prefs.OrderUpdates, prefs.ReviewReplies, prefs.SystemAlerts,
+            prefs.EmailEnabled, prefs.EmailOrderUpdates, prefs.EmailReviewReplies);
     }
 }
