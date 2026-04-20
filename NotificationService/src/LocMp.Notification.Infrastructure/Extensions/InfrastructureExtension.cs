@@ -19,6 +19,10 @@ public static class InfrastructureExtension
         services.AddDbContext<NotificationDbContext>(options =>
             options.UseNpgsql(connectionString));
 
+        var redisConnection = configuration.GetConnectionString("Redis")
+                              ?? throw new InvalidOperationException("Connection string 'Redis' not found.");
+        services.AddStackExchangeRedisCache(o => o.Configuration = redisConnection);
+
         var rabbitMqHost = configuration.GetConnectionString("RabbitMq")
                            ?? "amqp://guest:guest@localhost:5672";
 

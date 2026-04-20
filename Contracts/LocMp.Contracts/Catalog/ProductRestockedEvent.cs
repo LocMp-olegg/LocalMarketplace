@@ -6,4 +6,5 @@ public sealed record ProductRestockedEvent(
     string ProductName,
     Guid ShopId,
     int NewStock,
+    IReadOnlyList<Guid> FavoritedByUserIds,
     DateTimeOffset OccurredAt) : IIntegrationEvent;

@@ -98,6 +98,7 @@ public sealed class CreateReviewCommandHandler(
             request.SubjectId,
             request.SubjectType.ToString(),
             request.ReviewerId,
+            allowed.SellerId,
             request.Rating,
             now), ct);
 

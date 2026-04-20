@@ -54,7 +54,7 @@ public sealed class OpenDisputeCommandHandler(OrderDbContext db, IEventBus event
         await db.SaveChangesAsync(ct);
 
         await eventBus.PublishAsync(new DisputeOpenedEvent(
-            disputeId, order.Id, request.InitiatorId,
-            request.DisputeType, now), ct);
+            disputeId, order.Id, order.BuyerId, order.SellerId,
+            request.InitiatorId, request.DisputeType, now), ct);
     }
 }

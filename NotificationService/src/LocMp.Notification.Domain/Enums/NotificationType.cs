@@ -12,5 +12,11 @@ public enum NotificationType
     StockDepleted = 8,
     ReviewReceived = 9,
     ReviewReplied = 10,
-    SystemAlert = 11
+    SystemAlert = 11,
+    SellerActivated = 12,
+    AccountBlocked = 13,
+    AccountUnblocked = 14,
+    DisputeOpened = 15,
+    DisputeResolved = 16,
+    ProductRestocked = 17
 }

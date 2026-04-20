@@ -4,6 +4,7 @@ using LocMp.Catalog.Domain.Entities;
 using LocMp.Catalog.Infrastructure.Persistence;
 using LocMp.Contracts.Catalog;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 
 namespace LocMp.Catalog.Application.Catalog.Commands.Products.UpdateStock;
@@ -54,8 +55,16 @@ public sealed class UpdateStockCommandHandler(CatalogDbContext db, IEventBus eve
                 product.Id, product.SellerId, null, request.QuantityDelta, newQuantity, now), ct);
 
             if (previousQuantity == 0)
+            {
+                var favoritedByUserIds = await db.Favorites
+                    .Where(f => f.ProductId == product.Id)
+                    .Select(f => f.UserId)
+                    .ToListAsync(ct);
+
                 await eventBus.PublishAsync(new ProductRestockedEvent(
-                    product.Id, product.SellerId, product.Name, product.ShopId, newQuantity, now), ct);
+                    product.Id, product.SellerId, product.Name, product.ShopId,
+                    newQuantity, favoritedByUserIds, now), ct);
+            }
         }
 
         return newQuantity;
