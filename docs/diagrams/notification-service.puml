@@ -53,6 +53,12 @@ enum NotificationType {
     ReviewReceived
     ReviewReplied
     SystemAlert
+    SellerActivated
+    AccountBlocked
+    AccountUnblocked
+    DisputeOpened
+    DisputeResolved
+    ProductRestocked
 }
 
 enum DeliveryChannel {
@@ -93,8 +99,48 @@ class UserNotificationPreference {
     + OrderUpdates : bool
     + ReviewReplies : bool
     + SystemAlerts : bool
+    ..email..
+    + Email : string?
+    + EmailEnabled : bool
+    + EmailOrderUpdates : bool
+    + EmailReviewReplies : bool
+    ..
     + UpdatedAt : DateTimeOffset?
+    --helpers (not persisted)--
+    ~ CanEmailOrder : bool
+    ~ CanEmailReview : bool
+    ~ CanEmailSystem : bool
+    ~ CanEmailMandatory : bool
 }
+
+' ─── Email infrastructure ────────────────────────────────────────────────────
+
+interface IEmailService <<interface>> {
+    + SendAsync(to, subject, htmlBody, ct) : Task
+}
+
+class SmtpEmailService {
+    - options : SmtpOptions
+    - logger : ILogger
+    --
+    + SendAsync(to, subject, htmlBody, ct) : Task
+}
+
+class EmailTemplates <<static>> {
+    + {static} OrderPlaced(orderId, amount) : (Subject, Body)
+    + {static} OrderStatusChanged(orderId, from, to) : (Subject, Body)
+    + {static} OrderCompleted(orderId) : (Subject, Body)
+    + {static} DisputeOpened(orderId) : (Subject, Body)
+    + {static} DisputeResolved(orderId, outcome) : (Subject, Body)
+    + {static} ReviewCreated(rating, comment?) : (Subject, Body)
+    + {static} StockDepleted(productName) : (Subject, Body)
+    + {static} ProductRestocked(productName) : (Subject, Body)
+    + {static} SellerActivated() : (Subject, Body)
+    + {static} AccountBlocked(blockedUntil) : (Subject, Body)
+    + {static} AccountUnblocked() : (Subject, Body)
+}
+
+SmtpEmailService ..|> IEmailService
 
 ' ─── Relationships ────────────────────────────────────────────────────────────
 
@@ -127,8 +173,21 @@ note right of UserNotificationPreference
   <<UserRegisteredEvent>>.
   Нет FK в БД — другой сервис.
 
-  Позволяет пользователю отключить
-  отдельные типы уведомлений в ЛК.
+  Email сохраняется из события
+  UserRegisteredEvent.Email.
+
+  Mandatory emails (AccountBlocked,
+  DisputeOpened, DisputeResolved)
+  игнорируют EmailEnabled — только
+  требуют Email != null.
+end note
+
+note right of SmtpEmailService
+  Использует MailKit.
+  В dev — MailHog (:1025).
+  Ошибки SMTP логируются,
+  но НЕ бросают исключение —
+  consumer не падает при недоступном SMTP.
 end note
 
 note bottom of NotificationType
@@ -146,7 +205,13 @@ legend bottom
   <b>Таблицы сервиса (schema: notifs)</b>
   |= Класс C# |= Таблица в БД |= Описание |
   | Notification | Notifications | Уведомление пользователю с Payload (jsonb) для диплинков |
-  | UserNotificationPreference | UserNotificationPreferences | Настройки типов уведомлений (1:1 с пользователем) |
+  | UserNotificationPreference | UserNotificationPreferences | Настройки уведомлений + email-преференсы (1:1 с пользователем) |
+
+  <b>Инфраструктура email</b>
+  |= Класс |= Тип |= Описание |
+  | IEmailService | interface | Контракт отправки HTML-email |
+  | SmtpEmailService | class | MailKit SMTP. Dev: MailHog :1025 |
+  | EmailTemplates | static class | HTML-шаблоны для всех типов email |
 endlegend
 
 @enduml

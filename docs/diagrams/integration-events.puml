@@ -122,6 +122,7 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
             + ProductName : string
             + ShopId : Guid
             + NewStock : int
+            + FavoritedByUserIds : IReadOnlyList<Guid>
             + OccurredAt : DateTimeOffset
         }
     }
@@ -169,6 +170,8 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
         class DisputeOpenedEvent {
             + DisputeId : Guid
             + OrderId : Guid
+            + BuyerId : Guid
+            + SellerId : Guid
             + InitiatorId : Guid
             + DisputeType : DisputeType
             + OccurredAt : DateTimeOffset
@@ -215,6 +218,7 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
             + SubjectId : Guid
             + SubjectType : string
             + ReviewerId : Guid
+            + SellerId : Guid
             + Rating : int
             + OccurredAt : DateTimeOffset
         }
