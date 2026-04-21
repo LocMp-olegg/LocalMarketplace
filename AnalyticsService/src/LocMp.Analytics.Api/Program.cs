@@ -2,6 +2,7 @@ using LocMp.Analytics.Api.Extensions;
 using LocMp.Analytics.Application.Extensions;
 using LocMp.Analytics.Infrastructure.Extensions;
 using LocMp.Analytics.Infrastructure.Persistence;
+using LocMp.BuildingBlocks.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Context;
@@ -25,6 +26,7 @@ try
     builder.Services.AddApplication();
     builder.Services.AddApi(configuration);
     builder.Services.AddAuth(configuration);
+    builder.Services.AddSwagger(configuration);
 
     builder.Services.AddOpenApi();
 
@@ -36,6 +38,8 @@ try
         await dbContext.Database.MigrateAsync();
     }
 
+    app.UseSwaggerUi(configuration);
+    
     app.UseHttpsRedirection();
 
     app.Use(async (ctx, next) =>
