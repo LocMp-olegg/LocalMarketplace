@@ -7,22 +7,31 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - { name: IdentityService,    sln: IdentityService/IdentityService.sln }
+          - { name: CatalogService,     sln: CatalogService/CatalogService.sln }
+          - { name: OrderService,       sln: OrderService/OrderService.sln }
+          - { name: ReviewService,      sln: ReviewService/ReviewService.sln }
+          - { name: NotificationService, sln: NotificationService/NotificationService.sln }
+          - { name: AnalyticsService,   sln: AnalyticsService/AnalyticsService.sln }
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10.0.x'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
 
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Restore
+        run: dotnet restore ${{ matrix.service.sln }}
 
-    - name: Build
-      run: dotnet build --no-restore --configuration Release
+      - name: Build
+        run: dotnet build ${{ matrix.service.sln }} --no-restore --configuration Release
 
-    - name: Test
-      run: dotnet test --no-build --configuration Release --verbosity normal
+      - name: Test
+        run: dotnet test ${{ matrix.service.sln }} --no-build --configuration Release --verbosity normal
