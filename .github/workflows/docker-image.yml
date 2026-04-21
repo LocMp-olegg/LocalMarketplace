@@ -1,0 +1,31 @@
+name: Docker CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-images:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - { name: identity,      dockerfile: IdentityService/Dockerfile }
+          - { name: catalog,       dockerfile: CatalogService/Dockerfile }
+          - { name: orders,        dockerfile: OrderService/Dockerfile }
+          - { name: reviews,       dockerfile: ReviewService/Dockerfile }
+          - { name: notifications, dockerfile: NotificationService/Dockerfile }
+          - { name: analytics,     dockerfile: AnalyticsService/Dockerfile }
+          - { name: gateway,       dockerfile: Gateway/Dockerfile }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image — ${{ matrix.service.name }}
+        run: |
+          docker build \
+            -f ${{ matrix.service.dockerfile }} \
+            -t locmp-${{ matrix.service.name }}:ci \
+            .
