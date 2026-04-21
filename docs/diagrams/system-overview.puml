@@ -65,9 +65,10 @@ rectangle "Микросервисы" {
 ' ─── Инфраструктура (сбоку и снизу) ──────────────────────────────────────────
 queue "**RabbitMQ**\n:15672\nMassTransit" as MQ
 database "**Redis**\n:6379" as Redis
+component "**MailHog**\n:8025 Web\n:1025 SMTP\n(dev only)" as MailHog #FFF3E0
 
 ' ─── СЛОЙ 4: Databases ───────────────────────────────────────────────────────
-rectangle "**PostgreSQL  :5432**\n(один инстанс, разные схемы)" #E3F2FD {
+rectangle "**PostgreSQL  :5430**\n(один инстанс, разные схемы)" #E3F2FD {
     database "schema:\npublic + media" as DBIdentity
     database "schema:\ncatalog" as DBCatalog
     database "schema:\norders" as DBOrders
@@ -109,7 +110,11 @@ Orders -[#E65100,dashed]left-> Identity : <color:#E65100>GET /users/{id}</color>
 ' ── Redis cache (бирюзовый, пунктир) ──
 Catalog -[#00838F,dashed]up-> Redis : <color:#00838F>products, categories</color>\n<color:#00838F>profiles</color>
 Orders  -[#00838F,dashed]up-> Redis : <color:#00838F>cart:{userId}</color>
+Notifs  -[#00838F,dashed]up-> Redis : <color:#00838F>notif:prefs, notif:unread</color>
 Chat    -[#00838F,dashed]up-> Redis : <color:#00838F>SignalR backplane</color>
+
+' ── Email (оранжевый, пунктир) ──
+Notifs -[#E65100,dashed]right-> MailHog : <color:#E65100>SMTP :1025</color>
 
 ' ── Публикация событий в MQ (фиолетовый) ──
 Identity -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>UserRegisteredEvent</color>\n<color:#6A1B9A>UserBlockedEvent</color>\n<color:#6A1B9A>UserProfileUpdatedEvent</color>
@@ -146,6 +151,7 @@ legend bottom
   <color:#B71C1C>■</color> Потребление события из RabbitMQ (пунктир)
   <color:#795548>■</color> Чтение / запись в БД
   <color:#00838F>■</color> Redis cache (пунктир)
+  <color:#E65100>■</color> Email через MailHog SMTP (пунктир, dev only)
 endlegend
 
 @enduml
