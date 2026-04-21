@@ -18,6 +18,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocMp.Contracts", "..\Contr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocMp.Analytics.Infrastructure", "src\LocMp.Analytics.Infrastructure\LocMp.Analytics.Infrastructure.csproj", "{B6F850FC-21AE-4715-9E23-082608CF4BF1}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocMp.Analytics.Application.Tests", "tests\LocMp.Analytics.Application.Tests\LocMp.Analytics.Application.Tests.csproj", "{07E1A6C8-ADB2-4781-B84A-942BAE9A5AE5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -124,6 +128,18 @@ Global
 		{B6F850FC-21AE-4715-9E23-082608CF4BF1}.Release|x64.Build.0 = Release|Any CPU
 		{B6F850FC-21AE-4715-9E23-082608CF4BF1}.Release|x86.ActiveCfg = Release|Any CPU
 		{B6F850FC-21AE-4715-9E23-082608CF4BF1}.Release|x86.Build.0 = Release|Any CPU
+		{07E1A6C8-ADB2-4781-B84A-942BAE9A5AE5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{07E1A6C8-ADB2-4781-B84A-942BAE9A5AE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{07E1A6C8-ADB2-4781-B84A-942BAE9A5AE5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{07E1A6C8-ADB2-4781-B84A-942BAE9A5AE5}.Debug|x64.Build.0 = Debug|Any CPU
+		{07E1A6C8-ADB2-4781-B84A-942BAE9A5AE5}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{07E1A6C8-ADB2-4781-B84A-942BAE9A5AE5}.Debug|x86.Build.0 = Debug|Any CPU
+		{07E1A6C8-ADB2-4781-B84A-942BAE9A5AE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{07E1A6C8-ADB2-4781-B84A-942BAE9A5AE5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{07E1A6C8-ADB2-4781-B84A-942BAE9A5AE5}.Release|x64.ActiveCfg = Release|Any CPU
+		{07E1A6C8-ADB2-4781-B84A-942BAE9A5AE5}.Release|x64.Build.0 = Release|Any CPU
+		{07E1A6C8-ADB2-4781-B84A-942BAE9A5AE5}.Release|x86.ActiveCfg = Release|Any CPU
+		{07E1A6C8-ADB2-4781-B84A-942BAE9A5AE5}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -133,5 +149,6 @@ Global
 		{0E212DA9-D5D9-4890-AE74-B74691858DA5} = {E604F5E0-4B79-4BDB-9F02-DDEFD5A530C0}
 		{136B1EBC-5EFD-4BF3-87E9-A17C5936C748} = {E604F5E0-4B79-4BDB-9F02-DDEFD5A530C0}
 		{B6F850FC-21AE-4715-9E23-082608CF4BF1} = {E604F5E0-4B79-4BDB-9F02-DDEFD5A530C0}
+		{07E1A6C8-ADB2-4781-B84A-942BAE9A5AE5} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

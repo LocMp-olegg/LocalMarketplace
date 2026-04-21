@@ -18,11 +18,15 @@ public sealed class CheckoutCommandValidator : AbstractValidator<CheckoutCommand
             {
                 group.RuleFor(g => g.DeliveryAddress).NotNull()
                     .WithMessage("Delivery address is required for courier delivery.");
-                group.RuleFor(g => g.DeliveryAddress!.City).NotEmpty().MaximumLength(100);
-                group.RuleFor(g => g.DeliveryAddress!.Street).NotEmpty().MaximumLength(200);
-                group.RuleFor(g => g.DeliveryAddress!.HouseNumber).NotEmpty().MaximumLength(20);
-                group.RuleFor(g => g.DeliveryAddress!.RecipientName).NotEmpty().MaximumLength(200);
-                group.RuleFor(g => g.DeliveryAddress!.RecipientPhone).NotEmpty().MaximumLength(20);
+
+                group.When(g => g.DeliveryAddress != null, () =>
+                {
+                    group.RuleFor(g => g.DeliveryAddress!.City).NotEmpty().MaximumLength(100);
+                    group.RuleFor(g => g.DeliveryAddress!.Street).NotEmpty().MaximumLength(200);
+                    group.RuleFor(g => g.DeliveryAddress!.HouseNumber).NotEmpty().MaximumLength(20);
+                    group.RuleFor(g => g.DeliveryAddress!.RecipientName).NotEmpty().MaximumLength(200);
+                    group.RuleFor(g => g.DeliveryAddress!.RecipientPhone).NotEmpty().MaximumLength(20);
+                });
             });
         });
     }
