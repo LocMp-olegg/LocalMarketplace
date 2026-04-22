@@ -53,6 +53,16 @@
       "SwaggerKey": "review-service"
     },
     {
+      "UpstreamPathTemplate": "/api/notifications/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Patch", "Delete" ],
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "locmp-notifications", "Port": 8080 }
+      ],
+      "SwaggerKey": "notification-service"
+    },
+    {
       "UpstreamPathTemplate": "/api/analytics/{everything}",
       "UpstreamHttpMethod": [ "Get", "Post", "Put", "Patch", "Delete" ],
       "DownstreamPathTemplate": "/api/{everything}",
@@ -101,6 +111,16 @@
           "Name": "ReviewService API",
           "Version": "v1",
           "Url": "http://locmp-reviews:8080/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "notification-service",
+      "Config": [
+        {
+          "Name": "NotificationService API",
+          "Version": "v1",
+          "Url": "http://locmp-notifications:8080/swagger/v1/swagger.json"
         }
       ]
     },
