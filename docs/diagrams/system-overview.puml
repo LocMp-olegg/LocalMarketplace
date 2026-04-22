@@ -50,7 +50,7 @@ rectangle "Микросервисы" {
     component "**CatalogService**\n:5002\n─────────────────\nТовары, категории\nОстатки, избранное\nГеофильтрация" as Catalog      #E8F5E9
     component "**OrderService**\n:5003\n─────────────────\nКорзина, заказы\nСтатусы, курьер\nСпоры" as Orders      #E8EAF6
     component "**ReviewService**\n:5004\n─────────────────\nОтзывы, рейтинги\nМодерация" as Reviews     #FBE9E7
-    component "**NotificationService**\n:5005\n─────────────────\nТолько Consumer\nEmail / In-App" as Notifs      #E0F7FA
+    component "**NotificationService**\n:5005\n─────────────────\nIn-App уведомления\nEmail (MailKit)\nПредпочтения" as Notifs      #E0F7FA
     component "**AnalyticsService**\n:5006\n─────────────────\nДашборд продавца\nДашборд Admin\nPre-computed" as Analytics  #FFF3E0
     component "**ChatService**\n:5007\n─────────────────\nЧат заказа и поддержки\nSignalR WebSocket\nRedis backplane" as Chat      #E8F5E9
 
@@ -62,7 +62,7 @@ rectangle "Микросервисы" {
     Analytics -[hidden]right-> Chat
 }
 
-' ─── Инфраструктура (сбоку и снизу) ──────────────────────────────────────────
+' ─── Инфраструктура ──────────────────────────────────────────────────────────
 queue "**RabbitMQ**\n:15672\nMassTransit" as MQ
 database "**Redis**\n:6379" as Redis
 component "**MailHog**\n:8025 Web\n:1025 SMTP\n(dev only)" as MailHog #FFF3E0
@@ -74,7 +74,6 @@ rectangle "**PostgreSQL  :5430**\n(один инстанс, разные схе�
     database "schema:\norders" as DBOrders
     database "schema:\nreviews" as DBReviews
     database "schema:\nnotifs" as DBNotifs
-
     database "schema:\nanalytics" as DBAnalytics
     database "schema:\nchat" as DBChat
 
@@ -96,12 +95,13 @@ Seller  -[#1565C0,bold]down->  Gateway : <color:#1565C0>HTTPS</color>
 Courier -[#1565C0,bold]down->  Gateway : <color:#1565C0>HTTPS</color>
 
 ' ── Gateway → Services (зелёный) ──
-Gateway -[#2E7D32,bold]down-> Identity : <color:#2E7D32>/api/identity/**</color>\n<color:#2E7D32>/connect/**</color>
-Gateway -[#2E7D32,bold]down-> Catalog  : <color:#2E7D32>/api/catalog/**</color>
-Gateway -[#2E7D32,bold]down-> Orders   : <color:#2E7D32>/api/orders/**</color>
+Gateway -[#2E7D32,bold]down-> Identity  : <color:#2E7D32>/api/identity/**</color>\n<color:#2E7D32>/connect/**</color>
+Gateway -[#2E7D32,bold]down-> Catalog   : <color:#2E7D32>/api/catalog/**</color>
+Gateway -[#2E7D32,bold]down-> Orders    : <color:#2E7D32>/api/orders/**</color>
 Gateway -[#2E7D32,bold]down-> Reviews   : <color:#2E7D32>/api/reviews/**</color>
+Gateway -[#2E7D32,bold]down-> Notifs    : <color:#2E7D32>/api/notifications/**</color>
 Gateway -[#2E7D32,bold]down-> Analytics : <color:#2E7D32>/api/analytics/**</color>
-Gateway -[#2E7D32,bold]down-> Chat     : <color:#2E7D32>/api/chats/**</color>\n<color:#2E7D32>/hubs/chat (WS)</color>
+Gateway -[#2E7D32,bold]down-> Chat      : <color:#2E7D32>/api/chats/**</color>\n<color:#2E7D32>/hubs/chat (WS)</color>
 
 ' ── Синхронный HTTP между сервисами (оранжевый, пунктир) ──
 Orders -[#E65100,dashed]left-> Catalog  : <color:#E65100>GET /products/{id}/stock</color>\n<color:#E65100>POST /products/{id}/reserve</color>
@@ -113,33 +113,32 @@ Orders  -[#00838F,dashed]up-> Redis : <color:#00838F>cart:{userId}</color>
 Notifs  -[#00838F,dashed]up-> Redis : <color:#00838F>notif:prefs, notif:unread</color>
 Chat    -[#00838F,dashed]up-> Redis : <color:#00838F>SignalR backplane</color>
 
-' ── Email (оранжевый, пунктир) ──
-Notifs -[#E65100,dashed]right-> MailHog : <color:#E65100>SMTP :1025</color>
+' ── Email (пурпурный, пунктир) ──
+Notifs -[#AD1457,dashed]right-> MailHog : <color:#AD1457>SMTP :1025</color>
 
 ' ── Публикация событий в MQ (фиолетовый) ──
-Identity -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>UserRegisteredEvent</color>\n<color:#6A1B9A>UserBlockedEvent</color>\n<color:#6A1B9A>UserProfileUpdatedEvent</color>
-Catalog  -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>StockReservedEvent</color>\n<color:#6A1B9A>StockReleasedEvent</color>\n<color:#6A1B9A>StockDepletedEvent</color>
-Orders   -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>OrderPlacedEvent</color>\n<color:#6A1B9A>OrderStatusChangedEvent</color>\n<color:#6A1B9A>OrderCompletedEvent</color>
-Reviews  -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>RatingAggregateUpdatedEvent</color>
-Catalog  -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>ProductViewedEvent</color>
-Orders   -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>DisputeOpenedEvent</color>\n<color:#6A1B9A>DisputeResolvedEvent</color>
+Identity -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>UserRegisteredEvent</color>\n<color:#6A1B9A>UserBecameSellerEvent</color>\n<color:#6A1B9A>UserBlockedEvent</color>\n<color:#6A1B9A>UserUnblockedEvent</color>\n<color:#6A1B9A>UserProfileUpdatedEvent</color>
+Catalog  -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>StockReservedEvent</color>\n<color:#6A1B9A>StockReleasedEvent</color>\n<color:#6A1B9A>StockDepletedEvent</color>\n<color:#6A1B9A>StockReservationFailedEvent</color>\n<color:#6A1B9A>ProductCreatedEvent</color>\n<color:#6A1B9A>ProductViewedEvent</color>\n<color:#6A1B9A>ProductRestockedEvent</color>\n<color:#6A1B9A>FavoriteChangedEvent</color>
+Orders   -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>StockReserveRequestEvent</color>\n<color:#6A1B9A>OrderPlacedEvent</color>\n<color:#6A1B9A>OrderStatusChangedEvent</color>\n<color:#6A1B9A>OrderCompletedEvent</color>\n<color:#6A1B9A>DisputeOpenedEvent</color>\n<color:#6A1B9A>DisputeResolvedEvent</color>
+Reviews  -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>RatingAggregateUpdatedEvent</color>\n<color:#6A1B9A>ReviewCreatedEvent</color>
 Chat     -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>ChatMessageSentEvent</color>
 
 ' ── Потребление событий из MQ (красный, пунктир) ──
-MQ -[#B71C1C,dashed]up-> Notifs    : <color:#B71C1C>все события выше</color>
-MQ -[#B71C1C,dashed]up-> Catalog   : <color:#B71C1C>RatingAggregateUpdatedEvent</color>\n<color:#B71C1C>→ обновить SellerReadModel</color>
-MQ -[#B71C1C,dashed]up-> Orders    : <color:#B71C1C>StockReservedEvent → подтвердить</color>\n<color:#B71C1C>UserBlockedEvent → отменить</color>
-MQ -[#B71C1C,dashed]up-> Analytics : <color:#B71C1C>все события → агрегаты</color>
+MQ -[#B71C1C,dashed]up-> Catalog   : <color:#B71C1C>StockReserveRequestEvent</color>\n<color:#B71C1C>→ зарезервировать остаток</color>\n<color:#B71C1C>UserProfileUpdatedEvent</color>\n<color:#B71C1C>→ обновить SellerReadModel</color>\n<color:#B71C1C>RatingAggregateUpdatedEvent</color>\n<color:#B71C1C>→ рейтинг в SellerReadModel</color>
+MQ -[#B71C1C,dashed]up-> Orders    : <color:#B71C1C>StockReservedEvent → подтвердить</color>\n<color:#B71C1C>StockReservationFailedEvent → отменить</color>\n<color:#B71C1C>UserBlockedEvent → отменить заказы</color>
+MQ -[#B71C1C,dashed]up-> Reviews   : <color:#B71C1C>OrderCompletedEvent</color>\n<color:#B71C1C>→ разблокировать отзыв</color>\n<color:#B71C1C>DisputeResolvedEvent</color>\n<color:#B71C1C>→ авто-отзыв</color>
+MQ -[#B71C1C,dashed]up-> Notifs    : <color:#B71C1C>UserRegisteredEvent</color>\n<color:#B71C1C>UserBecameSellerEvent</color>\n<color:#B71C1C>UserBlocked/Unblocked</color>\n<color:#B71C1C>OrderPlaced/Status/Completed</color>\n<color:#B71C1C>DisputeOpened/Resolved</color>\n<color:#B71C1C>StockDepletedEvent</color>\n<color:#B71C1C>ProductRestockedEvent</color>\n<color:#B71C1C>RatingAggregateUpdatedEvent</color>\n<color:#B71C1C>ReviewCreatedEvent</color>
+MQ -[#B71C1C,dashed]up-> Analytics : <color:#B71C1C>OrderPlaced/Status/Completed</color>\n<color:#B71C1C>DisputeOpened/Resolved</color>\n<color:#B71C1C>StockDepletedEvent</color>\n<color:#B71C1C>ProductViewed/Created</color>\n<color:#B71C1C>FavoriteChangedEvent</color>\n<color:#B71C1C>RatingAggregateUpdatedEvent</color>\n<color:#B71C1C>ReviewCreatedEvent</color>
 MQ -[#B71C1C,dashed]up-> Chat      : <color:#B71C1C>OrderPlacedEvent → создать чат</color>\n<color:#B71C1C>OrderStatusChangedEvent → закрыть</color>\n<color:#B71C1C>UserBlockedEvent → закрыть чаты</color>
 
 ' ── Запись / чтение БД (коричневый) ──
-Identity -[#795548]down-> DBIdentity
-Catalog  -[#795548]down-> DBCatalog
-Orders   -[#795548]down-> DBOrders
-Reviews  -[#795548]down-> DBReviews
-Notifs     -[#795548]down-> DBNotifs
-Analytics  -[#795548]down-> DBAnalytics
-Chat       -[#795548]down-> DBChat
+Identity  -[#795548]down-> DBIdentity
+Catalog   -[#795548]down-> DBCatalog
+Orders    -[#795548]down-> DBOrders
+Reviews   -[#795548]down-> DBReviews
+Notifs    -[#795548]down-> DBNotifs
+Analytics -[#795548]down-> DBAnalytics
+Chat      -[#795548]down-> DBChat
 
 ' ─── Легенда ─────────────────────────────────────────────────────────────────
 legend bottom
@@ -151,7 +150,7 @@ legend bottom
   <color:#B71C1C>■</color> Потребление события из RabbitMQ (пунктир)
   <color:#795548>■</color> Чтение / запись в БД
   <color:#00838F>■</color> Redis cache (пунктир)
-  <color:#E65100>■</color> Email через MailHog SMTP (пунктир, dev only)
+  <color:#AD1457>■</color> Email через MailHog SMTP (пунктир, dev only)
 endlegend
 
 @enduml
