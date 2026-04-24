@@ -22,6 +22,8 @@ public sealed class CatalogProfile : Profile
             .ForMember(d => d.Longitude, o => o.MapFrom(s => s.Location != null ? s.Location.X : (double?)null))
             .ForMember(d => d.ShopName, o => o.MapFrom(s => s.Shop != null ? s.Shop.BusinessName : null))
             .ForMember(d => d.SellerName, o => o.Ignore())
+            .ForMember(d => d.AverageRating, o => o.MapFrom(s => s.AverageRating))
+            .ForMember(d => d.ReviewCount, o => o.MapFrom(s => s.ReviewCount))
             .ForMember(d => d.MainPhotoUrl, o => o.MapFrom(s =>
                 s.Photos.FirstOrDefault(ph => ph.IsMain)!.StorageUrl
                 ?? s.Photos.OrderBy(ph => ph.SortOrder).FirstOrDefault()!.StorageUrl))
