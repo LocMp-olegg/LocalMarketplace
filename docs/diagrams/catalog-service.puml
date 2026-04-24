@@ -125,6 +125,9 @@ class Product <<aggregate root>> {
     + Location : Point <<geometry(Point,4326)>>
     ..произвольные метаданные..
     + Attributes : JsonDocument? <<jsonb>>
+    ..рейтинг (денормализация из Review)..
+    + AverageRating : decimal
+    + ReviewCount : int
     ..состояние..
     + IsActive : bool
     + IsDeleted : bool
@@ -222,6 +225,12 @@ note right of Product
   Геофильтрация покупателем:
   ST_DWithin(product.location,
     buyer.location, radius_m)
+
+  AverageRating / ReviewCount:
+  денормализованы из ReviewService.
+  Обновляются через консьюмер:
+  RatingAggregateUpdatedEvent
+  (SubjectType == "Product")
 end note
 
 note right of ProductPhoto
@@ -232,9 +241,11 @@ end note
 
 note bottom of SellerReadModel
   Денормализованная копия из Identity+Review.
-  Обновляется через события:
-  • UserProfileUpdatedEvent (Identity)
-  • RatingAggregateUpdatedEvent (Review)
+  Обновляется через консьюмеры:
+  • UserProfileUpdatedEvent → DisplayName, AvatarUrl
+  • UserBecameSellerEvent   → создать запись
+  • RatingAggregateUpdatedEvent (SubjectType=="Seller")
+    → AverageRating, ReviewCount
   Нет FK — принадлежит другому сервису.
 end note
 
@@ -259,7 +270,7 @@ legend bottom
   | StockHistory | StockHistory | Аудит каждого изменения остатка товара |
   | Tag | Tags | Смарт-фильтры («без глютена», «ручная работа») |
   | ProductTag | ProductTags | M:M связь товар ↔ тег |
-  | SellerReadModel | SellerReadModels | Кэш профиля продавца, обновляется через события |
+  | SellerReadModel | SellerReadModels | Кэш профиля продавца (DisplayName, AverageRating), обновляется через события |
   | Favorite | Favorites | Избранные товары покупателя |
 endlegend
 
