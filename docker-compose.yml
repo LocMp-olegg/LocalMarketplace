@@ -279,7 +279,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       AuthenticationOptions__Authority: "http://locmp-identity:8080"
-      CorsPoliticsOptions__AllowedOrigins: "http://localhost:4200"
+      CorsPoliticsOptions__AllowedOrigins: "http://localhost:5173"
       ConnectionStrings__Redis: "locmp-redis:6379"
     ports:
       - "5000:8080"

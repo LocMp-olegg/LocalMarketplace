@@ -29,11 +29,8 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerForOcelotUI();
-}
+app.UseSwagger();
+app.UseSwaggerForOcelotUI();
 
 app.MapControllers();
 
@@ -61,6 +58,7 @@ app.Use(async (context, next) =>
             }
         }
     }
+
     await next();
 });
 
