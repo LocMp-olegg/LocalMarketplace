@@ -41,7 +41,11 @@ public sealed class GetProductsByTagsQueryHandler(CatalogDbContext db)
                 null,
                 p.ProductTags.Select(pt => pt.Tag.Name).ToList(),
                 p.IsMadeToOrder,
-                p.LeadTimeDays
+                p.LeadTimeDays,
+                p.Photos.OrderBy(ph => ph.SortOrder).Select(ph => ph.StorageUrl).ToList(),
+                p.Shop.BusinessName,
+                p.AverageRating,
+                p.ReviewCount
             ))
             .ToListAsync(ct);
 

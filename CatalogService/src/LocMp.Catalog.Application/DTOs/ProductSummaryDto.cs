@@ -16,5 +16,9 @@ public sealed record ProductSummaryDto(
     double? DistanceMeters,
     IReadOnlyList<string> Tags,
     bool IsMadeToOrder,
-    int? LeadTimeDays
+    int? LeadTimeDays,
+    IReadOnlyList<string> PhotoUrls,
+    string? ShopName,
+    decimal AverageRating,
+    int ReviewCount
 );

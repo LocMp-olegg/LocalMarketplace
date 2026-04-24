@@ -1,6 +1,9 @@
-﻿namespace LocMp.Gateway.Api.Options;
+namespace LocMp.Gateway.Api.Options;
 
 public class CorsPoliticsOptions
 {
-    public string Origin { get; set; } = string.Empty;
+    public string AllowedOrigins { get; set; } = string.Empty;
+
+    public string[] GetOrigins() =>
+        AllowedOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 }

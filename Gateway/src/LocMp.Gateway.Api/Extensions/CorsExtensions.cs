@@ -16,7 +16,7 @@ public static class CorsExtensions
                     .AllowAnyHeader()
                     .AllowCredentials()
                     .WithOrigins(services.BuildServiceProvider().GetRequiredService<IOptions<CorsPoliticsOptions>>()
-                        .Value.Origin);
+                        .Value.GetOrigins());
             });
         });
     }

@@ -59,7 +59,11 @@ public sealed class GetProductsByLocationQueryHandler(CatalogDbContext db)
                 p.Location != null ? p.Location.Distance(center) : null,
                 p.ProductTags.Select(pt => pt.Tag.Name).ToList(),
                 p.IsMadeToOrder,
-                p.LeadTimeDays
+                p.LeadTimeDays,
+                p.Photos.OrderBy(ph => ph.SortOrder).Select(ph => ph.StorageUrl).ToList(),
+                p.Shop.BusinessName,
+                p.AverageRating,
+                p.ReviewCount
             ))
             .ToListAsync(ct);
 

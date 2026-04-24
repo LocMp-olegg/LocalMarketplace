@@ -17,6 +17,8 @@ public sealed record ProductDto
     public int? LeadTimeDays { get; init; }
     public double? Latitude { get; init; }
     public double? Longitude { get; init; }
+    public decimal AverageRating { get; init; }
+    public int ReviewCount { get; init; }
     public bool IsActive { get; init; }
     public DateTimeOffset CreatedAt { get; init; }
     public DateTimeOffset? UpdatedAt { get; init; }

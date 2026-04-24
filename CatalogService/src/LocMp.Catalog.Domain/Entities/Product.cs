@@ -25,6 +25,9 @@ public class Product(Guid id) : AggregateRoot<Guid>(id)
 
     public JsonDocument? Attributes { get; set; }
 
+    public decimal AverageRating { get; set; }
+    public int ReviewCount { get; set; }
+
     public bool IsActive { get; set; } = true;
     public bool IsDeleted { get; set; }
     public DateTimeOffset? DeletedAt { get; set; }
