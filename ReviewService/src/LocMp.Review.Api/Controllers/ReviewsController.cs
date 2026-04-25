@@ -38,8 +38,11 @@ public sealed class ReviewsController(ISender sender) : ControllerBase
         [FromQuery] Guid subjectId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
+        [FromQuery] int? rating = null,
+        [FromQuery] ReviewSortBy sortBy = ReviewSortBy.DateDesc,
         CancellationToken ct = default)
-        => Ok(await sender.Send(new GetReviewsBySubjectQuery(subjectType, subjectId, page, pageSize), ct));
+        => Ok(await sender.Send(
+            new GetReviewsBySubjectQuery(subjectType, subjectId, page, pageSize, false, rating, sortBy), ct));
 
     [HttpGet("rating")]
     [AllowAnonymous]
