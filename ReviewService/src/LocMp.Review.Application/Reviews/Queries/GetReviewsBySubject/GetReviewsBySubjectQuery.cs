@@ -10,4 +10,6 @@ public sealed record GetReviewsBySubjectQuery(
     Guid SubjectId,
     int Page = 1,
     int PageSize = 20,
-    bool IncludeHidden = false) : IRequest<PagedResult<ReviewSummaryDto>>;
+    bool IncludeHidden = false,
+    int? RatingFilter = null,
+    ReviewSortBy SortBy = ReviewSortBy.DateDesc) : IRequest<PagedResult<ReviewSummaryDto>>;
