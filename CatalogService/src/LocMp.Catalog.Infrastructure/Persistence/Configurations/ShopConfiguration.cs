@@ -19,7 +19,7 @@ public class ShopConfiguration : IEntityTypeConfiguration<Shop>
         builder.Property(s => s.Inn).HasMaxLength(12);
         builder.Property(s => s.BusinessType).IsRequired();
         builder.Property(s => s.WorkingHours).HasMaxLength(200);
-        builder.Property(s => s.Location).HasColumnType("geometry(Point, 4326)");
+        builder.Property(s => s.Location).HasColumnType("geography");
         builder.Property(s => s.AvatarUrl).HasMaxLength(1024);
         builder.Property(s => s.AvatarObjectKey).HasMaxLength(512);
         builder.Property(s => s.AllowCourierDelivery).HasDefaultValue(true);

@@ -16,7 +16,7 @@ public class SellerReadModelConfiguration : IEntityTypeConfiguration<SellerReadM
         builder.Property(s => s.AvatarUrl).HasMaxLength(1024);
         builder.Property(s => s.AverageRating).HasPrecision(3, 2).HasDefaultValue(0m);
         builder.Property(s => s.ReviewCount).HasDefaultValue(0);
-        builder.Property(s => s.Location).HasColumnType("geometry(Point, 4326)");
+        builder.Property(s => s.Location).HasColumnType("geography");
         builder.Property(s => s.LastSyncedAt).IsRequired();
     }
 }

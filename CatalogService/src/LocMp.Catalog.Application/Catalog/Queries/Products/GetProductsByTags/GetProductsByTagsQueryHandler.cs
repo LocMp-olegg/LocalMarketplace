@@ -20,11 +20,12 @@ public sealed class GetProductsByTagsQueryHandler(CatalogDbContext db)
 
         var total = await query.CountAsync(ct);
 
-        var items = await query
+        var raw = await query
             .OrderByDescending(p => p.CreatedAt)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(p => new ProductSummaryDto(
+            .Select(p => new
+            {
                 p.Id,
                 p.SellerId,
                 p.ShopId,
@@ -34,20 +35,52 @@ public sealed class GetProductsByTagsQueryHandler(CatalogDbContext db)
                 p.Unit,
                 p.StockQuantity,
                 p.IsActive,
-                p.Location != null ? p.Location.Y : (double?)null,
-                p.Location != null ? p.Location.X : (double?)null,
-                p.Photos.Where(ph => ph.IsMain).Select(ph => ph.StorageUrl).FirstOrDefault()
-                    ?? p.Photos.OrderBy(ph => ph.SortOrder).Select(ph => ph.StorageUrl).FirstOrDefault(),
-                null,
-                p.ProductTags.Select(pt => pt.Tag.Name).ToList(),
+                p.Location,
+                MainPhotoUrl = p.Photos
+                                   .Where(ph => ph.IsMain)
+                                   .Select(ph => ph.StorageUrl)
+                                   .FirstOrDefault()
+                               ?? p.Photos
+                                   .OrderBy(ph => ph.SortOrder)
+                                   .Select(ph => ph.StorageUrl)
+                                   .FirstOrDefault(),
+                PhotoUrls = p.Photos
+                    .OrderBy(ph => ph.SortOrder)
+                    .Select(ph => ph.StorageUrl)
+                    .ToList(),
+                ShopName = p.Shop.BusinessName,
+                Tags = p.ProductTags
+                    .Select(pt => pt.Tag.Name)
+                    .ToList(),
                 p.IsMadeToOrder,
                 p.LeadTimeDays,
-                p.Photos.OrderBy(ph => ph.SortOrder).Select(ph => ph.StorageUrl).ToList(),
-                p.Shop.BusinessName,
                 p.AverageRating,
                 p.ReviewCount
-            ))
+            })
             .ToListAsync(ct);
+
+        var items = raw.Select(p => new ProductSummaryDto(
+            p.Id,
+            p.SellerId,
+            p.ShopId,
+            p.CategoryId,
+            p.Name,
+            p.Price,
+            p.Unit,
+            p.StockQuantity,
+            p.IsActive,
+            p.Location?.Y,
+            p.Location?.X,
+            p.MainPhotoUrl,
+            null,
+            p.Tags,
+            p.IsMadeToOrder,
+            p.LeadTimeDays,
+            p.PhotoUrls,
+            p.ShopName,
+            p.AverageRating,
+            p.ReviewCount
+        )).ToList();
 
         return new PagedResult<ProductSummaryDto>(items, total, request.Page, request.PageSize);
     }

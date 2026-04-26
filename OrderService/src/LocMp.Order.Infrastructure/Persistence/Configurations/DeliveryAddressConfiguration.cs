@@ -16,7 +16,7 @@ public class DeliveryAddressConfiguration : IEntityTypeConfiguration<DeliveryAdd
         builder.Property(a => a.HouseNumber).HasMaxLength(20).IsRequired();
         builder.Property(a => a.Apartment).HasMaxLength(20);
         builder.Property(a => a.Entrance).HasMaxLength(20);
-        builder.Property(a => a.Location).HasColumnType("geometry(Point, 4326)");
+        builder.Property(a => a.Location).HasColumnType("geography");
         builder.Property(a => a.RecipientName).HasMaxLength(200).IsRequired();
         builder.Property(a => a.RecipientPhone).HasMaxLength(20).IsRequired();
 

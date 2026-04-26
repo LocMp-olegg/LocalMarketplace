@@ -19,7 +19,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.IsMadeToOrder).HasDefaultValue(false);
         builder.Property(p => p.LeadTimeDays);
         builder.Property(p => p.Attributes).HasColumnType("jsonb");
-        builder.Property(p => p.Location).HasColumnType("geometry(Point, 4326)");
+        builder.Property(p => p.Location).HasColumnType("geography");
         builder.Property(p => p.AverageRating).HasPrecision(3, 2).HasDefaultValue(0m);
         builder.Property(p => p.ReviewCount).HasDefaultValue(0);
 
