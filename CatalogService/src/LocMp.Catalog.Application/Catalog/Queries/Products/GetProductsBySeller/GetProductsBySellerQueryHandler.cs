@@ -38,10 +38,12 @@ public sealed class GetProductsBySellerQueryHandler(CatalogDbContext db)
 
         query = request.Sort switch
         {
-            ProductSortBy.PriceAsc => query.OrderBy(p => p.Price),
+            ProductSortBy.PriceAsc  => query.OrderBy(p => p.Price),
             ProductSortBy.PriceDesc => query.OrderByDescending(p => p.Price),
-            ProductSortBy.NameAsc => query.OrderBy(p => p.Name),
-            _ => query.OrderByDescending(p => p.CreatedAt)
+            ProductSortBy.NameAsc   => query.OrderBy(p => p.Name),
+            ProductSortBy.NameDesc  => query.OrderByDescending(p => p.Name),
+            ProductSortBy.Oldest    => query.OrderBy(p => p.CreatedAt),
+            _                       => query.OrderByDescending(p => p.CreatedAt)
         };
 
         var raw = await query
