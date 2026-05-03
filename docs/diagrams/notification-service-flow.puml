@@ -1,0 +1,242 @@
+@startuml notification-service-flow
+title <size:16><b>NotificationService</b></size>\n<color:#555>Поток обработки запросов (:5005)</color>
+
+' ─── Стиль ───────────────────────────────────────────────────────────────────
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 12
+skinparam roundcorner 10
+skinparam shadowing false
+
+skinparam component {
+    BackgroundColor White
+    BorderColor #00838F
+    FontColor #2C3E50
+    BorderThickness 1.2
+}
+skinparam rectangle {
+    BorderColor #00838F
+    BorderThickness 1.5
+    FontColor #006064
+    FontStyle bold
+    BackgroundColor transparent
+}
+skinparam database {
+    BackgroundColor #E0F7FA
+    BorderColor #00838F
+}
+skinparam queue {
+    BackgroundColor #F3E5F5
+    BorderColor #6A1B9A
+}
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #FBC02D
+    FontColor #4E342E
+    BorderThickness 1.2
+    roundcorner 6
+}
+
+' ─── Внешние акторы ──────────────────────────────────────────────────────────
+
+component "API Gateway\n:5000" as Gateway #ECEFF1
+
+rectangle "RabbitMQ  (входящие события — 12)" #F3E5F5 {
+    queue "UserRegisteredEvent\nUserBecameSellerEvent\nUserBlockedEvent\nUserUnblockedEvent\n← IdentityService" as EV_Identity
+
+    queue "OrderPlacedEvent\nOrderStatusChangedEvent\nOrderCompletedEvent\nDisputeOpenedEvent\nDisputeResolvedEvent\n← OrderService" as EV_Order
+
+    queue "StockDepletedEvent\nProductRestockedEvent\n← CatalogService" as EV_Catalog
+
+    queue "RatingAggregateUpdatedEvent\nReviewCreatedEvent\n← ReviewService" as EV_Review
+}
+
+' ─── NotificationService ─────────────────────────────────────────────────────
+
+rectangle "**NotificationService  :5005**" #E0F7FA {
+
+  rectangle "**Api Layer**" #B2EBF2 {
+    component "**NotificationsController**\nGET /api/notifications  (Auth, paged, onlyUnread filter)\nPOST /api/notifications/{id}/read  (Auth)\nPOST /api/notifications/read-all  (Auth)\nGET /api/notifications/unread-count  (Auth)" as NotifCtrl
+
+    component "**PreferencesController**\nGET /api/notifications/preferences  (Auth)\nPUT /api/notifications/preferences  (Auth)" as PrefCtrl
+  }
+
+  rectangle "**Application Layer  (MediatR)**" {
+
+    component "**MediatR Pipeline**\nLoggingBehavior\n→ ValidationBehavior (FluentValidation)\n→ CachingBehavior (ICacheableQuery → Redis)" as Pipeline
+
+    rectangle "Commands" #E0F7FA {
+      component "MarkNotificationReadCommand\nMarkAllNotificationsReadCommand\n→ сбрасывает notif:unread:{userId} в Redis" as CmdRead
+      component "UpdatePreferencesCommand\n→ инвалидирует notif:prefs:{userId} в Redis" as CmdPref
+    }
+
+    rectangle "Queries" #FEF9E7 {
+      component "GetNotificationsQuery  (paged, ICacheableQuery)\nGetUnreadCountQuery  (ICacheableQuery → notif:unread:{userId})\nGetPreferencesQuery  (ICacheableQuery → notif:prefs:{userId})" as QNotif
+    }
+
+    rectangle "Consumers  (MassTransit) — 12 консьюмеров" #E0FFFF {
+      component "**UserRegisteredConsumer**\n→ INSERT UserNotificationPreferences\n   (UserId, Email из события)\n→ НЕ шлёт уведомление" as ConsUserReg
+
+      component "**UserBecameSellerConsumer**\n→ Creates Notification{SellerActivated}\n→ Email: CanEmailSystem → SmtpEmailService" as ConsUserSeller
+
+      component "**UserBlockedConsumer**\n→ Creates Notification{AccountBlocked}\n→ Email: CanEmailMandatory (игнорирует EmailEnabled)" as ConsUserBlock
+
+      component "**UserUnblockedConsumer**\n→ Creates Notification{AccountUnblocked}\n→ Email: CanEmailMandatory" as ConsUserUnblock
+
+      component "**OrderPlacedConsumer**\n→ Notification продавцу {OrderPlaced}\n→ Email: CanEmailOrder" as ConsOrderPlaced
+
+      component "**OrderStatusChangedConsumer**\n→ Notification покупателю / продавцу\n   по типу перехода статуса\n→ Email: CanEmailOrder" as ConsOrderStatus
+
+      component "**OrderCompletedConsumer**\n→ Notification покупателю {OrderCompleted}\n→ Email: CanEmailOrder" as ConsOrderDone
+
+      component "**DisputeOpenedConsumer**\n→ Notification покупателю + продавцу\n→ Email: CanEmailMandatory (обязательно)" as ConsDispOpen
+
+      component "**DisputeResolvedConsumer**\n→ Notification покупателю + продавцу\n→ Email: CanEmailMandatory (обязательно)" as ConsDispRes
+
+      component "**StockDepletedConsumer**\n→ Notification продавцу {StockDepleted}\n→ Email: CanEmailSystem" as ConsStock
+
+      component "**ProductRestockedConsumer**\n→ Notification пользователям из избранного\n→ Email: CanEmailSystem" as ConsRestock
+
+      component "**ReviewCreatedConsumer**\n→ Notification продавцу {ReviewReceived}\n→ Email: CanEmailReview\n**RatingAggregateUpdatedConsumer**\n→ Notification продавцу {ReviewReceived}" as ConsReview
+    }
+  }
+
+  rectangle "**Infrastructure Layer**" #B2EBF2 {
+    component "**NotifDbContext**\n(EF Core 10)" as DbCtx
+    component "**SmtpEmailService**\n(IEmailService, MailKit)\nHost: MailHog :1025 (dev)\nHTML-шаблоны: EmailTemplates" as EmailSvc
+    component "**Redis Adapter**\n(IDistributedCache)\nnotif:prefs:{userId}  — TTL 15 мин\nnotif:unread:{userId} — TTL 5 мин" as RedisAdapt
+  }
+}
+
+' ─── Внешние системы ─────────────────────────────────────────────────────────
+
+database "**PostgreSQL** :5430\nschema: notifs\n(Notifications, UserNotificationPreferences)" as DB #E0F7FA
+database "**Redis** :6379" as Redis #EAFAF1
+component "**MailHog** :1025 SMTP\n:8025 Web UI (dev only)" as MailHog #FFF3E0
+
+' ─── Связи ───────────────────────────────────────────────────────────────────
+
+' Gateway → API
+Gateway -[#00838F,bold]-> NotifCtrl : HTTP + JWT
+Gateway -[#00838F,bold]-> PrefCtrl  : HTTP + JWT
+
+' Consumed events → Consumers
+EV_Identity -[#B71C1C,dashed]-> ConsUserReg    : consume
+EV_Identity -[#B71C1C,dashed]-> ConsUserSeller : consume
+EV_Identity -[#B71C1C,dashed]-> ConsUserBlock  : consume
+EV_Identity -[#B71C1C,dashed]-> ConsUserUnblock: consume
+EV_Order    -[#B71C1C,dashed]-> ConsOrderPlaced: consume
+EV_Order    -[#B71C1C,dashed]-> ConsOrderStatus: consume
+EV_Order    -[#B71C1C,dashed]-> ConsOrderDone  : consume
+EV_Order    -[#B71C1C,dashed]-> ConsDispOpen   : consume
+EV_Order    -[#B71C1C,dashed]-> ConsDispRes    : consume
+EV_Catalog  -[#B71C1C,dashed]-> ConsStock      : consume
+EV_Catalog  -[#B71C1C,dashed]-> ConsRestock    : consume
+EV_Review   -[#B71C1C,dashed]-> ConsReview     : consume
+
+' API → MediatR
+NotifCtrl -[#00838F]-> Pipeline : ISender.Send()
+PrefCtrl  -[#00838F]-> Pipeline
+
+' Pipeline → Handlers
+Pipeline -[#00838F]-> CmdRead
+Pipeline -[#00838F]-> CmdPref
+Pipeline -[#00838F]-> QNotif
+
+' Commands → Infrastructure
+CmdRead -[#795548]-> DbCtx
+CmdRead -[#00838F,dashed]-> RedisAdapt : инвалидация unread count
+CmdPref -[#795548]-> DbCtx
+CmdPref -[#00838F,dashed]-> RedisAdapt : инвалидация prefs
+
+' Queries → Infrastructure
+QNotif -[#795548]-> DbCtx
+QNotif -[#00838F,dashed]-> RedisAdapt
+
+' All Consumers: читают prefs, пишут Notification, шлют email
+ConsUserReg    -[#795548]-> DbCtx
+ConsUserSeller -[#795548]-> DbCtx
+ConsUserSeller -[#AD1457,dashed]-> EmailSvc
+ConsUserBlock  -[#795548]-> DbCtx
+ConsUserBlock  -[#AD1457,dashed]-> EmailSvc
+ConsUserUnblock -[#795548]-> DbCtx
+ConsUserUnblock -[#AD1457,dashed]-> EmailSvc
+ConsOrderPlaced -[#795548]-> DbCtx
+ConsOrderPlaced -[#00838F,dashed]-> RedisAdapt : читает prefs
+ConsOrderPlaced -[#AD1457,dashed]-> EmailSvc
+ConsOrderStatus -[#795548]-> DbCtx
+ConsOrderStatus -[#00838F,dashed]-> RedisAdapt : читает prefs
+ConsOrderStatus -[#AD1457,dashed]-> EmailSvc
+ConsOrderDone  -[#795548]-> DbCtx
+ConsOrderDone  -[#AD1457,dashed]-> EmailSvc
+ConsDispOpen   -[#795548]-> DbCtx
+ConsDispOpen   -[#AD1457,dashed]-> EmailSvc
+ConsDispRes    -[#795548]-> DbCtx
+ConsDispRes    -[#AD1457,dashed]-> EmailSvc
+ConsStock      -[#795548]-> DbCtx
+ConsStock      -[#AD1457,dashed]-> EmailSvc
+ConsRestock    -[#795548]-> DbCtx
+ConsRestock    -[#AD1457,dashed]-> EmailSvc
+ConsReview     -[#795548]-> DbCtx
+ConsReview     -[#AD1457,dashed]-> EmailSvc
+
+' Infrastructure → External
+DbCtx     -[#006064,bold]-> DB
+RedisAdapt -[#00838F,dashed]-> Redis
+EmailSvc  -[#AD1457,dashed]-> MailHog : SMTP :1025
+
+' ─── Заметки ─────────────────────────────────────────────────────────────────
+
+note right of Pipeline
+  NotificationService только
+  потребляет события. REST API
+  — только для чтения и управления
+  уведомлениями пользователя.
+  Не публикует никаких событий в MQ.
+end note
+
+note right of RedisAdapt
+  Redis ключи:
+  notif:prefs:{userId}  TTL 15 мин
+  — настройки пользователя, читаются
+    каждым consumer перед отправкой
+
+  notif:unread:{userId} TTL 5 мин
+  — счётчик непрочитанных,
+    инвалидируется при новом notif
+    и при чтении
+end note
+
+note right of EmailSvc
+  Логика отправки Email:
+  CanEmailOrder    = Email≠null && EmailEnabled && EmailOrderUpdates
+  CanEmailReview   = Email≠null && EmailEnabled && EmailReviewReplies
+  CanEmailSystem   = Email≠null && EmailEnabled
+  CanEmailMandatory = Email≠null
+    (AccountBlocked, Dispute — игнорирует EmailEnabled)
+
+  Ошибка SMTP → логируется,
+  Consumer НЕ бросает исключение
+  (сообщение не возвращается в очередь).
+end note
+
+note bottom of ConsUserReg
+  UserRegisteredConsumer:
+  1. Создаёт UserNotificationPreferences
+     с Email из UserRegisteredEvent.Email
+  2. Уведомление НЕ создаётся
+     (регистрация — не событие для уведомления)
+end note
+
+' ─── Легенда ─────────────────────────────────────────────────────────────────
+
+legend bottom
+  <b>Условные обозначения</b>
+  |= Цвет |= Тип связи |
+  |= <color:#00838F>━━━━━</color> |= HTTP запрос / ISender.Send() (MediatR) |
+  |= <color:#B71C1C>- - -</color> |= Потребление события из RabbitMQ |
+  |= <color:#795548>━━━━━</color> |= Чтение / запись через EF Core |
+  |= <color:#00838F>- - -</color> |= Redis cache (prefs, unread count, пунктир) |
+  |= <color:#AD1457>- - -</color> |= SMTP Email через MailKit (пунктир) |
+endlegend
+
+@enduml

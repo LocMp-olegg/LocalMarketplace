@@ -1,0 +1,223 @@
+@startuml catalog-service-flow
+title <size:16><b>CatalogService</b></size>\n<color:#555>Поток обработки запросов (:5002)</color>
+
+' ─── Стиль ───────────────────────────────────────────────────────────────────
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 12
+skinparam roundcorner 10
+skinparam shadowing false
+
+skinparam component {
+    BackgroundColor White
+    BorderColor #27AE60
+    FontColor #2C3E50
+    BorderThickness 1.2
+}
+skinparam rectangle {
+    BorderColor #27AE60
+    BorderThickness 1.5
+    FontColor #1E8449
+    FontStyle bold
+    BackgroundColor transparent
+}
+skinparam database {
+    BackgroundColor #D5F5E3
+    BorderColor #1E8449
+}
+skinparam queue {
+    BackgroundColor #F3E5F5
+    BorderColor #6A1B9A
+}
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #FBC02D
+    FontColor #4E342E
+    BorderThickness 1.2
+    roundcorner 6
+}
+
+' ─── Внешние акторы ──────────────────────────────────────────────────────────
+
+component "API Gateway\n:5000" as Gateway #ECEFF1
+
+rectangle "RabbitMQ  (входящие события)" #F3E5F5 {
+    queue "StockReserveRequestEvent\n← OrderService" as EV_Reserve
+    queue "UserBecameSellerEvent\nUserProfileUpdatedEvent\n← IdentityService" as EV_User
+    queue "RatingAggregateUpdatedEvent\n← ReviewService" as EV_Rating
+}
+
+' ─── CatalogService ──────────────────────────────────────────────────────────
+
+rectangle "**CatalogService  :5002**" #E9F7EF {
+
+  rectangle "**Api Layer**" #D5F5E3 {
+    component "**ProductsController**\nGET /api/products/{id}\nGET /api/products/nearby  (lat, lon, radiusKm)\nGET /api/products/search  (q, category, tags, price, sort)\nGET /api/products/by-seller/{id}\nGET /api/products/by-shop/{id}\nGET /api/products/my  (Seller)\nPOST /api/products  (Seller)\nPUT /api/products/{id}  (Seller)\nDELETE /api/products/{id}  (Seller)\nPATCH /api/products/{id}/stock  (Seller)\nPOST /api/products/{id}/reserve  (API-Key)\nPOST /api/products/{id}/release  (API-Key)\nPOST|DELETE /api/products/{id}/photos  (Seller)\nPOST|DELETE /api/products/{id}/tags  (Seller)" as ProdCtrl
+
+    component "**ShopsController**\nGET /api/shops/{id}  (AllowAnonymous)\nGET /api/shops/my  (Seller)\nPOST /api/shops  (Seller)\nPUT /api/shops/{id}  (Seller)\nPOST|DELETE /api/shops/{id}/photos  (Seller)" as ShopCtrl
+
+    component "**CategoriesController**\nGET /api/categories  (AllowAnonymous)\nGET /api/categories/{id}  (AllowAnonymous)\nPOST|PUT|DELETE /api/categories  (Admin)" as CatCtrl
+
+    component "**TagsController**\nGET /api/tags  (AllowAnonymous)\nPOST|DELETE /api/tags  (Admin)" as TagCtrl
+
+    component "**FavoritesController**\nGET /api/favorites  (Auth)\nPOST /api/favorites  (Auth)\nDELETE /api/favorites/{productId}  (Auth)" as FavCtrl
+
+    component "**SellerReadModelsController**\nGET /api/sellers/{id}  (AllowAnonymous)" as SellerCtrl
+  }
+
+  rectangle "**Application Layer  (MediatR)**" {
+
+    component "**MediatR Pipeline**\nLoggingBehavior\n→ ValidationBehavior (FluentValidation)\n→ CachingBehavior (ICacheableQuery → Redis)" as Pipeline
+
+    rectangle "Commands" #E8F5E8 {
+      component "CreateProductCommand  (→ ProductCreatedEvent)\nUpdateProductCommand  /  DeleteProductCommand\nUpdateStockCommand  (→ StockDepletedEvent / ProductRestockedEvent)\nReserveStockCommand  (→ StockReservedEvent / StockReservationFailedEvent)\nReleaseStockCommand  (→ StockReleasedEvent)" as CmdProduct
+      component "UploadProductPhotoCommand  /  DeleteProductPhotoCommand\nSetMainProductPhotoCommand\nAddProductTagCommand  /  RemoveProductTagCommand" as CmdMedia
+      component "CreateShopCommand  /  UpdateShopCommand\nUploadShopPhotoCommand  /  DeleteShopPhotoCommand" as CmdShop
+      component "ToggleFavoriteCommand  (→ FavoriteChangedEvent)" as CmdFav
+    }
+
+    rectangle "Queries" #FEFDE7 {
+      component "GetProductByIdQuery  (ICacheableQuery, TTL 5m)\nGetProductsNearbyQuery  (PostGIS ST_DWithin, TTL 2m)\nSearchProductsQuery  (полнотекст + фильтры)\nGetProductsBySellerQuery  /  GetProductsByShopQuery\nGetMyProductsQuery" as QProd
+      component "GetShopByIdQuery  /  GetMyShopQuery\nGetCategoriesTreeQuery  (ICacheableQuery, TTL 1h)\nGetTagsQuery  /  GetFavoritesQuery\nGetSellerReadModelQuery  (ICacheableQuery, TTL 10m)" as QOther
+    }
+
+    rectangle "Consumers  (MassTransit)" #EBF5FB {
+      component "**StockReserveRequestConsumer**\n→ проверяет StockQuantity\n→ если достаточно: уменьшает остаток,\n  создаёт StockHistory, публикует StockReservedEvent\n→ если нет: публикует StockReservationFailedEvent" as ConsReserve
+      component "**UserBecameSellerConsumer**\n→ создаёт запись SellerReadModel\n  (SellerId, DisplayName, AvatarUrl)\n**UserProfileUpdatedConsumer**\n→ обновляет DisplayName и AvatarUrl\n  в SellerReadModel" as ConsUser
+      component "**RatingAggregateUpdatedConsumer**\n→ если SubjectType == Product:\n  обновляет Product.AverageRating, ReviewCount\n→ если SubjectType == Seller:\n  обновляет SellerReadModel.AverageRating, ReviewCount" as ConsRating
+    }
+  }
+
+  rectangle "**Infrastructure Layer**" #D5F5E3 {
+    component "**CatalogDbContext**\n(EF Core 10 · PostGIS / NetTopologySuite\n· JSONB для Product.Attributes)" as DbCtx
+    component "**MassTransitEventBus**\n(IEventBus)" as EventBus
+    component "**MinIO Adapter**\n(IStorageService)\nbucket: catalog-media" as MinIOAdapt
+    component "**Redis Adapter**\n(IDistributedCache)\nCachingBehavior + инвалидация в командах" as RedisAdapt
+  }
+}
+
+' ─── Внешние системы ─────────────────────────────────────────────────────────
+
+database "**PostgreSQL** :5430\nschema: catalog\n(Shops, Categories, Products, ProductPhotos,\nStockHistory, Tags, Favorites, SellerReadModels)" as DB #D5F5E3
+database "**Redis** :6379" as Redis #EAFAF1
+component "**MinIO** :9000\nbucket: catalog-media" as MinIO #FFF3E0
+queue "**RabbitMQ** :5672\n(исходящие события)" as MQ_OUT #F3E5F5
+
+' ─── Связи ───────────────────────────────────────────────────────────────────
+
+' Gateway → API
+Gateway -[#27AE60,bold]-> ProdCtrl  : HTTP + JWT
+Gateway -[#27AE60,bold]-> ShopCtrl  : HTTP + JWT
+Gateway -[#27AE60,bold]-> CatCtrl   : HTTP
+Gateway -[#27AE60,bold]-> TagCtrl   : HTTP
+Gateway -[#27AE60,bold]-> FavCtrl   : HTTP + JWT
+Gateway -[#27AE60,bold]-> SellerCtrl: HTTP
+
+' Consumed events → Consumers
+EV_Reserve -[#B71C1C,dashed]-> ConsReserve : consume
+EV_User    -[#B71C1C,dashed]-> ConsUser    : consume
+EV_Rating  -[#B71C1C,dashed]-> ConsRating  : consume
+
+' API → MediatR
+ProdCtrl   -[#27AE60]-> Pipeline : ISender.Send()
+ShopCtrl   -[#27AE60]-> Pipeline
+CatCtrl    -[#27AE60]-> Pipeline
+TagCtrl    -[#27AE60]-> Pipeline
+FavCtrl    -[#27AE60]-> Pipeline
+SellerCtrl -[#27AE60]-> Pipeline
+
+' Pipeline → Handlers
+Pipeline -[#27AE60]-> CmdProduct
+Pipeline -[#27AE60]-> CmdMedia
+Pipeline -[#27AE60]-> CmdShop
+Pipeline -[#27AE60]-> CmdFav
+Pipeline -[#27AE60]-> QProd
+Pipeline -[#27AE60]-> QOther
+
+' Commands → Infrastructure
+CmdProduct -[#795548]-> DbCtx
+CmdProduct -[#6A1B9A,bold]-> EventBus
+CmdProduct -[#00838F,dashed]-> RedisAdapt : инвалидация кэша
+CmdMedia   -[#795548]-> DbCtx
+CmdMedia   -[#795548]-> MinIOAdapt
+CmdShop    -[#795548]-> DbCtx
+CmdShop    -[#795548]-> MinIOAdapt
+CmdFav     -[#795548]-> DbCtx
+CmdFav     -[#6A1B9A,bold]-> EventBus
+
+' Queries → Infrastructure
+QProd   -[#795548]-> DbCtx
+QProd   -[#00838F,dashed]-> RedisAdapt
+QOther  -[#795548]-> DbCtx
+QOther  -[#00838F,dashed]-> RedisAdapt
+
+' Consumers → Infrastructure
+ConsReserve -[#795548]-> DbCtx
+ConsReserve -[#6A1B9A,bold]-> EventBus
+ConsUser    -[#795548]-> DbCtx
+ConsRating  -[#795548]-> DbCtx
+
+' Infrastructure → External
+DbCtx      -[#1E8449,bold]-> DB
+MinIOAdapt -[#E65100,dashed]-> MinIO
+RedisAdapt -[#00838F,dashed]-> Redis
+EventBus   -[#6A1B9A,bold]-> MQ_OUT
+
+' ─── Заметки ─────────────────────────────────────────────────────────────────
+
+note right of EventBus
+  Публикует 8 событий:
+  • ProductCreatedEvent
+  • StockReservedEvent
+  • StockReleasedEvent
+  • StockDepletedEvent
+  • StockReservationFailedEvent
+  • ProductViewedEvent
+  • ProductRestockedEvent
+  • FavoriteChangedEvent
+end note
+
+note right of QProd
+  PostGIS геофильтрация:
+  ST_DWithin(product.location,
+    buyer.location, radius_meters)
+
+  Кэш Redis:
+  product:{id}        — TTL 5 мин
+  products:nearby:*   — TTL 2 мин
+  categories:all      — TTL 1 час
+  seller:{id}:profile — TTL 10 мин
+end note
+
+note bottom of ConsReserve
+  Saga-like pattern (Choreography):
+  OrderService → StockReserveRequestEvent
+  CatalogService резервирует остаток
+  → StockReservedEvent (OK)
+  → StockReservationFailedEvent (нет остатка)
+  OrderService реагирует:
+  подтверждает или отменяет заказ
+end note
+
+note right of ProdCtrl
+  POST /api/products/{id}/reserve
+  и /release — защищены API-ключом
+  (X-Internal-Key header).
+  Вызываются CatalogServiceClient
+  из OrderService по HTTP напрямую
+  (в дополнение к MQ-паттерну).
+end note
+
+' ─── Легенда ─────────────────────────────────────────────────────────────────
+
+legend bottom
+  <b>Условные обозначения</b>
+  |= Цвет |= Тип связи |
+  |= <color:#27AE60>━━━━━</color> |= HTTP запрос / ISender.Send() (MediatR) |
+  |= <color:#6A1B9A>━━━━━</color> |= Публикация события → RabbitMQ (MassTransit) |
+  |= <color:#B71C1C>- - -</color> |= Потребление события из RabbitMQ |
+  |= <color:#795548>━━━━━</color> |= Чтение / запись через EF Core |
+  |= <color:#00838F>- - -</color> |= Redis cache (пунктир) |
+  |= <color:#E65100>- - -</color> |= MinIO объектное хранилище (пунктир) |
+endlegend
+
+@enduml
