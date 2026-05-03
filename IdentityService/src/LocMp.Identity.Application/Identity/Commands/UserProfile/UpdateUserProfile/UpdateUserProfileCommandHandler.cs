@@ -55,6 +55,12 @@ public sealed class UpdateUserProfileCommandHandler(
                     new UserBecameSellerEvent(user.Id, displayName, DateTimeOffset.UtcNow), ct);
             }
         }
+        else if (request.IsSeller == false)
+        {
+            var isSeller = await userManager.IsInRoleAsync(user, nameof(UserRole.Seller));
+            if (isSeller)
+                await userManager.RemoveFromRoleAsync(user, nameof(UserRole.Seller));
+        }
 
         await eventBus.PublishAsync(
             new UserProfileUpdatedEvent(
