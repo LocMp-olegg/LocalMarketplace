@@ -1,0 +1,198 @@
+@startuml identity-service-flow
+title <size:16><b>IdentityService</b></size>\n<color:#555>Поток обработки запросов (:5001)</color>
+
+' ─── Стиль ───────────────────────────────────────────────────────────────────
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 12
+skinparam roundcorner 10
+skinparam shadowing false
+
+skinparam component {
+    BackgroundColor White
+    BorderColor #2980B9
+    FontColor #2C3E50
+    BorderThickness 1.2
+}
+skinparam rectangle {
+    BorderColor #2980B9
+    BorderThickness 1.5
+    FontColor #1A5276
+    FontStyle bold
+    BackgroundColor transparent
+}
+skinparam database {
+    BackgroundColor #D6EAF8
+    BorderColor #1565C0
+}
+skinparam queue {
+    BackgroundColor #F3E5F5
+    BorderColor #6A1B9A
+}
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #FBC02D
+    FontColor #4E342E
+    BorderThickness 1.2
+    roundcorner 6
+}
+
+' ─── Внешние акторы ──────────────────────────────────────────────────────────
+
+component "API Gateway\n:5000" as Gateway #ECEFF1
+
+' ─── IdentityService ─────────────────────────────────────────────────────────
+
+rectangle "**IdentityService  :5001**" #EBF5FB {
+
+  rectangle "**Api Layer**" #D6EAF8 {
+    component "**UsersController**\nGET /api/users  (paged, Admin)\nGET /api/users/{id}  (Admin)\nGET /api/users/by-email|phone|username  (Admin)\nGET /api/users/by-role/{roleId}  (Admin)\nPUT /api/users/{id}  (Admin)\nDELETE /api/users/{id}  (Admin)\nPUT /api/users/{id}/roles  (Admin)\nPOST /api/users/{id}/block|unblock  (Admin)" as UsersCtrl
+
+    component "**UserProfileController**\nGET /api/user-profiles/me  (Auth)\nPUT /api/user-profiles/me  (Auth)\nGET /api/user-profiles/{id}  (Auth)" as ProfileCtrl
+
+    component "**UserAddressesController**\nGET /api/user-addresses  (Auth)\nPOST /api/user-addresses  (Auth)\nPUT /api/user-addresses/{id}  (Auth)\nDELETE /api/user-addresses/{id}  (Auth)\nPATCH /api/user-addresses/{id}/set-default  (Auth)" as AddrCtrl
+
+    component "**UserPhotoController**\nGET /api/users/{id}/photo  (Auth, ETag)\nPOST /api/users/photo  (Auth)\nDELETE /api/users/photo  (Auth)" as PhotoCtrl
+
+    component "**SellerReadModelsController**\nGET /api/sellers  (AllowAnonymous)\nGET /api/sellers/{id}  (AllowAnonymous)" as SellerCtrl
+
+    component "**Duende IdentityServer**\nPOST /connect/token  (OAuth2 ROPC)\nGET  /connect/userinfo\nPOST /connect/revocation" as IDS
+  }
+
+  rectangle "**Application Layer  (MediatR)**" {
+
+    component "**MediatR Pipeline**\nLoggingBehavior\nValidationBehavior (FluentValidation)\nCachingBehavior (ICacheableQuery → Redis)" as Pipeline
+
+    rectangle "Commands" #E8F3FD {
+      component "RegisterUserCommand\n(→ UserRegisteredEvent)" as CmdRegister
+      component "UpdateUserCommand\n(→ UserProfileUpdatedEvent)\nUpdateUserRolesCommand\n(→ UserBecameSellerEvent если добавлена роль Seller)" as CmdUpdate
+      component "BlockUserCommand  (→ UserBlockedEvent)\nUnblockUserCommand  (→ UserUnblockedEvent)" as CmdBlock
+      component "UpsertUserAddressCommand\nDeleteUserAddressCommand" as CmdAddr
+      component "UploadUserPhotoCommand\nDeleteUserPhotoCommand" as CmdPhoto
+    }
+
+    rectangle "Queries" #FEF9E7 {
+      component "GetUsersPagedQuery\nGetUserByIdQuery\nGetUserByEmailQuery\nGetUserByPhoneQuery\nGetUserByUsernameQuery\nGetUsersByRoleQuery" as QUsers
+      component "GetUserProfileQuery\nGetSellerReadModelQuery\nGetUserPhotoQuery  (ICacheableQuery, ETag)" as QProfile
+    }
+  }
+
+  rectangle "**Infrastructure Layer**" #D6EAF8 {
+    component "**IdentityDbContext**\n(EF Core 10 · ASP.NET Core Identity\n· PostGIS / NetTopologySuite)" as DbCtx
+    component "**MassTransitEventBus**\n(IEventBus)" as EventBus
+    component "**MinIO Adapter**\n(IStorageService)\nbucket: identity-media" as MinIOAdapt
+    component "**Redis Adapter**\n(IDistributedCache)\nuser:{id}:photo — TTL 1ч (ETag)" as RedisAdapt
+    component "**SellerReadModelSyncService**\n(BackgroundService)\n— синхронизирует SellerReadModel\n  из собственного DbContext" as BgSvc
+  }
+}
+
+' ─── Внешние системы ─────────────────────────────────────────────────────────
+
+database "**PostgreSQL** :5430\nschema: public  (AspNetUsers, UserAddresses, SellerReadModels)\nschema: media   (UserPhotos)" as DB #D6EAF8
+database "**Redis** :6379" as Redis #EAFAF1
+component "**MinIO** :9000\nbucket: identity-media" as MinIO #FFF3E0
+queue "**RabbitMQ** :5672\n(исходящие события)" as MQ_OUT #F3E5F5
+
+' ─── Связи ───────────────────────────────────────────────────────────────────
+
+' Gateway → API
+Gateway -[#2980B9,bold]-> UsersCtrl   : HTTP + JWT
+Gateway -[#2980B9,bold]-> ProfileCtrl : HTTP + JWT
+Gateway -[#2980B9,bold]-> AddrCtrl    : HTTP + JWT
+Gateway -[#2980B9,bold]-> PhotoCtrl   : HTTP + JWT
+Gateway -[#2980B9,bold]-> SellerCtrl  : HTTP
+Gateway -[#2980B9,bold]-> IDS         : HTTP (OAuth2)
+
+' API → MediatR pipeline
+UsersCtrl   -[#2980B9]-> Pipeline : ISender.Send()
+ProfileCtrl -[#2980B9]-> Pipeline
+AddrCtrl    -[#2980B9]-> Pipeline
+PhotoCtrl   -[#2980B9]-> Pipeline
+SellerCtrl  -[#2980B9]-> Pipeline
+
+' Pipeline → Handlers
+Pipeline -[#2980B9]-> CmdRegister
+Pipeline -[#2980B9]-> CmdUpdate
+Pipeline -[#2980B9]-> CmdBlock
+Pipeline -[#2980B9]-> CmdAddr
+Pipeline -[#2980B9]-> CmdPhoto
+Pipeline -[#2980B9]-> QUsers
+Pipeline -[#2980B9]-> QProfile
+
+' Commands → Infrastructure
+CmdRegister -[#795548]-> DbCtx
+CmdRegister -[#6A1B9A,bold]-> EventBus
+CmdUpdate   -[#795548]-> DbCtx
+CmdUpdate   -[#6A1B9A,bold]-> EventBus
+CmdBlock    -[#795548]-> DbCtx
+CmdBlock    -[#6A1B9A,bold]-> EventBus
+CmdAddr     -[#795548]-> DbCtx
+CmdPhoto    -[#795548]-> DbCtx
+CmdPhoto    -[#795548]-> MinIOAdapt
+
+' Queries → Infrastructure
+QUsers   -[#795548]-> DbCtx
+QProfile -[#795548]-> DbCtx
+QProfile -[#00838F,dashed]-> RedisAdapt : GET/SET ETag кэш
+
+' Infrastructure → External
+DbCtx       -[#1565C0,bold]-> DB
+MinIOAdapt  -[#E65100,dashed]-> MinIO
+RedisAdapt  -[#00838F,dashed]-> Redis
+EventBus    -[#6A1B9A,bold]-> MQ_OUT
+BgSvc       -[#795548]-> DbCtx : читает Users + Roles
+
+' ─── Заметки ─────────────────────────────────────────────────────────────────
+
+note right of EventBus
+  Публикует 5 событий:
+  • UserRegisteredEvent
+  • UserProfileUpdatedEvent
+  • UserBecameSellerEvent
+  • UserBlockedEvent
+  • UserUnblockedEvent
+
+  IdentityService не потребляет
+  никаких событий из MQ.
+end note
+
+note right of IDS
+  OAuth2 Resource Owner Password:
+  POST /connect/token
+  grant_type=password
+  → access_token (JWT, TTL 3600s)
+  → refresh_token (sliding expiration)
+
+  JWT claims: sub, email,
+  username, role[], jti
+  Валидируется Gateway + каждым сервисом.
+end note
+
+note bottom of BgSvc
+  Не вызывает другие сервисы по HTTP.
+  Читает AspNetUsers + AspNetUserRoles
+  из IdentityDbContext и обновляет
+  SellerReadModels (DisplayName, AvatarUrl).
+end note
+
+note right of RedisAdapt
+  Кэш ETag для фото:
+  Ключ: user:{id}:photo
+  TTL: 1 час
+  GET /api/users/{id}/photo → 304 Not Modified
+  при совпадении ETag.
+end note
+
+' ─── Легенда ─────────────────────────────────────────────────────────────────
+
+legend bottom
+  <b>Условные обозначения</b>
+  |= Цвет |= Тип связи |
+  |= <color:#2980B9>━━━━━</color> |= HTTP запрос / ISender.Send() (MediatR) |
+  |= <color:#6A1B9A>━━━━━</color> |= Публикация события → RabbitMQ (MassTransit) |
+  |= <color:#795548>━━━━━</color> |= Чтение / запись через EF Core |
+  |= <color:#00838F>- - -</color> |= Redis cache (пунктир) |
+  |= <color:#E65100>- - -</color> |= MinIO объектное хранилище (пунктир) |
+  |= <color:#1565C0>━━━━━</color> |= PostgreSQL подключение |
+endlegend
+
+@enduml

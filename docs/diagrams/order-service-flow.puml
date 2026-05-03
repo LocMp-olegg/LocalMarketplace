@@ -1,0 +1,224 @@
+@startuml order-service-flow
+title <size:16><b>OrderService</b></size>\n<color:#555>Поток обработки запросов (:5003)</color>
+
+' ─── Стиль ───────────────────────────────────────────────────────────────────
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 12
+skinparam roundcorner 10
+skinparam shadowing false
+
+skinparam component {
+    BackgroundColor White
+    BorderColor #7B1FA2
+    FontColor #2C3E50
+    BorderThickness 1.2
+}
+skinparam rectangle {
+    BorderColor #7B1FA2
+    BorderThickness 1.5
+    FontColor #4A235A
+    FontStyle bold
+    BackgroundColor transparent
+}
+skinparam database {
+    BackgroundColor #EDE7F6
+    BorderColor #6A1B9A
+}
+skinparam queue {
+    BackgroundColor #F3E5F5
+    BorderColor #6A1B9A
+}
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #FBC02D
+    FontColor #4E342E
+    BorderThickness 1.2
+    roundcorner 6
+}
+
+' ─── Внешние акторы ──────────────────────────────────────────────────────────
+
+component "API Gateway\n:5000" as Gateway #ECEFF1
+
+rectangle "RabbitMQ  (входящие события)" #F3E5F5 {
+    queue "StockReservedEvent\n← CatalogService" as EV_StockOK
+    queue "StockReservationFailedEvent\n← CatalogService" as EV_StockFail
+    queue "UserBlockedEvent\n← IdentityService" as EV_Blocked
+}
+
+component "**CatalogService** :5002\n(HTTP внутренний вызов)" as CatalogSvc #E9F7EF
+
+' ─── OrderService ────────────────────────────────────────────────────────────
+
+rectangle "**OrderService  :5003**" #EDE7F6 {
+
+  rectangle "**Api Layer**" #E8DAEF {
+    component "**CartsController**\nGET /api/carts  (Auth)\nPOST /api/carts/items  (Auth)\nPUT /api/carts/items/{id}  (Auth)\nDELETE /api/carts/items/{id}  (Auth)\nDELETE /api/carts  (Auth)" as CartCtrl
+
+    component "**CheckoutController**\nPOST /api/checkout  (Auth)\n— группирует корзину по продавцам\n— создаёт по 1 заказу на продавца\n— возвращает список OrderId (CheckoutId)" as CheckoutCtrl
+
+    component "**OrdersController**\nGET /api/orders/{id}  (Auth)\nGET /api/orders/my-purchases  (Auth, status filter)\nGET /api/orders/my-sales  (Seller, shop/status/date filter)\nGET /api/orders/seller/{id}  (Admin)\nGET /api/orders/all  (Admin)\nPOST /api/orders/{id}/confirm  (Seller)\nPOST /api/orders/{id}/ready  (Seller)\nPOST /api/orders/{id}/assign-courier  (Seller)\nPOST /api/orders/{id}/complete  (Auth)\nPOST /api/orders/{id}/cancel  (Auth)\nPOST /api/orders/{id}/photos\nDELETE /api/orders/photos/{photoId}" as OrderCtrl
+
+    component "**DisputesController**\nGET /api/disputes/{orderId}  (Auth)\nPOST /api/disputes  (Auth)\nPOST /api/disputes/{id}/resolve  (Admin)" as DisputeCtrl
+  }
+
+  rectangle "**Application Layer  (MediatR)**" {
+
+    component "**MediatR Pipeline**\nLoggingBehavior\n→ ValidationBehavior (FluentValidation)\n→ CachingBehavior (ICacheableQuery → Redis)" as Pipeline
+
+    rectangle "Commands" #EDE7F6 {
+      component "AddToCartCommand  /  UpdateCartItemQuantityCommand\nRemoveCartItemCommand  /  ClearCartCommand" as CmdCart
+      component "CheckoutCommand\n→ CatalogServiceClient.GetProductAsync() — снепшот\n→ CatalogServiceClient.GetShopAsync() — настройки доставки\n→ CatalogServiceClient.ReserveStockAsync() — резерв\n→ создаёт Order{Status=Pending}\n→ публикует StockReserveRequestEvent\n→ публикует OrderPlacedEvent" as CmdCheckout
+      component "ConfirmOrderCommand  (Seller → Confirmed)\nMarkReadyForPickupCommand  (Seller → ReadyForPickup)\nAssignCourierCommand  (Seller → InDelivery)\nCompleteOrderCommand  (Auth → Completed)\nCancelOrderCommand  (Auth → Cancelled)\n→ каждый пишет OrderStatusHistory\n→ публикует OrderStatusChangedEvent / OrderCompletedEvent" as CmdStatus
+      component "OpenDisputeCommand  (→ DisputeOpenedEvent)\nResolveDisputeCommand  (Admin, → DisputeResolvedEvent)" as CmdDispute
+      component "UploadOrderPhotosCommand  /  DeleteOrderPhotoCommand" as CmdPhoto
+    }
+
+    rectangle "Queries" #FEF9E7 {
+      component "GetOrderByIdQuery\nGetMyPurchasesQuery  /  GetMySalesQuery\nGetOrdersBySellerQuery  /  GetAllOrdersQuery\nGetCartQuery  (ICacheableQuery → Redis)" as QOrders
+    }
+
+    rectangle "Consumers  (MassTransit)" #F0E6FF {
+      component "**StockReservedConsumer**\n← StockReservedEvent\n→ переводит Order в Confirmed\n→ публикует OrderStatusChangedEvent" as ConsStockOK
+      component "**StockReservationFailedConsumer**\n← StockReservationFailedEvent\n→ переводит Order в Cancelled\n→ публикует OrderStatusChangedEvent" as ConsStockFail
+      component "**UserBlockedConsumer**\n← UserBlockedEvent\n→ отменяет все Pending заказы\n  этого пользователя (как покупатель и продавец)\n→ публикует OrderStatusChangedEvent для каждого" as ConsBlocked
+    }
+  }
+
+  rectangle "**Infrastructure Layer**" #E8DAEF {
+    component "**OrderDbContext**\n(EF Core 10 · PostGIS для DeliveryAddress.Location)" as DbCtx
+    component "**MassTransitEventBus**\n(IEventBus)" as EventBus
+    component "**CatalogServiceClient**\n(HttpClient)\nGET  api/products/{id}\nGET  api/shops/{id}\nPOST api/products/{id}/reserve\nPOST api/products/{id}/release" as CatalogClient
+    component "**MinIO Adapter**\n(IStorageService)\nbucket: order-media" as MinIOAdapt
+    component "**Redis Adapter**\n(IDistributedCache)\ncart:{userId} — TTL 24ч" as RedisAdapt
+    component "**CartExpiryBackgroundService**\n(BackgroundService)\n— чистит истёкшие корзины" as BgCart
+  }
+}
+
+' ─── Внешние системы ─────────────────────────────────────────────────────────
+
+database "**PostgreSQL** :5430\nschema: orders\n(Carts, CartItems, Orders, OrderItems,\nOrderStatusHistory, DeliveryAddresses,\nCourierAssignments, Disputes, OrderPhotos)" as DB #EDE7F6
+database "**Redis** :6379" as Redis #EAFAF1
+component "**MinIO** :9000\nbucket: order-media" as MinIO #FFF3E0
+queue "**RabbitMQ** :5672\n(исходящие события)" as MQ_OUT #F3E5F5
+
+' ─── Связи ───────────────────────────────────────────────────────────────────
+
+' Gateway → API
+Gateway -[#7B1FA2,bold]-> CartCtrl     : HTTP + JWT
+Gateway -[#7B1FA2,bold]-> CheckoutCtrl : HTTP + JWT
+Gateway -[#7B1FA2,bold]-> OrderCtrl    : HTTP + JWT
+Gateway -[#7B1FA2,bold]-> DisputeCtrl  : HTTP + JWT
+
+' Consumed events → Consumers
+EV_StockOK   -[#B71C1C,dashed]-> ConsStockOK   : consume
+EV_StockFail -[#B71C1C,dashed]-> ConsStockFail  : consume
+EV_Blocked   -[#B71C1C,dashed]-> ConsBlocked    : consume
+
+' API → MediatR
+CartCtrl     -[#7B1FA2]-> Pipeline : ISender.Send()
+CheckoutCtrl -[#7B1FA2]-> Pipeline
+OrderCtrl    -[#7B1FA2]-> Pipeline
+DisputeCtrl  -[#7B1FA2]-> Pipeline
+
+' Pipeline → Handlers
+Pipeline -[#7B1FA2]-> CmdCart
+Pipeline -[#7B1FA2]-> CmdCheckout
+Pipeline -[#7B1FA2]-> CmdStatus
+Pipeline -[#7B1FA2]-> CmdDispute
+Pipeline -[#7B1FA2]-> CmdPhoto
+Pipeline -[#7B1FA2]-> QOrders
+
+' Commands → Infrastructure
+CmdCart     -[#795548]-> DbCtx
+CmdCart     -[#00838F,dashed]-> RedisAdapt : cart:{userId} HSET/HGET
+CmdCheckout -[#795548]-> DbCtx
+CmdCheckout -[#6A1B9A,bold]-> EventBus
+CmdCheckout -[#E65100,bold]-> CatalogClient : GET product snapshot\nPOST reserve stock
+CmdStatus   -[#795548]-> DbCtx
+CmdStatus   -[#6A1B9A,bold]-> EventBus
+CmdDispute  -[#795548]-> DbCtx
+CmdDispute  -[#6A1B9A,bold]-> EventBus
+CmdPhoto    -[#795548]-> DbCtx
+CmdPhoto    -[#795548]-> MinIOAdapt
+
+' Queries → Infrastructure
+QOrders -[#795548]-> DbCtx
+QOrders -[#00838F,dashed]-> RedisAdapt
+
+' Consumers → Infrastructure
+ConsStockOK   -[#795548]-> DbCtx
+ConsStockOK   -[#6A1B9A,bold]-> EventBus
+ConsStockFail -[#795548]-> DbCtx
+ConsStockFail -[#6A1B9A,bold]-> EventBus
+ConsBlocked   -[#795548]-> DbCtx
+ConsBlocked   -[#6A1B9A,bold]-> EventBus
+
+' Infrastructure → External
+DbCtx        -[#6A1B9A,bold]-> DB
+MinIOAdapt   -[#E65100,dashed]-> MinIO
+RedisAdapt   -[#00838F,dashed]-> Redis
+EventBus     -[#6A1B9A,bold]-> MQ_OUT
+CatalogClient -[#E65100,bold]-> CatalogSvc : HTTP (внутренняя сеть)
+BgCart       -[#795548]-> DbCtx
+
+' ─── Заметки ─────────────────────────────────────────────────────────────────
+
+note right of EventBus
+  Публикует 6 событий:
+  • StockReserveRequestEvent
+  • OrderPlacedEvent
+  • OrderStatusChangedEvent
+  • OrderCompletedEvent
+  • DisputeOpenedEvent
+  • DisputeResolvedEvent
+end note
+
+note right of CmdCheckout
+  Snapshot pattern:
+  1. HTTP GET product → фиксирует Name, Price
+  2. HTTP GET shop → настройки доставки
+  3. Создаёт Order + OrderItems (снепшоты)
+  4. HTTP POST reserve ИЛИ
+     публикует StockReserveRequestEvent (async)
+  5. CheckoutId объединяет заказы
+     из одной корзины (разные продавцы)
+end note
+
+note right of CmdStatus
+  Конечный автомат статусов:
+  Pending → Confirmed (продавец)
+  Pending → Cancelled
+  Confirmed → ReadyForPickup (Pickup)
+  Confirmed → InDelivery (NeighborCourier)
+  Confirmed → Cancelled
+  ReadyForPickup → Completed
+  InDelivery → Completed
+  Confirmed+ → Disputed
+  Disputed → Cancelled (BuyerFavored)
+  Disputed → Completed (SellerFavored)
+end note
+
+note bottom of RedisAdapt
+  Корзина в Redis (Hashes):
+  Ключ: cart:{userId}
+  Field: {productId}
+  Value: {quantity}:{price}:{name}
+  TTL: 24 часа
+  При Checkout → корзина очищается.
+end note
+
+' ─── Легенда ─────────────────────────────────────────────────────────────────
+
+legend bottom
+  <b>Условные обозначения</b>
+  |= Цвет |= Тип связи |
+  |= <color:#7B1FA2>━━━━━</color> |= HTTP запрос / ISender.Send() (MediatR) |
+  |= <color:#6A1B9A>━━━━━</color> |= Публикация события → RabbitMQ (MassTransit) |
+  |= <color:#B71C1C>- - -</color> |= Потребление события из RabbitMQ |
+  |= <color:#E65100>━━━━━</color> |= Синхронный HTTP вызов → CatalogService |
+  |= <color:#795548>━━━━━</color> |= Чтение / запись через EF Core |
+  |= <color:#00838F>- - -</color> |= Redis cache (корзина, пунктир) |
+endlegend
+
+@enduml
