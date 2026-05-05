@@ -1,13 +1,14 @@
 name: Generate PlantUML diagrams
 
-permissions:
-  contents: write
-
 on:
   push:
     paths:
       - 'docs/diagrams/**/*.puml'
   workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   generate:
@@ -20,21 +21,21 @@ jobs:
       - name: Create output folder
         run: mkdir -p docs/diagrams/svg
 
-      - name: Generate diagrams (SVG)
+      - name: Generate PlantUML diagrams
         run: |
           docker run --rm \
             -v ${{ github.workspace }}:/work \
             plantuml/plantuml \
             -tsvg -o svg -r /work/docs/diagrams
 
-      - name: Debug list generated SVG
-        run: |
-          echo "=== SVG FILES ==="
-          find docs/diagrams/svg -name "*.svg" || true
-
-      - name: Commit generated images
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - name: Create Pull Request with generated diagrams
+        uses: peter-evans/create-pull-request@v6
         with:
-            commit_message: "Auto-generate PlantUML diagrams"
-            file_pattern: |
-              docs/diagrams/svg
+          commit-message: "Auto-generate PlantUML diagrams"
+          title: "Update PlantUML diagrams"
+          body: "Auto-generated SVG diagrams from .puml sources"
+          branch: auto/plantuml-diagrams
+          base: main
+          delete-branch: true
+          add-paths: |
+            docs/diagrams/svg
