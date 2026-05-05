@@ -24,7 +24,7 @@ jobs:
             plantuml/plantuml \
             -tsvg -o svg -r /work/docs/diagrams
 
-      - name: Debug: list generated SVG
+      - name: Debug list generated SVG
         run: |
           echo "=== SVG FILES ==="
           find docs/diagrams/svg -name "*.svg" || true
