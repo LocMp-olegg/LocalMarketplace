@@ -1,0 +1,27 @@
+name: Generate PlantUML diagrams
+
+on:
+  push:
+    paths:
+      - 'docs/diagrams/**/*.puml'
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install PlantUML
+        run: sudo apt-get update && sudo apt-get install -y plantuml
+
+      - name: Generate diagrams (SVG)
+        run: plantuml -tsvg -r docs/diagrams
+
+      - name: Commit generated images
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Auto-generate PlantUML diagrams"
+          file_pattern: "docs/diagrams/svg/*.svg"
