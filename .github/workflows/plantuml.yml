@@ -18,10 +18,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y plantuml
 
       - name: Generate diagrams (SVG)
-        run: plantuml -tsvg -r docs/diagrams
+        run: plantuml -tsvg docs/diagrams/**/*.puml
 
       - name: Commit generated images
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Auto-generate PlantUML diagrams"
-          file_pattern: "docs/diagrams/svg/*.svg"
+          file_pattern: "docs/diagrams/**/*.svg"
