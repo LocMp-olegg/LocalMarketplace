@@ -32,5 +32,6 @@ jobs:
       - name: Commit generated images
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Auto-generate PlantUML diagrams"
-          file_pattern: "docs/diagrams/svg/**/*.svg"
+            commit_message: "Auto-generate PlantUML diagrams"
+            file_pattern: |
+              docs/diagrams/svg
