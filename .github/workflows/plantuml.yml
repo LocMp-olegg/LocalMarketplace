@@ -1,5 +1,8 @@
 name: Generate PlantUML diagrams
 
+permissions:
+  contents: write
+
 on:
   push:
     paths:
