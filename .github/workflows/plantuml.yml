@@ -17,7 +17,7 @@ jobs:
       - name: Install PlantUML
         run: sudo apt-get update && sudo apt-get install -y plantuml
 
-      - name: Debug1: list files
+      - name: Debug1 list files
         run: |
           echo "=== ALL FILES ==="
           find docs/diagrams || true
@@ -28,7 +28,7 @@ jobs:
         run: |
           find docs/diagrams -name "*.puml" -print0 | xargs -0 plantuml -tsvg
 
-      - name: Debug2: list generated SVG
+      - name: Debug2 list generated SVG
         run: |
           echo "=== SVG FILES ==="
           find docs/diagrams -name "*.svg" || true
