@@ -1,6 +1,7 @@
 using AutoMapper;
 using LocMp.Identity.Application.DTOs.Role;
 using LocMp.Identity.Application.DTOs.User;
+using LocMp.Identity.Application.DTOs.UserAddress;
 using LocMp.Identity.Application.DTOs.UserProfile;
 using LocMp.Identity.Domain.Entities;
 using LocMp.Identity.Domain.Enums;
@@ -21,5 +22,9 @@ public sealed class IdentityProfile : Profile
             .ForMember(d => d.PhotoVersion,
                 o => o.MapFrom(s => s.Photo != null ? (long?)s.Photo.UploadedAt.Ticks : null))
             .ForMember(d => d.Roles, o => o.Ignore());
+
+        CreateMap<UserAddress, UserAddressDto>()
+            .ForMember(d => d.Latitude, o => o.MapFrom(s => s.Location != null ? (double?)s.Location.Y : null))
+            .ForMember(d => d.Longitude, o => o.MapFrom(s => s.Location != null ? (double?)s.Location.X : null));
     }
 }
