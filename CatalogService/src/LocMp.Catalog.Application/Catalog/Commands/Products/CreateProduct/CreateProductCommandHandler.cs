@@ -32,6 +32,8 @@ public sealed class CreateProductCommandHandler(CatalogDbContext db, IMapper map
         Point? location = null;
         if (request.Latitude.HasValue && request.Longitude.HasValue)
             location = new Point(request.Longitude.Value, request.Latitude.Value) { SRID = 4326 };
+        else
+            location = shop.Location;
 
         var productId = Guid.NewGuid();
         var product = new Product(productId)

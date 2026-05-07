@@ -3,6 +3,7 @@ using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Catalog.Application.DTOs;
 using LocMp.Catalog.Infrastructure.Persistence;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 
 namespace LocMp.Catalog.Application.Catalog.Commands.Shops.UpdateShop;
@@ -30,9 +31,20 @@ public sealed class UpdateShopCommandHandler(CatalogDbContext db, IMapper mapper
         shop.BusinessType = request.BusinessType;
         shop.WorkingHours = request.WorkingHours;
         shop.ServiceRadiusMeters = request.ServiceRadiusMeters;
+        var locationChanged = shop.Location?.X != location?.X || shop.Location?.Y != location?.Y;
+
         shop.Location = location;
         shop.IsActive = request.IsActive;
         shop.UpdatedAt = DateTimeOffset.UtcNow;
+
+        if (locationChanged)
+        {
+            await db.Products
+                .Where(p => p.ShopId == shop.Id && !p.IsDeleted)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(p => p.Location, location)
+                    .SetProperty(p => p.UpdatedAt, DateTimeOffset.UtcNow), ct);
+        }
 
         await db.SaveChangesAsync(ct);
         return mapper.Map<ShopDto>(shop);
