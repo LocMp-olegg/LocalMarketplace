@@ -11,6 +11,7 @@ public sealed class CatalogProfile : Profile
         CreateMap<Category, CategoryDto>();
         CreateMap<ProductPhoto, ProductPhotoDto>();
         CreateMap<ShopPhoto, ShopPhotoDto>();
+        CreateMap<ShopAddress, ShopAddressDto>();
 
         CreateMap<Shop, ShopDto>()
             .ForMember(d => d.Latitude, o => o.MapFrom(s => s.Location != null ? s.Location.Y : (double?)null))

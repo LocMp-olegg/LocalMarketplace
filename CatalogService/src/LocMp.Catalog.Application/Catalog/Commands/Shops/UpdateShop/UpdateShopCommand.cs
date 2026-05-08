@@ -18,5 +18,11 @@ public sealed record UpdateShopCommand(
     int? ServiceRadiusMeters,
     double? Latitude,
     double? Longitude,
-    bool IsActive
+    bool IsActive,
+    string? City,
+    string? Street,
+    string? HouseNumber,
+    string? Apartment,
+    string? Entrance,
+    string? Floor
 ) : IRequest<ShopDto>;

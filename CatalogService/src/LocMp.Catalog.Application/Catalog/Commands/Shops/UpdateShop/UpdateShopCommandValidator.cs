@@ -24,5 +24,15 @@ public sealed class UpdateShopCommandValidator : AbstractValidator<UpdateShopCom
         RuleFor(x => x.ServiceRadiusMeters).GreaterThan(0).When(x => x.ServiceRadiusMeters.HasValue);
         RuleFor(x => x.Latitude).InclusiveBetween(-90, 90).When(x => x.Latitude.HasValue);
         RuleFor(x => x.Longitude).InclusiveBetween(-180, 180).When(x => x.Longitude.HasValue);
+
+        When(x => x.City is not null || x.Street is not null || x.HouseNumber is not null, () =>
+        {
+            RuleFor(x => x.City).NotEmpty().MaximumLength(100);
+            RuleFor(x => x.Street).NotEmpty().MaximumLength(250);
+            RuleFor(x => x.HouseNumber).NotEmpty().MaximumLength(20);
+        });
+        RuleFor(x => x.Apartment).MaximumLength(20).When(x => x.Apartment is not null);
+        RuleFor(x => x.Entrance).MaximumLength(10).When(x => x.Entrance is not null);
+        RuleFor(x => x.Floor).MaximumLength(10).When(x => x.Floor is not null);
     }
 }

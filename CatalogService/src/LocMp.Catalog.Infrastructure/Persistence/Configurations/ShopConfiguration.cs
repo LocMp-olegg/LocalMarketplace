@@ -24,6 +24,16 @@ public class ShopConfiguration : IEntityTypeConfiguration<Shop>
         builder.Property(s => s.AvatarObjectKey).HasMaxLength(512);
         builder.Property(s => s.AllowCourierDelivery).HasDefaultValue(true);
         builder.Property(s => s.MaxCourierDistanceMeters);
+        builder.OwnsOne(s => s.Address, a =>
+        {
+            a.Property(x => x.City).HasColumnName("City").HasMaxLength(100).IsRequired();
+            a.Property(x => x.Street).HasColumnName("Street").HasMaxLength(250).IsRequired();
+            a.Property(x => x.HouseNumber).HasColumnName("HouseNumber").HasMaxLength(20).IsRequired();
+            a.Property(x => x.Apartment).HasColumnName("Apartment").HasMaxLength(20);
+            a.Property(x => x.Entrance).HasColumnName("Entrance").HasMaxLength(10);
+            a.Property(x => x.Floor).HasColumnName("Floor").HasMaxLength(10);
+        });
+
         builder.Property(s => s.IsVerified).HasDefaultValue(true);
         builder.Property(s => s.IsActive).HasDefaultValue(true);
         builder.Property(s => s.CreatedAt).IsRequired();

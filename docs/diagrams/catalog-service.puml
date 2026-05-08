@@ -74,9 +74,19 @@ class Shop {
     + MaxCourierDistanceMeters : int?
     + IsVerified : bool
     + VerifiedAt : DateTimeOffset?
+    + Address : ShopAddress? <<owned entity>>
     + IsActive : bool
     + CreatedAt : DateTimeOffset
     + UpdatedAt : DateTimeOffset?
+}
+
+class ShopAddress <<owned entity>> {
+    + City : string
+    + Street : string
+    + HouseNumber : string
+    + Apartment : string?
+    + Entrance : string?
+    + Floor : string?
 }
 
 class ShopPhoto {
@@ -197,6 +207,7 @@ Category "0..1" -right- "0..*" Category : parent >
 
 Shop "1" *-down- "0..*" ShopPhoto : фото магазина >
 Shop "1" *-right- "1..*" Product : товары >
+Shop "1" *-- "0..1" ShopAddress : адрес >
 Shop ..> BusinessType : использует
 
 Product "0..*" -up-> "1" Category : принадлежит >
@@ -263,6 +274,7 @@ legend bottom
   <b>Таблицы сервиса (schema: catalog)</b>
   |= Класс C# |= Таблица в БД |= Описание |
   | Shop | Shops | Магазин продавца с геолокацией, бизнес-типом и настройками курьерской доставки |
+  | ShopAddress | — (owned, в Shops) | Адрес магазина: City, Street, HouseNumber, Apartment, Entrance, Floor |
   | ShopPhoto | ShopPhotos | Фото магазина (StorageUrl → MinIO bucket: catalog-media) |
   | Category | Categories | Дерево категорий товаров (self-referencing) |
   | Product | Products | Товар продавца с геолокацией и JSONB-атрибутами |

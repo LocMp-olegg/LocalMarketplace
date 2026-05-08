@@ -73,6 +73,14 @@ enum DisputeOutcome {
     SellerFavored
 }
 
+enum DisputeType {
+    NotDelivered 
+    WrongItem    
+    DefectiveItem
+    CourierIssue 
+    Other        
+}
+
 ' ─── Cart ────────────────────────────────────────────────────────────────────
 
 class Cart {
@@ -178,6 +186,7 @@ class Dispute {
     + Id : Guid <<PK>>
     + OrderId : Guid <<FK, unique>>
     + InitiatorId : Guid <<logical ref: Identity>>
+    + DisputeType : DisputeType
     + Reason : string
     + Status : DisputeStatus
     + Outcome : DisputeOutcome?
@@ -227,6 +236,7 @@ Order ..> DeliveryType
 Order ..> PaymentStatus
 Dispute ..> DisputeStatus
 Dispute ..> DisputeOutcome
+Dispute ..> DisputeType
 
 ' ─── Notes ───────────────────────────────────────────────────────────────────
 

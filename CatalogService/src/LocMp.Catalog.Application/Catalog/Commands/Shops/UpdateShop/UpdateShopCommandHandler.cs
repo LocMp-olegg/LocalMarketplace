@@ -1,6 +1,7 @@
 using AutoMapper;
 using LocMp.BuildingBlocks.Application.Exceptions;
 using LocMp.Catalog.Application.DTOs;
+using LocMp.Catalog.Domain.Entities;
 using LocMp.Catalog.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,17 @@ public sealed class UpdateShopCommandHandler(CatalogDbContext db, IMapper mapper
         shop.BusinessType = request.BusinessType;
         shop.WorkingHours = request.WorkingHours;
         shop.ServiceRadiusMeters = request.ServiceRadiusMeters;
+        shop.Address = request.City is not null && request.Street is not null && request.HouseNumber is not null
+            ? new ShopAddress
+            {
+                City = request.City,
+                Street = request.Street,
+                HouseNumber = request.HouseNumber,
+                Apartment = request.Apartment,
+                Entrance = request.Entrance,
+                Floor = request.Floor
+            }
+            : null;
         var locationChanged = shop.Location?.X != location?.X || shop.Location?.Y != location?.Y;
 
         shop.Location = location;

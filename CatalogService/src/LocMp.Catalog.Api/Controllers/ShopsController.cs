@@ -48,7 +48,13 @@ public sealed class ShopsController(ISender sender) : ControllerBase
             request.WorkingHours,
             request.ServiceRadiusMeters,
             request.Latitude,
-            request.Longitude);
+            request.Longitude,
+            request.Address?.City,
+            request.Address?.Street,
+            request.Address?.HouseNumber,
+            request.Address?.Apartment,
+            request.Address?.Entrance,
+            request.Address?.Floor);
 
         var result = await sender.Send(command, ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
@@ -72,7 +78,13 @@ public sealed class ShopsController(ISender sender) : ControllerBase
             request.ServiceRadiusMeters,
             request.Latitude,
             request.Longitude,
-            request.IsActive);
+            request.IsActive,
+            request.Address?.City,
+            request.Address?.Street,
+            request.Address?.HouseNumber,
+            request.Address?.Apartment,
+            request.Address?.Entrance,
+            request.Address?.Floor);
 
         return Ok(await sender.Send(command, ct));
     }
