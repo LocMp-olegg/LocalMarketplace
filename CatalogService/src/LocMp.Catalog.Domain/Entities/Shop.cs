@@ -29,6 +29,8 @@ public class Shop(Guid id)
     public bool IsVerified { get; set; } = true;
     public DateTimeOffset? VerifiedAt { get; set; }
 
+    public ShopAddress? Address { get; set; }
+
     public bool IsActive { get; set; } = true;
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; set; }

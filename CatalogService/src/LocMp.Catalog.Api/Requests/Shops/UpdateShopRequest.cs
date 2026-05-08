@@ -13,5 +13,6 @@ public sealed record UpdateShopRequest(
     int? ServiceRadiusMeters,
     double? Latitude,
     double? Longitude,
-    bool IsActive
+    bool IsActive,
+    ShopAddressRequest? Address
 );

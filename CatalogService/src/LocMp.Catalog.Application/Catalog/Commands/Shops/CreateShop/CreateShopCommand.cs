@@ -15,5 +15,11 @@ public sealed record CreateShopCommand(
     string? WorkingHours,
     int? ServiceRadiusMeters,
     double? Latitude,
-    double? Longitude
+    double? Longitude,
+    string? City,
+    string? Street,
+    string? HouseNumber,
+    string? Apartment,
+    string? Entrance,
+    string? Floor
 ) : IRequest<ShopDto>;

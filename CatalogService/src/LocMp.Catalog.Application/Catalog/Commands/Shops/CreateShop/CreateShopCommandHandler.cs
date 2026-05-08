@@ -25,6 +25,18 @@ public sealed class CreateShopCommandHandler(CatalogDbContext db, IMapper mapper
         if (request.Latitude.HasValue && request.Longitude.HasValue)
             location = new Point(request.Longitude.Value, request.Latitude.Value) { SRID = 4326 };
 
+        ShopAddress? address = null;
+        if (request.City is not null && request.Street is not null && request.HouseNumber is not null)
+            address = new ShopAddress
+            {
+                City = request.City,
+                Street = request.Street,
+                HouseNumber = request.HouseNumber,
+                Apartment = request.Apartment,
+                Entrance = request.Entrance,
+                Floor = request.Floor
+            };
+
         var shop = new Shop(Guid.NewGuid())
         {
             SellerId = request.SellerId,
@@ -37,6 +49,7 @@ public sealed class CreateShopCommandHandler(CatalogDbContext db, IMapper mapper
             WorkingHours = request.WorkingHours,
             ServiceRadiusMeters = request.ServiceRadiusMeters,
             Location = location,
+            Address = address,
             IsVerified = true,
             VerifiedAt = DateTimeOffset.UtcNow,
             IsActive = true,

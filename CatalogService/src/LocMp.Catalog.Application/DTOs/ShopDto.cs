@@ -16,6 +16,7 @@ public sealed record ShopDto
     public int? ServiceRadiusMeters { get; init; }
     public double? Latitude { get; init; }
     public double? Longitude { get; init; }
+    public ShopAddressDto? Address { get; init; }
     public string? AvatarUrl { get; init; }
     public bool AllowCourierDelivery { get; init; }
     public int? MaxCourierDistanceMeters { get; init; }

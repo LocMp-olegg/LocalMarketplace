@@ -12,5 +12,6 @@ public sealed record CreateShopRequest(
     string? WorkingHours,
     int? ServiceRadiusMeters,
     double? Latitude,
-    double? Longitude
+    double? Longitude,
+    ShopAddressRequest? Address
 );
