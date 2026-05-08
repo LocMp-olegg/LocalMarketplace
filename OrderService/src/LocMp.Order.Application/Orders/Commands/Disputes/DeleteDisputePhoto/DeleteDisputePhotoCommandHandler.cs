@@ -12,14 +12,11 @@ public sealed class DeleteDisputePhotoCommandHandler(OrderDbContext db, IStorage
     public async Task Handle(DeleteDisputePhotoCommand request, CancellationToken ct)
     {
         var photo = await db.DisputePhotos
-                        .Include(p => p.Dispute).ThenInclude(d => d.Order)
                         .FirstOrDefaultAsync(p => p.Id == request.PhotoId, ct)
                     ?? throw new NotFoundException($"Dispute photo '{request.PhotoId}' not found.");
 
-        if (!request.IsAdmin
-            && photo.Dispute.Order.BuyerId != request.RequesterId
-            && photo.Dispute.Order.SellerId != request.RequesterId)
-            throw new ForbiddenException("You are not a participant in this dispute.");
+        if (!request.IsAdmin && photo.UploadedById != request.RequesterId)
+            throw new ForbiddenException("Only the photo uploader can delete it.");
 
         await storageService.DeleteAsync(photo.ObjectKey, ct);
         db.DisputePhotos.Remove(photo);

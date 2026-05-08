@@ -53,6 +53,10 @@ public sealed class OpenDisputeCommandHandler(OrderDbContext db, IEventBus event
 
         await db.SaveChangesAsync(ct);
 
+        await eventBus.PublishAsync(new OrderStatusChangedEvent(
+            order.Id, order.BuyerId, order.SellerId,
+            history.FromStatus?.ToString() ?? string.Empty, nameof(OrderStatus.Disputed), now), ct);
+
         await eventBus.PublishAsync(new DisputeOpenedEvent(
             disputeId, order.Id, order.BuyerId, order.SellerId,
             request.InitiatorId, request.DisputeType, now), ct);

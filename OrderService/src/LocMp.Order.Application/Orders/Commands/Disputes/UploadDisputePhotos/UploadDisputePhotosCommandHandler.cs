@@ -31,10 +31,8 @@ public sealed class UploadDisputePhotosCommandHandler(
             .FirstOrDefaultAsync(d => d.Id == request.DisputeId, ct)
             ?? throw new NotFoundException($"Dispute '{request.DisputeId}' not found.");
 
-        if (!request.IsAdmin
-            && dispute.Order.BuyerId != request.UploadedById
-            && dispute.Order.SellerId != request.UploadedById)
-            throw new ForbiddenException("You are not a participant in this dispute.");
+        if (!request.IsAdmin && dispute.InitiatorId != request.UploadedById)
+            throw new ForbiddenException("Only the dispute initiator can upload photos.");
 
         ValidatePhotoLimits(request.Images.Count, dispute.Photos.Count, MaxPhotosPerDispute, MaxPhotosPerRequest);
 
