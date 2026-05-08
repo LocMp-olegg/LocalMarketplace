@@ -44,7 +44,6 @@ public sealed class UpdateProductCommandHandler(CatalogDbContext db, IMapper map
 
         await db.SaveChangesAsync(ct);
         await cache.RemoveAsync($"product:{product.Id}", ct);
-
         return mapper.Map<ProductDto>(product);
     }
 }

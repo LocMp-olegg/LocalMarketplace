@@ -17,7 +17,7 @@ public sealed class GetProductsByLocationQueryHandler(CatalogDbContext db)
         var radiusMeters = request.RadiusKm * 1000;
 
         var query = db.Products
-            .Where(p => p.IsActive && !p.IsDeleted && (p.StockQuantity > 0 || p.IsMadeToOrder));
+            .Where(p => p.IsActive && !p.IsDeleted && p.Shop.IsActive && (p.StockQuantity > 0 || p.IsMadeToOrder));
 
         if (request.CategoryId.HasValue)
             query = query.Where(p => p.CategoryId == request.CategoryId.Value);
@@ -53,6 +53,7 @@ public sealed class GetProductsByLocationQueryHandler(CatalogDbContext db)
                 p.Unit,
                 p.StockQuantity,
                 p.IsActive,
+                ShopIsActive = p.Shop.IsActive,
                 p.Location,
                 Distance = p.Location != null ? p.Location.Distance(center) : (double?)null,
                 MainPhotoUrl = p.Photos
@@ -88,6 +89,7 @@ public sealed class GetProductsByLocationQueryHandler(CatalogDbContext db)
             p.Unit,
             p.StockQuantity,
             p.IsActive,
+            p.ShopIsActive,
             p.Location?.Y,
             p.Location?.X,
             p.MainPhotoUrl,

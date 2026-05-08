@@ -10,6 +10,7 @@ public sealed record ProductSummaryDto(
     string Unit,
     int StockQuantity,
     bool IsActive,
+    bool ShopIsActive,
     double? Latitude,
     double? Longitude,
     string? MainPhotoUrl,

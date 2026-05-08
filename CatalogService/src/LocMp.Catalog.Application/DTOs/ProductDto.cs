@@ -20,6 +20,7 @@ public sealed record ProductDto
     public decimal AverageRating { get; init; }
     public int ReviewCount { get; init; }
     public bool IsActive { get; init; }
+    public bool ShopIsActive { get; init; }
     public DateTimeOffset CreatedAt { get; init; }
     public DateTimeOffset? UpdatedAt { get; init; }
     public string? MainPhotoUrl { get; init; }

@@ -12,5 +12,6 @@ public sealed record ProductSnapshotDto(
     int StockQuantity,
     string? MainPhotoUrl,
     bool IsActive,
+    bool ShopIsActive = true,
     bool IsMadeToOrder = false,
     int? LeadTimeDays = null);

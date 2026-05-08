@@ -64,7 +64,7 @@ rectangle "**IdentityService  :5001**" #EBF5FB {
 
     rectangle "Commands" #E8F3FD {
       component "RegisterUserCommand\n(→ UserRegisteredEvent)" as CmdRegister
-      component "UpdateUserCommand\n(→ UserProfileUpdatedEvent)\nUpdateUserRolesCommand\n(→ UserBecameSellerEvent если добавлена роль Seller)" as CmdUpdate
+      component "UpdateUserCommand\n(→ UserProfileUpdatedEvent)\nUpdateUserRolesCommand\n(→ UserBecameSellerEvent если добавлена роль Seller)\n(→ UserLostSellerStatusEvent если роль Seller снята)" as CmdUpdate
       component "BlockUserCommand  (→ UserBlockedEvent)\nUnblockUserCommand  (→ UserUnblockedEvent)" as CmdBlock
       component "UpsertUserAddressCommand\nDeleteUserAddressCommand" as CmdAddr
       component "UploadUserPhotoCommand\nDeleteUserPhotoCommand" as CmdPhoto
@@ -144,10 +144,11 @@ BgSvc       -[#795548]-> DbCtx : читает Users + Roles
 ' ─── Заметки ─────────────────────────────────────────────────────────────────
 
 note right of EventBus
-  Публикует 5 событий:
+  Публикует 6 событий:
   • UserRegisteredEvent
   • UserProfileUpdatedEvent
   • UserBecameSellerEvent
+  • UserLostSellerStatusEvent
   • UserBlockedEvent
   • UserUnblockedEvent
 

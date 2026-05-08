@@ -14,7 +14,7 @@ public sealed class SearchProductsQueryHandler(CatalogDbContext db)
         SearchProductsQuery request, CancellationToken ct)
     {
         var query = db.Products
-            .Where(p => p.IsActive && !p.IsDeleted && (p.StockQuantity > 0 || p.IsMadeToOrder));
+            .Where(p => p.IsActive && !p.IsDeleted && p.Shop.IsActive && (p.StockQuantity > 0 || p.IsMadeToOrder));
 
         if (!string.IsNullOrWhiteSpace(request.Search))
             query = query.Where(p => EF.Functions.ILike(p.Name, $"%{request.Search}%")
@@ -67,6 +67,7 @@ public sealed class SearchProductsQueryHandler(CatalogDbContext db)
                 p.Unit,
                 p.StockQuantity,
                 p.IsActive,
+                ShopIsActive = p.Shop.IsActive,
                 p.Location,
                 MainPhotoUrl = p.Photos
                                    .Where(ph => ph.IsMain)
@@ -101,6 +102,7 @@ public sealed class SearchProductsQueryHandler(CatalogDbContext db)
             p.Unit,
             p.StockQuantity,
             p.IsActive,
+            p.ShopIsActive,
             p.Location?.Y,
             p.Location?.X,
             p.MainPhotoUrl, null,

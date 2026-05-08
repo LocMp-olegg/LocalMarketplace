@@ -64,6 +64,7 @@ public sealed class GetMyProductsQueryHandler(CatalogDbContext db)
                 p.Unit,
                 p.StockQuantity,
                 p.IsActive,
+                ShopIsActive = p.Shop.IsActive,
                 p.Location,
                 MainPhotoUrl = p.Photos
                                    .Where(ph => ph.IsMain)
@@ -98,6 +99,7 @@ public sealed class GetMyProductsQueryHandler(CatalogDbContext db)
             p.Unit,
             p.StockQuantity,
             p.IsActive,
+            p.ShopIsActive,
             p.Location?.Y,
             p.Location?.X,
             p.MainPhotoUrl, null,

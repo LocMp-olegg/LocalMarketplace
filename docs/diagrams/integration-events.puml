@@ -68,6 +68,10 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
             + DisplayName : string
             + OccurredAt : DateTimeOffset
         }
+        class UserLostSellerStatusEvent {
+            + UserId : Guid
+            + OccurredAt : DateTimeOffset
+        }
     }
 
     package "Catalog Events" #E9F7EF {
@@ -234,6 +238,7 @@ note as PublisherNote
                      UserUnblockedEvent
                      UserProfileUpdatedEvent
                      UserBecameSellerEvent
+                     UserLostSellerStatusEvent
   ─────────────────────────────────────────
   CatalogService   → StockReservedEvent
                      StockReservationFailedEvent
@@ -257,9 +262,10 @@ end note
 note as ConsumerNote
   <b>Кто потребляет:</b>
   CatalogService:
-    • RatingAggregateUpdatedEvent → обновляет SellerReadModel
-    • UserProfileUpdatedEvent     → обновляет SellerReadModel
-    • UserBecameSellerEvent       → создаёт SellerReadModel
+    • RatingAggregateUpdatedEvent  → обновляет SellerReadModel
+    • UserProfileUpdatedEvent      → обновляет SellerReadModel
+    • UserBecameSellerEvent        → создаёт SellerReadModel
+    • UserLostSellerStatusEvent    → деактивирует все магазины продавца
   ─────────────────────────────────────────
   OrderService:
     • UserBlockedEvent            → отменяет Pending заказы

@@ -14,7 +14,7 @@ public sealed class CachingBehavior<TRequest, TResponse>(
 {
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
     {
-        if (request is not ICacheableQuery cacheableQuery)
+        if (request is not ICacheableQuery cacheableQuery || cacheableQuery.BypassCache)
             return await next(ct);
 
         var cached = await cache.GetStringAsync(cacheableQuery.CacheKey, ct);
