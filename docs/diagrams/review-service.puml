@@ -72,7 +72,9 @@ class ReviewPhoto {
     + Id : Guid <<PK>>
     + ReviewId : Guid <<FK>>
     + StorageUrl : string <<MinIO bucket: review-media>>
+    + ObjectKey : string <<MinIO object key>>
     + MimeType : string
+    + FileSize : long
     + SortOrder : int
     + UploadedAt : DateTimeOffset
 }
