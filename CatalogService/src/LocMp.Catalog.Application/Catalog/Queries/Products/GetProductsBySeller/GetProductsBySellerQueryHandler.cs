@@ -17,7 +17,7 @@ public sealed class GetProductsBySellerQueryHandler(CatalogDbContext db)
             .Where(p => p.SellerId == request.SellerId && !p.IsDeleted);
 
         if (!request.IncludeInactive)
-            query = query.Where(p => p.IsActive);
+            query = query.Where(p => p.IsActive && p.Shop.IsActive);
 
         if (request.ShopId.HasValue)
             query = query.Where(p => p.ShopId == request.ShopId.Value);
@@ -60,6 +60,7 @@ public sealed class GetProductsBySellerQueryHandler(CatalogDbContext db)
                 p.Unit,
                 p.StockQuantity,
                 p.IsActive,
+                ShopIsActive = p.Shop.IsActive,
                 p.Location,
                 MainPhotoUrl = p.Photos
                                    .Where(ph => ph.IsMain)
@@ -94,6 +95,7 @@ public sealed class GetProductsBySellerQueryHandler(CatalogDbContext db)
             p.Unit,
             p.StockQuantity,
             p.IsActive,
+            p.ShopIsActive,
             p.Location?.Y,
             p.Location?.X,
             p.MainPhotoUrl,

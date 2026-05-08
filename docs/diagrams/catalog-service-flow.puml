@@ -42,7 +42,7 @@ component "API Gateway\n:5000" as Gateway #ECEFF1
 
 rectangle "RabbitMQ  (входящие события)" #F3E5F5 {
     queue "StockReserveRequestEvent\n← OrderService" as EV_Reserve
-    queue "UserBecameSellerEvent\nUserProfileUpdatedEvent\n← IdentityService" as EV_User
+    queue "UserBecameSellerEvent\nUserProfileUpdatedEvent\nUserLostSellerStatusEvent\n← IdentityService" as EV_User
     queue "RatingAggregateUpdatedEvent\n← ReviewService" as EV_Rating
 }
 
@@ -82,7 +82,7 @@ rectangle "**CatalogService  :5002**" #E9F7EF {
 
     rectangle "Consumers  (MassTransit)" #EBF5FB {
       component "**StockReserveRequestConsumer**\n→ проверяет StockQuantity\n→ если достаточно: уменьшает остаток,\n  создаёт StockHistory, публикует StockReservedEvent\n→ если нет: публикует StockReservationFailedEvent" as ConsReserve
-      component "**UserBecameSellerConsumer**\n→ создаёт запись SellerReadModel\n  (SellerId, DisplayName, AvatarUrl)\n**UserProfileUpdatedConsumer**\n→ обновляет DisplayName и AvatarUrl\n  в SellerReadModel" as ConsUser
+      component "**UserBecameSellerConsumer**\n→ создаёт запись SellerReadModel\n  (SellerId, DisplayName, AvatarUrl)\n**UserProfileUpdatedConsumer**\n→ обновляет DisplayName и AvatarUrl\n  в SellerReadModel\n**UserLostSellerStatusConsumer**\n→ деактивирует все магазины продавца\n→ инвалидирует кэш products:search:* / products:location:*" as ConsUser
       component "**RatingAggregateUpdatedConsumer**\n→ если SubjectType == Product:\n  обновляет Product.AverageRating, ReviewCount\n→ если SubjectType == Seller:\n  обновляет SellerReadModel.AverageRating, ReviewCount" as ConsRating
     }
   }
@@ -141,6 +141,7 @@ CmdMedia   -[#795548]-> DbCtx
 CmdMedia   -[#795548]-> MinIOAdapt
 CmdShop    -[#795548]-> DbCtx
 CmdShop    -[#795548]-> MinIOAdapt
+CmdShop    -[#00838F,dashed]-> RedisAdapt : инвалидация кэша (при смене IsActive)
 CmdFav     -[#795548]-> DbCtx
 CmdFav     -[#6A1B9A,bold]-> EventBus
 
@@ -154,6 +155,7 @@ QOther  -[#00838F,dashed]-> RedisAdapt
 ConsReserve -[#795548]-> DbCtx
 ConsReserve -[#6A1B9A,bold]-> EventBus
 ConsUser    -[#795548]-> DbCtx
+ConsUser    -[#00838F,dashed]-> RedisAdapt : инвалидация кэша (UserLostSellerStatus)
 ConsRating  -[#795548]-> DbCtx
 
 ' Infrastructure → External

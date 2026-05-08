@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Minio;
+using StackExchange.Redis;
 
 namespace LocMp.Catalog.Infrastructure.Extensions;
 
@@ -61,6 +62,8 @@ public static class InfrastructureExtension
         // Redis
         var redisConnection = configuration.GetConnectionString("Redis")
                               ?? "localhost:6379";
+        services.AddSingleton<IConnectionMultiplexer>(_ =>
+            ConnectionMultiplexer.Connect(redisConnection));
         services.AddStackExchangeRedisCache(opts =>
         {
             opts.Configuration = redisConnection;

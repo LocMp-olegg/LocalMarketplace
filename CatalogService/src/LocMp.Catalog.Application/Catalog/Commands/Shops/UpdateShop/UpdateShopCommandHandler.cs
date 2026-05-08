@@ -6,10 +6,11 @@ using LocMp.Catalog.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
+using StackExchange.Redis;
 
 namespace LocMp.Catalog.Application.Catalog.Commands.Shops.UpdateShop;
 
-public sealed class UpdateShopCommandHandler(CatalogDbContext db, IMapper mapper)
+public sealed class UpdateShopCommandHandler(CatalogDbContext db, IMapper mapper, IConnectionMultiplexer redis)
     : IRequestHandler<UpdateShopCommand, ShopDto>
 {
     public async Task<ShopDto> Handle(UpdateShopCommand request, CancellationToken ct)
@@ -44,6 +45,7 @@ public sealed class UpdateShopCommandHandler(CatalogDbContext db, IMapper mapper
             }
             : null;
         var locationChanged = shop.Location?.X != location?.X || shop.Location?.Y != location?.Y;
+        var activeStatusChanged = shop.IsActive != request.IsActive;
 
         shop.Location = location;
         shop.IsActive = request.IsActive;
@@ -59,6 +61,39 @@ public sealed class UpdateShopCommandHandler(CatalogDbContext db, IMapper mapper
         }
 
         await db.SaveChangesAsync(ct);
+
+        if (activeStatusChanged)
+        {
+            var productIds = await db.Products
+                .Where(p => p.ShopId == shop.Id && !p.IsDeleted)
+                .Select(p => p.Id)
+                .ToListAsync(ct);
+
+            await InvalidateCachesAsync(productIds);
+        }
+
         return mapper.Map<ShopDto>(shop);
+    }
+
+    private async Task InvalidateCachesAsync(IReadOnlyList<Guid> productIds)
+    {
+        var server = redis.GetServer(redis.GetEndPoints()[0]);
+        var database = redis.GetDatabase();
+
+        var listPatterns = new[] { "locmp-catalog:products:search:*", "locmp-catalog:products:location:*" };
+        foreach (var pattern in listPatterns)
+        {
+            var keys = server.Keys(pattern: pattern).ToArray();
+            if (keys.Length > 0)
+                await database.KeyDeleteAsync(keys);
+        }
+
+        if (productIds.Count > 0)
+        {
+            var productKeys = productIds
+                .Select(id => new RedisKey($"locmp-catalog:product:{id}"))
+                .ToArray();
+            await database.KeyDeleteAsync(productKeys);
+        }
     }
 }

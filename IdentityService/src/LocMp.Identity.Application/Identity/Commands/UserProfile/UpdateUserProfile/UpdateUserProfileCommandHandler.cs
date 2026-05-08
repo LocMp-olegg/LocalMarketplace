@@ -59,7 +59,11 @@ public sealed class UpdateUserProfileCommandHandler(
         {
             var isSeller = await userManager.IsInRoleAsync(user, nameof(UserRole.Seller));
             if (isSeller)
+            {
                 await userManager.RemoveFromRoleAsync(user, nameof(UserRole.Seller));
+                await eventBus.PublishAsync(
+                    new UserLostSellerStatusEvent(user.Id, DateTimeOffset.UtcNow), ct);
+            }
         }
 
         await eventBus.PublishAsync(

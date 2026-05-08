@@ -107,6 +107,9 @@ public sealed class CheckoutCommandHandler(
             if (!product.IsActive)
                 throw new ConflictException($"Product '{product.Name}' is not active.");
 
+            if (!product.ShopIsActive)
+                throw new ConflictException($"The shop for product '{product.Name}' is temporarily inactive.");
+
             if (!product.IsMadeToOrder && product.StockQuantity < cartItem.Quantity)
                 throw new ConflictException(
                     $"Insufficient stock for '{product.Name}'. Available: {product.StockQuantity}, requested: {cartItem.Quantity}.");

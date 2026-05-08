@@ -8,4 +8,5 @@ public interface ICacheableQuery
 {
     string CacheKey { get; }
     TimeSpan Ttl { get; }
+    bool BypassCache => false;
 }
