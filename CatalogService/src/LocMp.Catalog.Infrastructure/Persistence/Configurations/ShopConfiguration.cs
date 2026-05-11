@@ -34,6 +34,9 @@ public class ShopConfiguration : IEntityTypeConfiguration<Shop>
             a.Property(x => x.Floor).HasColumnName("Floor").HasMaxLength(10);
         });
 
+        builder.Property(s => s.AverageRating).HasPrecision(4, 2).HasDefaultValue(0m);
+        builder.Property(s => s.ReviewCount).HasDefaultValue(0);
+
         builder.Property(s => s.IsVerified).HasDefaultValue(true);
         builder.Property(s => s.IsActive).HasDefaultValue(true);
         builder.Property(s => s.CreatedAt).IsRequired();
