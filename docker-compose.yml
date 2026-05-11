@@ -101,6 +101,11 @@ services:
       Minio__UseSSL: "false"
       Minio__PublicEndpoint: "localhost:9000"
       JwtAuthenticationOptions__Authority: "http://locmp-identity:8080"
+      Smtp__Host: "locmp-mailhog"
+      Smtp__Port: "1025"
+      Smtp__FromAddress: "noreply@localmarketplace.local"
+      Smtp__FromName: "Районный Маркетплейс"
+      PasswordReset__UiBaseUrl: "http://localhost:5173"
     ports:
       - "5001:8080"
     depends_on:
@@ -112,6 +117,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mailhog:
+        condition: service_started
 
   catalog:
     build:

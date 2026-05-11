@@ -76,5 +76,12 @@ public static class InfrastructureExtension
             .Build());
 
         services.AddScoped<IStorageService, MinioStorageService>();
+
+        services.Configure<SmtpOptions>(configuration.GetSection("Smtp"));
+        services.Configure<PasswordResetOptions>(configuration.GetSection("PasswordReset"));
+        services.AddScoped<IEmailService, SmtpEmailService>();
+
+        services.Configure<Microsoft.AspNetCore.Identity.DataProtectionTokenProviderOptions>(o =>
+            o.TokenLifespan = TimeSpan.FromHours(2));
     }
 }
