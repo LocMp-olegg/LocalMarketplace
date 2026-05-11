@@ -4,9 +4,11 @@ using LocMp.Notification.Infrastructure.Services;
 using LocMp.Notification.Domain.Enums;
 using LocMp.Notification.Infrastructure.Cache;
 using LocMp.Notification.Infrastructure.Email;
+using LocMp.Notification.Infrastructure.Options;
 using LocMp.Notification.Infrastructure.Persistence;
 using MassTransit;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
 using NotificationEntity = LocMp.Notification.Domain.Entities.Notification;
 
 namespace LocMp.Notification.Infrastructure.Consumers;
@@ -14,7 +16,8 @@ namespace LocMp.Notification.Infrastructure.Consumers;
 public sealed class OrderCompletedConsumer(
     NotificationDbContext db,
     IDistributedCache cache,
-    IEmailService email)
+    IEmailService email,
+    IOptions<FrontendOptions> frontend)
     : IConsumer<OrderCompletedEvent>
 {
     public async Task Consume(ConsumeContext<OrderCompletedEvent> ctx)
@@ -43,7 +46,8 @@ public sealed class OrderCompletedConsumer(
 
         if (prefs.CanEmailOrder)
         {
-            var (subject, body) = EmailTemplates.OrderCompleted(msg.OrderId);
+            var (subject, body) = EmailTemplates.OrderCompleted(
+                msg.OrderId, frontend.Value.OrderUrl(msg.OrderId));
             await email.SendAsync(prefs.Email!, subject, body, ctx.CancellationToken);
         }
     }

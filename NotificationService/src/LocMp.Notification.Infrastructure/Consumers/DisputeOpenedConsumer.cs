@@ -4,15 +4,18 @@ using LocMp.Notification.Infrastructure.Services;
 using LocMp.Notification.Domain.Enums;
 using LocMp.Notification.Infrastructure.Cache;
 using LocMp.Notification.Infrastructure.Email;
+using LocMp.Notification.Infrastructure.Options;
 using LocMp.Notification.Infrastructure.Persistence;
 using MassTransit;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
 using NotificationEntity = LocMp.Notification.Domain.Entities.Notification;
 
 namespace LocMp.Notification.Infrastructure.Consumers;
 
 public sealed class DisputeOpenedConsumer(
-    NotificationDbContext db, IDistributedCache cache, IEmailService email)
+    NotificationDbContext db, IDistributedCache cache, IEmailService email,
+    IOptions<FrontendOptions> frontend)
     : IConsumer<DisputeOpenedEvent>
 {
     public async Task Consume(ConsumeContext<DisputeOpenedEvent> ctx)
@@ -41,7 +44,8 @@ public sealed class DisputeOpenedConsumer(
                 await cache.RemoveAsync(NotificationCacheKeys.UnreadCount(msg.SellerId), ctx.CancellationToken);
         }
 
-        var (subject, body) = EmailTemplates.DisputeOpened(msg.OrderId);
+        var (subject, body) = EmailTemplates.DisputeOpened(
+            msg.OrderId, frontend.Value.OrderUrl(msg.OrderId));
         if (buyerPrefs.CanEmailMandatory)
             await email.SendAsync(buyerPrefs.Email!, subject, body, ctx.CancellationToken);
         if (sellerPrefs.CanEmailMandatory)

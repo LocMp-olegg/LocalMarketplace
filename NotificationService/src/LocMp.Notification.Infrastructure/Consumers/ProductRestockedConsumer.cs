@@ -4,15 +4,18 @@ using LocMp.Notification.Infrastructure.Services;
 using LocMp.Notification.Domain.Enums;
 using LocMp.Notification.Infrastructure.Cache;
 using LocMp.Notification.Infrastructure.Email;
+using LocMp.Notification.Infrastructure.Options;
 using LocMp.Notification.Infrastructure.Persistence;
 using MassTransit;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
 using NotificationEntity = LocMp.Notification.Domain.Entities.Notification;
 
 namespace LocMp.Notification.Infrastructure.Consumers;
 
 public sealed class ProductRestockedConsumer(
-    NotificationDbContext db, IDistributedCache cache, IEmailService email)
+    NotificationDbContext db, IDistributedCache cache, IEmailService email,
+    IOptions<FrontendOptions> frontend)
     : IConsumer<ProductRestockedEvent>
 {
     public async Task Consume(ConsumeContext<ProductRestockedEvent> ctx)
@@ -47,7 +50,8 @@ public sealed class ProductRestockedConsumer(
 
             if (prefs.CanEmailSystem)
             {
-                var (subject, body) = EmailTemplates.ProductRestocked(msg.ProductName);
+                var (subject, body) = EmailTemplates.ProductRestocked(
+                    msg.ProductName, frontend.Value.ProductUrl(msg.ProductId));
                 await email.SendAsync(prefs.Email!, subject, body, ctx.CancellationToken);
             }
         }
