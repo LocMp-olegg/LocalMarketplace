@@ -83,7 +83,7 @@ rectangle "**CatalogService  :5002**" #E9F7EF {
     rectangle "Consumers  (MassTransit)" #EBF5FB {
       component "**StockReserveRequestConsumer**\n→ проверяет StockQuantity\n→ если достаточно: уменьшает остаток,\n  создаёт StockHistory, публикует StockReservedEvent\n→ если нет: публикует StockReservationFailedEvent" as ConsReserve
       component "**UserBecameSellerConsumer**\n→ создаёт запись SellerReadModel\n  (SellerId, DisplayName, AvatarUrl)\n**UserProfileUpdatedConsumer**\n→ обновляет DisplayName и AvatarUrl\n  в SellerReadModel\n**UserLostSellerStatusConsumer**\n→ деактивирует все магазины продавца\n→ инвалидирует кэш products:search:* / products:location:*" as ConsUser
-      component "**RatingAggregateUpdatedConsumer**\n→ если SubjectType == Product:\n  обновляет Product.AverageRating, ReviewCount\n→ если SubjectType == Seller:\n  обновляет SellerReadModel.AverageRating, ReviewCount" as ConsRating
+      component "**RatingAggregateUpdatedConsumer**\n→ если SubjectType == Product:\n  обновляет Product.AverageRating, ReviewCount\n  пересчитывает Shop.AverageRating, ReviewCount\n  (средневзвешенная по всем товарам магазина)\n→ если SubjectType == Seller:\n  обновляет SellerReadModel.AverageRating, ReviewCount" as ConsRating
     }
   }
 
@@ -157,6 +157,7 @@ ConsReserve -[#6A1B9A,bold]-> EventBus
 ConsUser    -[#795548]-> DbCtx
 ConsUser    -[#00838F,dashed]-> RedisAdapt : инвалидация кэша (UserLostSellerStatus)
 ConsRating  -[#795548]-> DbCtx
+ConsRating  -[#00838F,dashed]-> RedisAdapt : инвалидация shop:{id}
 
 ' Infrastructure → External
 DbCtx      -[#1E8449,bold]-> DB

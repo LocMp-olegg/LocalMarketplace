@@ -75,6 +75,10 @@ class Shop {
     + IsVerified : bool
     + VerifiedAt : DateTimeOffset?
     + Address : ShopAddress? <<owned entity>>
+    ..рейтинг (агрегация из товаров)..
+    + AverageRating : decimal
+    + ReviewCount : int
+    ..состояние..
     + IsActive : bool
     + CreatedAt : DateTimeOffset
     + UpdatedAt : DateTimeOffset?
@@ -224,6 +228,20 @@ Product ..> StockChangeType : использует
 
 ' ─── Notes ───────────────────────────────────────────────────────────────────
 
+note right of Shop
+  AverageRating / ReviewCount:
+  средневзвешенный рейтинг по всем
+  товарам магазина (без прямых отзывов).
+
+  Формула: SUM(product.AverageRating
+    × product.ReviewCount)
+    / SUM(product.ReviewCount)
+
+  Пересчитывается в консьюмере:
+  RatingAggregateUpdatedEvent
+  (SubjectType == "Product")
+end note
+
 note right of Product
   SellerId — логическая ссылка.
   Нет FK в БД (другой сервис).
@@ -273,7 +291,7 @@ end note
 legend bottom
   <b>Таблицы сервиса (schema: catalog)</b>
   |= Класс C# |= Таблица в БД |= Описание |
-  | Shop | Shops | Магазин продавца с геолокацией, бизнес-типом и настройками курьерской доставки |
+  | Shop | Shops | Магазин продавца с геолокацией, бизнес-типом, настройками доставки и агрегированным рейтингом по товарам |
   | ShopAddress | — (owned, в Shops) | Адрес магазина: City, Street, HouseNumber, Apartment, Entrance, Floor |
   | ShopPhoto | ShopPhotos | Фото магазина (StorageUrl → MinIO bucket: catalog-media) |
   | Category | Categories | Дерево категорий товаров (self-referencing) |
