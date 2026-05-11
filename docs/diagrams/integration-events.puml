@@ -224,6 +224,7 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
             + ReviewerId : Guid
             + SellerId : Guid
             + Rating : int
+            + SubjectName : string? <<snapshot>>
             + OccurredAt : DateTimeOffset
         }
     }

@@ -20,6 +20,14 @@ public class AllowedReviewConfiguration : IEntityTypeConfiguration<AllowedReview
                 v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                 v => JsonSerializer.Deserialize<List<Guid>>(v, (JsonSerializerOptions?)null) ?? new List<Guid>());
 
+        builder.Property(ar => ar.ProductNames)
+            .HasColumnType("jsonb")
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Deserialize<Dictionary<Guid, string>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<Guid, string>());
+
+        builder.Property(ar => ar.SellerName).HasMaxLength(300);
+
         builder.HasIndex(ar => ar.BuyerId);
     }
 }

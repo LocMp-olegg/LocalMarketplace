@@ -11,5 +11,7 @@ public class AllowedReview
     public Guid SellerId { get; set; }
     public Guid? CourierId { get; set; }
     public List<Guid> ProductIds { get; set; } = [];
+    public Dictionary<Guid, string> ProductNames { get; set; } = [];
+    public string? SellerName { get; set; }
     public DateTimeOffset AllowedAt { get; set; } = DateTimeOffset.UtcNow;
 }

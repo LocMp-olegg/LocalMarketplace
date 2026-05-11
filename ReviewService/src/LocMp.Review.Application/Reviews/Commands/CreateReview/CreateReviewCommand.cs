@@ -11,4 +11,5 @@ public sealed record CreateReviewCommand(
     ReviewSubjectType SubjectType,
     Guid SubjectId,
     int Rating,
-    string? Comment) : IRequest<ReviewDto>;
+    string? Comment,
+    string? SubjectName = null) : IRequest<ReviewDto>;

@@ -62,6 +62,7 @@ class Review <<aggregate root>> {
     ..содержимое..
     + Rating : int <<1..5>>
     + Comment : string?
+    + SubjectName : string? <<snapshot>>
     ..модерация..
     + IsVisible : bool
     + CreatedAt : DateTimeOffset
@@ -94,7 +95,10 @@ class AllowedReview <<event projection>> {
     + OrderId : Guid <<PK>>
     + BuyerId : Guid <<logical ref: Identity>>
     + SellerId : Guid <<logical ref: Identity>>
+    + SellerName : string? <<snapshot>>
     + CourierId : Guid? <<logical ref: Identity>>
+    + ProductIds : List<Guid> <<jsonb>>
+    + ProductNames : Dictionary<Guid,string> <<jsonb, snapshot>>
     + AllowedAt : DateTimeOffset
 }
 
@@ -177,6 +181,11 @@ note bottom of AllowedReview
   Идемпотентна: если запись уже есть,
   Consumer пропускает создание.
 
+  ProductNames и SellerName —
+  снепшоты на момент завершения заказа.
+  Используются в PendingReviewSubjectDto
+  (GET /api/reviews/allowed),
+  чтобы фронтенд не ходил в CatalogService.
 end note
 
 

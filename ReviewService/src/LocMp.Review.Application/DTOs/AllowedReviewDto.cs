@@ -9,4 +9,5 @@ public sealed record PendingReviewSubjectDto(
     Guid OrderId,
     ReviewSubjectType SubjectType,
     Guid SubjectId,
+    string? SubjectName,
     DateTimeOffset AllowedAt);

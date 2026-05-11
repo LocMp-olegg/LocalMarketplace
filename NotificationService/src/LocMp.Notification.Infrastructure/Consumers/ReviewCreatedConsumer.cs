@@ -4,15 +4,18 @@ using LocMp.Notification.Infrastructure.Services;
 using LocMp.Notification.Domain.Enums;
 using LocMp.Notification.Infrastructure.Cache;
 using LocMp.Notification.Infrastructure.Email;
+using LocMp.Notification.Infrastructure.Options;
 using LocMp.Notification.Infrastructure.Persistence;
 using MassTransit;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
 using NotificationEntity = LocMp.Notification.Domain.Entities.Notification;
 
 namespace LocMp.Notification.Infrastructure.Consumers;
 
 public sealed class ReviewCreatedConsumer(
-    NotificationDbContext db, IDistributedCache cache, IEmailService email)
+    NotificationDbContext db, IDistributedCache cache, IEmailService email,
+    IOptions<FrontendOptions> frontend)
     : IConsumer<ReviewCreatedEvent>
 {
     public async Task Consume(ConsumeContext<ReviewCreatedEvent> ctx)
@@ -42,7 +45,11 @@ public sealed class ReviewCreatedConsumer(
 
         if (prefs.CanEmailReview)
         {
-            var (subject, body) = EmailTemplates.ReviewCreated(msg.Rating);
+            var actionUrl = msg.SubjectType == "Product"
+                ? frontend.Value.ProductUrl(msg.SubjectId)
+                : frontend.Value.SellerAnalyticsUrl();
+            var (subject, body) = EmailTemplates.ReviewCreated(
+                msg.Rating, msg.SubjectType, msg.SubjectName, actionUrl);
             await email.SendAsync(prefs.Email!, subject, body, ctx.CancellationToken);
         }
     }

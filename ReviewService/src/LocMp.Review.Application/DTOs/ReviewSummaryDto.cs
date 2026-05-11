@@ -8,6 +8,7 @@ public sealed record ReviewSummaryDto(
     string ReviewerName,
     ReviewSubjectType SubjectType,
     Guid SubjectId,
+    string? SubjectName,
     int Rating,
     string? Comment,
     bool IsVisible,

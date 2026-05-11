@@ -47,6 +47,7 @@ public static class InfrastructureExtension
         services.AddScoped<IEventBus, MassTransitEventBus>();
 
         services.Configure<SmtpOptions>(configuration.GetSection("Smtp"));
+        services.Configure<FrontendOptions>(configuration.GetSection("Frontend"));
         services.AddScoped<IEmailService, SmtpEmailService>();
     }
 }

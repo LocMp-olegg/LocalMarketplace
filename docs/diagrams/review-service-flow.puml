@@ -68,13 +68,13 @@ rectangle "**ReviewService  :5004**" #FDEDEC {
     }
 
     rectangle "Queries" #FEF9E7 {
-      component "GetReviewsQuery  (paged, sort, filter by rating)\nGetReviewByIdQuery  /  GetReviewByOrderQuery\nGetMyReviewsQuery\nGetAllowedReviewsQuery  (читает AllowedReview)\nGetReviewsForModerationQuery  (Admin)" as QReviews
+      component "GetReviewsQuery  (paged, sort, filter by rating)\nGetReviewByIdQuery  /  GetReviewByOrderQuery\nGetMyReviewsQuery  → ReviewSummaryDto с SubjectName\nGetAllowedReviewsQuery  → PendingReviewSubjectDto с SubjectName\nGetReviewsForModerationQuery  (Admin)" as QReviews
 
       component "GetRatingAggregateQuery  (ICacheableQuery)\nGetBulkRatingAggregatesQuery" as QRating
     }
 
     rectangle "Consumers  (MassTransit)" #FDF2F2 {
-      component "**OrderCompletedConsumer**\n← OrderCompletedEvent\n→ создаёт AllowedReview:\n  { OrderId, BuyerId, SellerId, CourierId? }\n→ идемпотентно (INSERT OR IGNORE)" as ConsCompleted
+      component "**OrderCompletedConsumer**\n← OrderCompletedEvent\n→ создаёт AllowedReview:\n  { OrderId, BuyerId, SellerId, SellerName,\n    CourierId?, ProductIds, ProductNames }\n→ идемпотентно (INSERT OR IGNORE)" as ConsCompleted
 
       component "**DisputeResolvedConsumer**\n← DisputeResolvedEvent\n→ если исход BuyerFavored:\n  проверяет AllowedReview,\n  создаёт авто-Review от имени системы\n→ пересчитывает RatingAggregate" as ConsDispute
     }
@@ -142,7 +142,8 @@ note right of EventBus
   Публикует 2 события:
   • ReviewCreatedEvent
     (ReviewId, SubjectId, SubjectType,
-     ReviewerId, SellerId, Rating)
+     ReviewerId, SellerId, Rating,
+     SubjectName?)
   • RatingAggregateUpdatedEvent
     (SubjectId, SubjectType,
      NewAverage, ReviewCount,
@@ -191,10 +192,13 @@ note right of ConsCompleted
   ON CONFLICT (OrderId) DO NOTHING
 
   AllowedReview хранит:
-  OrderId, BuyerId, SellerId, CourierId?
-  — чтобы покупатель мог оценить
-    продавца, товар и курьера
-    за один завершённый заказ.
+  OrderId, BuyerId, SellerId, SellerName,
+  CourierId?, ProductIds, ProductNames
+  — ProductNames: снепшот {ProductId → Name}
+    из OrderCompletedEvent.Products.
+  Позволяет GET /api/reviews/allowed
+  вернуть SubjectName без запроса
+  в CatalogService.
 end note
 
 ' ─── Легенда ─────────────────────────────────────────────────────────────────

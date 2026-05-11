@@ -7,4 +7,5 @@ public sealed record ReviewCreatedEvent(
     Guid ReviewerId,
     Guid SellerId,
     int Rating,
-    DateTimeOffset OccurredAt) : IIntegrationEvent;
+    DateTimeOffset OccurredAt,
+    string? SubjectName = null) : IIntegrationEvent;
