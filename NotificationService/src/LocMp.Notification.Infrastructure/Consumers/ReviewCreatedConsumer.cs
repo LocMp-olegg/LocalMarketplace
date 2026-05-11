@@ -45,11 +45,12 @@ public sealed class ReviewCreatedConsumer(
 
         if (prefs.CanEmailReview)
         {
-            var actionUrl = msg.SubjectType == "Product"
+            var reviewUrl = frontend.Value.ReviewUrl(msg.ReviewId);
+            var productUrl = msg.SubjectType == "Product"
                 ? frontend.Value.ProductUrl(msg.SubjectId)
-                : frontend.Value.SellerAnalyticsUrl();
+                : null;
             var (subject, body) = EmailTemplates.ReviewCreated(
-                msg.Rating, msg.SubjectType, msg.SubjectName, actionUrl);
+                msg.Rating, msg.SubjectType, reviewUrl, msg.SubjectName, productUrl);
             await email.SendAsync(prefs.Email!, subject, body, ctx.CancellationToken);
         }
     }

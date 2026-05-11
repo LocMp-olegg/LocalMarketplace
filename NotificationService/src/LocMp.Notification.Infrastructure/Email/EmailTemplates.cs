@@ -56,12 +56,12 @@ internal static class EmailTemplates
     // ── Review ────────────────────────────────────────────────────────────────
 
     public static (string Subject, string Body) ReviewCreated(
-        int rating, string subjectType, string? subjectName = null, string? actionUrl = null) =>
+        int rating, string subjectType, string reviewUrl, string? subjectName = null, string? productUrl = null) =>
         ("Новый отзыв",
          Render("ReviewCreated", new()
          {
              ["rating"]       = rating.ToString(),
-             ["subjectLabel"] = (subjectType, subjectName, actionUrl) switch
+             ["subjectLabel"] = (subjectType, subjectName, productUrl) switch
              {
                  ("Product", { } n, { } url) =>
                      $"ваш товар <a href=\"{url}\" style=\"color:#2a9d8f;font-weight:600;text-decoration:none;\">«{n}»</a>",
@@ -73,7 +73,7 @@ internal static class EmailTemplates
                  ("Courier", _, _)       => "услугу курьера",
                  _                       => "профиль продавца",
              },
-             ["actionButton"] = Button(actionUrl, subjectType == "Product" ? "Смотреть товар" : "Открыть аналитику"),
+             ["actionButton"] = Button(reviewUrl, "Смотреть отзыв"),
          }));
 
     // ── Stock ─────────────────────────────────────────────────────────────────
