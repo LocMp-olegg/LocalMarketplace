@@ -13,6 +13,7 @@ public class ReviewConfiguration : IEntityTypeConfiguration<ReviewEntity>
 
         builder.Property(r => r.ReviewerName).HasMaxLength(200).IsRequired();
         builder.Property(r => r.Comment).HasMaxLength(2000);
+        builder.Property(r => r.SubjectName).HasMaxLength(300);
         builder.Property(r => r.CreatedAt).IsRequired();
 
         builder.HasMany(r => r.Photos)

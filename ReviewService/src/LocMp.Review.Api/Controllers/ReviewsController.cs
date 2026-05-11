@@ -101,7 +101,7 @@ public sealed class ReviewsController(ISender sender) : ControllerBase
         var result = await sender.Send(new CreateReviewCommand(
             request.OrderId, userId, reviewerName,
             request.SubjectType, request.SubjectId,
-            request.Rating, request.Comment), ct);
+            request.Rating, request.Comment, request.SubjectName), ct);
 
         return CreatedAtAction(nameof(GetByOrder), new { orderId = request.OrderId }, result);
     }

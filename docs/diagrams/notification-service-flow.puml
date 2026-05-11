@@ -96,13 +96,13 @@ rectangle "**NotificationService  :5005**" #E0F7FA {
 
       component "**ProductRestockedConsumer**\n→ Notification пользователям из избранного\n→ Email: CanEmailSystem" as ConsRestock
 
-      component "**ReviewCreatedConsumer**\n→ Notification продавцу {ReviewReceived}\n→ Email: CanEmailReview\n**RatingAggregateUpdatedConsumer**\n→ Notification продавцу {ReviewReceived}" as ConsReview
+      component "**ReviewCreatedConsumer**\n→ Notification продавцу {ReviewReceived}\n→ Email: CanEmailReview\n  субъект: товар (имя + ссылка) / продавец / курьер\n  URL: FrontendOptions.ProductUrl() | SellerAnalyticsUrl()\n**RatingAggregateUpdatedConsumer**\n→ Notification продавцу {ReviewReceived}" as ConsReview
     }
   }
 
   rectangle "**Infrastructure Layer**" #B2EBF2 {
     component "**NotifDbContext**\n(EF Core 10)" as DbCtx
-    component "**SmtpEmailService**\n(IEmailService, MailKit)\nHost: MailHog :1025 (dev)\nHTML-шаблоны: EmailTemplates" as EmailSvc
+    component "**SmtpEmailService**\n(IEmailService, MailKit)\nHost: mailhog :1025 (Docker dev)\nHTML-шаблоны: EmailTemplates (EmbeddedResource)\naction URLs: FrontendOptions\norderId: GuidExtensions.ToShortId()" as EmailSvc
     component "**Redis Adapter**\n(IDistributedCache)\nnotif:prefs:{userId}  — TTL 15 мин\nnotif:unread:{userId} — TTL 5 мин" as RedisAdapt
   }
 }

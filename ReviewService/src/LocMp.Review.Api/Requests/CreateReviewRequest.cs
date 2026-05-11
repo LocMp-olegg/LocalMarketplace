@@ -7,4 +7,5 @@ public sealed record CreateReviewRequest(
     ReviewSubjectType SubjectType,
     Guid SubjectId,
     int Rating,
-    string? Comment);
+    string? Comment,
+    string? SubjectName = null);

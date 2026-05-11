@@ -127,20 +127,40 @@ class SmtpEmailService {
 }
 
 class EmailTemplates <<static>> {
-    + {static} OrderPlaced(orderId, amount) : (Subject, Body)
-    + {static} OrderStatusChanged(orderId, from, to) : (Subject, Body)
-    + {static} OrderCompleted(orderId) : (Subject, Body)
-    + {static} DisputeOpened(orderId) : (Subject, Body)
-    + {static} DisputeResolved(orderId, outcome) : (Subject, Body)
-    + {static} ReviewCreated(rating, comment?) : (Subject, Body)
-    + {static} StockDepleted(productName) : (Subject, Body)
-    + {static} ProductRestocked(productName) : (Subject, Body)
-    + {static} SellerActivated() : (Subject, Body)
+    ..HTML из embedded resources (.html файлы)..
+    + {static} OrderPlaced(total, orderId, actionUrl?) : (Subject, Body)
+    + {static} OrderStatusChanged(statusText, orderId, actionUrl?) : (Subject, Body)
+    + {static} OrderCompleted(orderId, actionUrl?) : (Subject, Body)
+    + {static} DisputeOpened(orderId, actionUrl?) : (Subject, Body)
+    + {static} DisputeResolved(orderId, outcome, actionUrl?) : (Subject, Body)
+    + {static} ReviewCreated(rating, subjectType, subjectName?, actionUrl?) : (Subject, Body)
+    + {static} StockDepleted(productName, actionUrl?) : (Subject, Body)
+    + {static} ProductRestocked(productName, actionUrl?) : (Subject, Body)
+    + {static} SellerActivated(displayName, actionUrl?) : (Subject, Body)
     + {static} AccountBlocked(blockedUntil) : (Subject, Body)
     + {static} AccountUnblocked() : (Subject, Body)
+    - {static} Render(templateName, vars) : string
+    - {static} Button(url?, label) : string
+}
+
+class FrontendOptions <<options>> {
+    + BaseUrl : string
+    ..URL builders..
+    + OrderUrl(orderId) : string
+    + SellerOrdersUrl() : string
+    + SellerAnalyticsUrl() : string
+    + ProductUrl(productId) : string
+    + ProductEditUrl(productId) : string
+    + SellerShopsUrl() : string
+}
+
+class GuidExtensions <<static>> {
+    + {static} ToShortId(id : Guid) : string
+    .. id.ToString("N")[^8..].ToUpperInvariant() ..
 }
 
 SmtpEmailService ..|> IEmailService
+EmailTemplates ..> FrontendOptions : URL builders\n(injected via consumers)
 
 ' ─── Relationships ────────────────────────────────────────────────────────────
 
@@ -185,9 +205,37 @@ end note
 note right of SmtpEmailService
   Использует MailKit.
   В dev — MailHog (:1025).
+  Docker SMTP host: "mailhog" (не localhost).
   Ошибки SMTP логируются,
   но НЕ бросают исключение —
   consumer не падает при недоступном SMTP.
+end note
+
+note right of FrontendOptions
+  Регистрируется через
+  services.Configure<FrontendOptions>(
+    configuration.GetSection("Frontend"))
+  appsettings.json: { "Frontend": { "BaseUrl": "http://localhost:5173" } }
+
+  Каждый consumer инжектирует
+  IOptions<FrontendOptions> и передаёт
+  actionUrl в метод EmailTemplates.*
+end note
+
+note right of EmailTemplates
+  HTML-шаблоны компилируются
+  в сборку как EmbeddedResource.
+  Загружаются через
+  Assembly.GetManifestResourceStream().
+
+  {{placeholder}} заменяются через
+  Render(name, Dictionary<string,string>).
+  {{actionButton}} = Button(url?, label) —
+  пустая строка если url == null.
+
+  orderId отображается как
+  id.ToString("N")[^8..].ToUpper()
+  (последние 8 символов HEX).
 end note
 
 note bottom of NotificationType
@@ -210,8 +258,10 @@ legend bottom
   <b>Инфраструктура email</b>
   |= Класс |= Тип |= Описание |
   | IEmailService | interface | Контракт отправки HTML-email |
-  | SmtpEmailService | class | MailKit SMTP. Dev: MailHog :1025 |
-  | EmailTemplates | static class | HTML-шаблоны для всех типов email |
+  | SmtpEmailService | class | MailKit SMTP. Dev: MailHog :1025 (Docker host: mailhog) |
+  | EmailTemplates | static class | 11 HTML-шаблонов как EmbeddedResource, Render() + Button() |
+  | FrontendOptions | options class | URL-строители для action-кнопок в email (BaseUrl из конфига) |
+  | GuidExtensions | static class | ToShortId() — последние 8 HEX символов GUID (как на фронтенде) |
 endlegend
 
 @enduml

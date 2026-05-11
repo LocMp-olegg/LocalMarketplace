@@ -15,6 +15,7 @@ public class Review(Guid id) : AggregateRoot<Guid>(id)
 
     public int Rating { get; set; }
     public string? Comment { get; set; }
+    public string? SubjectName { get; set; }
 
     public bool IsVisible { get; set; } = true;
 

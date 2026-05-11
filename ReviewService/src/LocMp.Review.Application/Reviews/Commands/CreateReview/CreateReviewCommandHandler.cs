@@ -56,6 +56,7 @@ public sealed class CreateReviewCommandHandler(
             SubjectId = request.SubjectId,
             Rating = request.Rating,
             Comment = request.Comment,
+            SubjectName = request.SubjectName,
             CreatedAt = now
         };
 
@@ -100,7 +101,8 @@ public sealed class CreateReviewCommandHandler(
             request.ReviewerId,
             allowed.SellerId,
             request.Rating,
-            now), ct);
+            now,
+            request.SubjectName), ct);
 
         return mapper.Map<ReviewDto>(review);
     }

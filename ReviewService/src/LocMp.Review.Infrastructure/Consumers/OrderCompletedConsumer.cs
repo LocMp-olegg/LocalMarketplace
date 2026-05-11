@@ -17,12 +17,14 @@ public sealed class OrderCompletedConsumer(ReviewDbContext db) : IConsumer<Order
 
         db.AllowedReviews.Add(new AllowedReview
         {
-            OrderId    = msg.OrderId,
-            BuyerId    = msg.BuyerId,
-            SellerId   = msg.SellerId,
-            CourierId  = msg.CourierId,
-            ProductIds = msg.Products.Select(p => p.ProductId).ToList(),
-            AllowedAt  = msg.OccurredAt
+            OrderId      = msg.OrderId,
+            BuyerId      = msg.BuyerId,
+            SellerId     = msg.SellerId,
+            SellerName   = msg.SellerName,
+            CourierId    = msg.CourierId,
+            ProductIds   = msg.Products.Select(p => p.ProductId).ToList(),
+            ProductNames = msg.Products.ToDictionary(p => p.ProductId, p => p.ProductName),
+            AllowedAt    = msg.OccurredAt
         });
 
         await db.SaveChangesAsync(context.CancellationToken);

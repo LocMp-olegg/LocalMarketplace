@@ -53,7 +53,15 @@ public sealed class GetAllowedReviewsForBuyerQueryHandler(ReviewDbContext db)
         void TryAdd(ReviewSubjectType type, Guid subjectId, AllowedReview ar)
         {
             if (!reviewedSet.Contains((type, subjectId)) && seen.Add((type, subjectId)))
-                pending.Add(new PendingReviewSubjectDto(ar.OrderId, type, subjectId, ar.AllowedAt));
+            {
+                var name = type switch
+                {
+                    ReviewSubjectType.Product => ar.ProductNames.TryGetValue(subjectId, out var n) ? n : null,
+                    ReviewSubjectType.Seller  => ar.SellerName,
+                    _                         => null
+                };
+                pending.Add(new PendingReviewSubjectDto(ar.OrderId, type, subjectId, name, ar.AllowedAt));
+            }
         }
     }
 }
