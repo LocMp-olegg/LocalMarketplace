@@ -1,11 +1,12 @@
 using System.Text.Json;
 using LocMp.Contracts.Catalog;
-using LocMp.Notification.Infrastructure.Services;
+using LocMp.Notification.Domain;
 using LocMp.Notification.Domain.Enums;
 using LocMp.Notification.Infrastructure.Cache;
 using LocMp.Notification.Infrastructure.Email;
 using LocMp.Notification.Infrastructure.Options;
 using LocMp.Notification.Infrastructure.Persistence;
+using LocMp.Notification.Infrastructure.Services;
 using MassTransit;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
@@ -15,7 +16,7 @@ namespace LocMp.Notification.Infrastructure.Consumers;
 
 public sealed class StockDepletedConsumer(
     NotificationDbContext db, IDistributedCache cache, IEmailService email,
-    IOptions<FrontendOptions> frontend)
+    IOptions<FrontendOptions> frontend, INotificationPusher pusher)
     : IConsumer<StockDepletedEvent>
 {
     public async Task Consume(ConsumeContext<StockDepletedEvent> ctx)
@@ -26,7 +27,7 @@ public sealed class StockDepletedConsumer(
         if (prefs.SystemAlerts)
         {
             var payload = JsonDocument.Parse(JsonSerializer.Serialize(new { productId = msg.ProductId }));
-            db.Notifications.Add(new NotificationEntity(Guid.NewGuid())
+            var notif = new NotificationEntity(Guid.NewGuid())
             {
                 UserId = msg.SellerId,
                 Type = NotificationType.StockDepleted,
@@ -37,9 +38,11 @@ public sealed class StockDepletedConsumer(
                 Payload = payload,
                 SentAt = msg.OccurredAt,
                 CreatedAt = msg.OccurredAt
-            });
+            };
+            db.Notifications.Add(notif);
             await db.SaveChangesAsync(ctx.CancellationToken);
             await cache.RemoveAsync(NotificationCacheKeys.UnreadCount(msg.SellerId), ctx.CancellationToken);
+            await pusher.PushAsync(msg.SellerId, NotificationPushDto.From(notif), ctx.CancellationToken);
         }
 
         if (prefs.CanEmailSystem)

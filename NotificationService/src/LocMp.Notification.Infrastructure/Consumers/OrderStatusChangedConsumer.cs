@@ -1,11 +1,12 @@
 using System.Text.Json;
 using LocMp.Contracts.Orders;
-using LocMp.Notification.Infrastructure.Services;
+using LocMp.Notification.Domain;
 using LocMp.Notification.Domain.Enums;
 using LocMp.Notification.Infrastructure.Cache;
 using LocMp.Notification.Infrastructure.Email;
 using LocMp.Notification.Infrastructure.Options;
 using LocMp.Notification.Infrastructure.Persistence;
+using LocMp.Notification.Infrastructure.Services;
 using MassTransit;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
@@ -17,7 +18,8 @@ public sealed class OrderStatusChangedConsumer(
     NotificationDbContext db,
     IDistributedCache cache,
     IEmailService email,
-    IOptions<FrontendOptions> frontend)
+    IOptions<FrontendOptions> frontend,
+    INotificationPusher pusher)
     : IConsumer<OrderStatusChangedEvent>
 {
     public async Task Consume(ConsumeContext<OrderStatusChangedEvent> ctx)
@@ -86,9 +88,15 @@ public sealed class OrderStatusChangedConsumer(
         {
             await db.SaveChangesAsync(ctx.CancellationToken);
             if (buyerNotif is not null)
+            {
                 await cache.RemoveAsync(NotificationCacheKeys.UnreadCount(msg.BuyerId), ctx.CancellationToken);
+                await pusher.PushAsync(msg.BuyerId, NotificationPushDto.From(buyerNotif), ctx.CancellationToken);
+            }
             if (sellerNotif is not null)
+            {
                 await cache.RemoveAsync(NotificationCacheKeys.UnreadCount(msg.SellerId), ctx.CancellationToken);
+                await pusher.PushAsync(msg.SellerId, NotificationPushDto.From(sellerNotif), ctx.CancellationToken);
+            }
         }
 
         if (statusText is not null)
