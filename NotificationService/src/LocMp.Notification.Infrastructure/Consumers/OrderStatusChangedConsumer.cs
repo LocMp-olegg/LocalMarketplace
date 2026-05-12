@@ -14,14 +14,17 @@ using NotificationEntity = LocMp.Notification.Domain.Entities.Notification;
 namespace LocMp.Notification.Infrastructure.Consumers;
 
 public sealed class OrderStatusChangedConsumer(
-    NotificationDbContext db, IDistributedCache cache, IEmailService email,
+    NotificationDbContext db,
+    IDistributedCache cache,
+    IEmailService email,
     IOptions<FrontendOptions> frontend)
     : IConsumer<OrderStatusChangedEvent>
 {
     public async Task Consume(ConsumeContext<OrderStatusChangedEvent> ctx)
     {
         var msg = ctx.Message;
-        var payload = JsonDocument.Parse(JsonSerializer.Serialize(new { orderId = msg.OrderId }));
+        var payload =
+            JsonDocument.Parse(JsonSerializer.Serialize(new { orderId = msg.OrderId, status = msg.ToStatus }));
         var now = msg.OccurredAt;
 
         NotificationEntity? buyerNotif = null;
@@ -55,7 +58,8 @@ public sealed class OrderStatusChangedConsumer(
                 buyerPrefs = await PreferenceHelper.GetAsync(msg.BuyerId, cache, db, ctx.CancellationToken);
                 if (buyerPrefs.OrderUpdates)
                     buyerNotif = Make(msg.BuyerId, NotificationType.OrderInDelivery,
-                        "Заказ передан курьеру", "Ваш заказ передан курьеру-соседу и скоро будет доставлен.", payload, now);
+                        "Заказ передан курьеру", "Ваш заказ передан курьеру-соседу и скоро будет доставлен.", payload,
+                        now);
                 statusText = "передан курьеру";
                 break;
             }
@@ -95,6 +99,7 @@ public sealed class OrderStatusChangedConsumer(
                     statusText, msg.OrderId, frontend.Value.OrderUrl(msg.OrderId));
                 await email.SendAsync(buyerPrefs.Email!, subject, body, ctx.CancellationToken);
             }
+
             if (sellerPrefs?.CanEmailOrder == true)
             {
                 var (subject, body) = EmailTemplates.OrderStatusChanged(

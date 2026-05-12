@@ -1,5 +1,3 @@
-using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using LocMp.BuildingBlocks.Application.Common;
 using LocMp.Notification.Application.DTOs;
 using LocMp.Notification.Infrastructure.Persistence;
@@ -8,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LocMp.Notification.Application.Notifications.Queries.GetNotifications;
 
-public sealed class GetNotificationsQueryHandler(NotificationDbContext db, IMapper mapper)
+public sealed class GetNotificationsQueryHandler(NotificationDbContext db)
     : IRequestHandler<GetNotificationsQuery, PagedResult<NotificationDto>>
 {
     public async Task<PagedResult<NotificationDto>> Handle(GetNotificationsQuery request, CancellationToken ct)
@@ -21,12 +19,15 @@ public sealed class GetNotificationsQueryHandler(NotificationDbContext db, IMapp
 
         var total = await query.CountAsync(ct);
 
-        var items = await query
+        var raw = await query
             .OrderByDescending(n => n.CreatedAt)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
-            .ProjectTo<NotificationDto>(mapper.ConfigurationProvider)
             .ToListAsync(ct);
+
+        var items = raw.Select(n => new NotificationDto(
+            n.Id, n.Type, n.Title, n.Body, n.IsRead, n.ReadAt, n.CreatedAt,
+            n.Payload?.RootElement)).ToList();
 
         return PagedResult<NotificationDto>.Create(items, total, request.Page, request.PageSize);
     }

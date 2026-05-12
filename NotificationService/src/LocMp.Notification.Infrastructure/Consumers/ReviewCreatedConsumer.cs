@@ -14,7 +14,9 @@ using NotificationEntity = LocMp.Notification.Domain.Entities.Notification;
 namespace LocMp.Notification.Infrastructure.Consumers;
 
 public sealed class ReviewCreatedConsumer(
-    NotificationDbContext db, IDistributedCache cache, IEmailService email,
+    NotificationDbContext db,
+    IDistributedCache cache,
+    IEmailService email,
     IOptions<FrontendOptions> frontend)
     : IConsumer<ReviewCreatedEvent>
 {
@@ -25,7 +27,8 @@ public sealed class ReviewCreatedConsumer(
 
         if (prefs.ReviewReplies)
         {
-            var payload = JsonDocument.Parse(JsonSerializer.Serialize(new { reviewId = msg.ReviewId, subjectId = msg.SubjectId }));
+            var payload = JsonDocument.Parse(JsonSerializer.Serialize(new
+                { reviewId = msg.ReviewId, subjectId = msg.SubjectId, subjectType = msg.SubjectType }));
             var stars = new string('★', msg.Rating) + new string('☆', 5 - msg.Rating);
             db.Notifications.Add(new NotificationEntity(Guid.NewGuid())
             {

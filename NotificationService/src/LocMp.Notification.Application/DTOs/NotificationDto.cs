@@ -1,3 +1,4 @@
+using System.Text.Json;
 using LocMp.Notification.Domain.Enums;
 
 namespace LocMp.Notification.Application.DTOs;
@@ -9,4 +10,5 @@ public sealed record NotificationDto(
     string Body,
     bool IsRead,
     DateTimeOffset? ReadAt,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    JsonElement? Payload);

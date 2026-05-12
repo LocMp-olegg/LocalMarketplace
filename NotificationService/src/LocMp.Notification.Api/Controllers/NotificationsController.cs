@@ -29,17 +29,18 @@ public sealed class NotificationsController(ISender sender) : ControllerBase
         => Ok(await sender.Send(new GetNotificationsQuery(HttpContext.GetUserId(), onlyUnread, page, pageSize), ct));
 
     [HttpPost("{id:guid}/read")]
-    public async Task<IActionResult> MarkRead(Guid id, CancellationToken ct)
+    public async Task<ActionResult<int>> MarkRead(Guid id, CancellationToken ct)
     {
-        await sender.Send(new MarkNotificationReadCommand(id, HttpContext.GetUserId()), ct);
-        return NoContent();
+        var userId = HttpContext.GetUserId();
+        await sender.Send(new MarkNotificationReadCommand(id, userId), ct);
+        return Ok(await sender.Send(new GetUnreadCountQuery(userId), ct));
     }
 
     [HttpPost("read-all")]
-    public async Task<IActionResult> MarkAllRead(CancellationToken ct)
+    public async Task<ActionResult<int>> MarkAllRead(CancellationToken ct)
     {
         await sender.Send(new MarkAllNotificationsReadCommand(HttpContext.GetUserId()), ct);
-        return NoContent();
+        return Ok(0);
     }
 
     [HttpGet("unread-count")]
