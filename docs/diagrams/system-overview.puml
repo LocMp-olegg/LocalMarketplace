@@ -50,7 +50,7 @@ rectangle "Микросервисы" {
     component "**CatalogService**\n:5002\n─────────────────\nТовары, категории\nОстатки, избранное\nГеофильтрация" as Catalog      #E8F5E9
     component "**OrderService**\n:5003\n─────────────────\nКорзина, заказы\nСтатусы, курьер\nСпоры" as Orders      #E8EAF6
     component "**ReviewService**\n:5004\n─────────────────\nОтзывы, рейтинги\nМодерация" as Reviews     #FBE9E7
-    component "**NotificationService**\n:5005\n─────────────────\nIn-App уведомления\nEmail (MailKit)\nПредпочтения" as Notifs      #E0F7FA
+    component "**NotificationService**\n:5005\n─────────────────\nIn-App уведомления\nSignalR WebSocket push\nEmail (MailKit)\nПредпочтения" as Notifs      #E0F7FA
     component "**AnalyticsService**\n:5006\n─────────────────\nДашборд продавца\nДашборд Admin\nPre-computed" as Analytics  #FFF3E0
     component "**ChatService**\n:5007\n─────────────────\nЧат заказа и поддержки\nSignalR WebSocket\nRedis backplane" as Chat      #E8F5E9
 
@@ -99,7 +99,7 @@ Gateway -[#2E7D32,bold]down-> Identity  : <color:#2E7D32>/api/identity/**</color
 Gateway -[#2E7D32,bold]down-> Catalog   : <color:#2E7D32>/api/catalog/**</color>
 Gateway -[#2E7D32,bold]down-> Orders    : <color:#2E7D32>/api/orders/**</color>
 Gateway -[#2E7D32,bold]down-> Reviews   : <color:#2E7D32>/api/reviews/**</color>
-Gateway -[#2E7D32,bold]down-> Notifs    : <color:#2E7D32>/api/notifications/**</color>
+Gateway -[#2E7D32,bold]down-> Notifs    : <color:#2E7D32>/api/notifications/**</color>\n<color:#2E7D32>/hubs/notifications (WS)</color>
 Gateway -[#2E7D32,bold]down-> Analytics : <color:#2E7D32>/api/analytics/**</color>
 Gateway -[#2E7D32,bold]down-> Chat      : <color:#2E7D32>/api/chats/**</color>\n<color:#2E7D32>/hubs/chat (WS)</color>
 

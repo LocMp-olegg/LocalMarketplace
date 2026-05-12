@@ -39,6 +39,7 @@ skinparam note {
 ' ─── Внешние акторы ──────────────────────────────────────────────────────────
 
 component "API Gateway\n:5000" as Gateway #ECEFF1
+component "Frontend / Browser" as Frontend #E8F5E9
 
 rectangle "RabbitMQ  (входящие события — 12)" #F3E5F5 {
     queue "UserRegisteredEvent\nUserBecameSellerEvent\nUserBlockedEvent\nUserUnblockedEvent\n← IdentityService" as EV_Identity
@@ -58,6 +59,8 @@ rectangle "**NotificationService  :5005**" #E0F7FA {
     component "**NotificationsController**\nGET /api/notifications  (Auth, paged, onlyUnread filter)\nPOST /api/notifications/{id}/read  (Auth)\nPOST /api/notifications/read-all  (Auth)\nGET /api/notifications/unread-count  (Auth)" as NotifCtrl
 
     component "**PreferencesController**\nGET /api/notifications/preferences  (Auth)\nPUT /api/notifications/preferences  (Auth)" as PrefCtrl
+
+    component "**NotificationHub**  (SignalR)\n[Authorize]  /hubs/notifications\nJWT из ?access_token= query string\nSubClaimUserIdProvider → Clients.User(sub)" as Hub
   }
 
   rectangle "**Application Layer  (MediatR)**" {
@@ -104,6 +107,7 @@ rectangle "**NotificationService  :5005**" #E0F7FA {
     component "**NotifDbContext**\n(EF Core 10)" as DbCtx
     component "**SmtpEmailService**\n(IEmailService, MailKit)\nHost: mailhog :1025 (Docker dev)\nHTML-шаблоны: EmailTemplates (EmbeddedResource)\naction URLs: FrontendOptions\norderId: GuidExtensions.ToShortId()" as EmailSvc
     component "**Redis Adapter**\n(IDistributedCache)\nnotif:prefs:{userId}  — TTL 15 мин\nnotif:unread:{userId} — TTL 5 мин" as RedisAdapt
+    component "**SignalRNotificationPusher**\n(INotificationPusher)\nIHubContext<NotificationHub>\nPushAsync → Clients.User(userId)\n  .SendAsync(\"notification_received\", dto)" as Pusher
   }
 }
 
@@ -118,6 +122,11 @@ component "**MailHog** :1025 SMTP\n:8025 Web UI (dev only)" as MailHog #FFF3E0
 ' Gateway → API
 Gateway -[#00838F,bold]-> NotifCtrl : HTTP + JWT
 Gateway -[#00838F,bold]-> PrefCtrl  : HTTP + JWT
+Gateway -[#00838F,bold]-> Hub       : WebSocket + JWT\n(?access_token=)
+
+' Frontend → Hub
+Frontend -[#2E7D32,bold]-> Hub : WS connect\n@microsoft/signalr\n.withAutomaticReconnect()
+Hub -[#2E7D32,bold]-> Frontend : notification_received\n{id,type,title,body,createdAt}
 
 ' Consumed events → Consumers
 EV_Identity -[#B71C1C,dashed]-> ConsUserReg    : consume
@@ -152,32 +161,45 @@ CmdPref -[#00838F,dashed]-> RedisAdapt : инвалидация prefs
 QNotif -[#795548]-> DbCtx
 QNotif -[#00838F,dashed]-> RedisAdapt
 
-' All Consumers: читают prefs, пишут Notification, шлют email
+' All Consumers: читают prefs, пишут Notification, шлют email + SignalR push
 ConsUserReg    -[#795548]-> DbCtx
 ConsUserSeller -[#795548]-> DbCtx
 ConsUserSeller -[#AD1457,dashed]-> EmailSvc
+ConsUserSeller -[#7B1FA2,dashed]-> Pusher
 ConsUserBlock  -[#795548]-> DbCtx
 ConsUserBlock  -[#AD1457,dashed]-> EmailSvc
+ConsUserBlock  -[#7B1FA2,dashed]-> Pusher
 ConsUserUnblock -[#795548]-> DbCtx
 ConsUserUnblock -[#AD1457,dashed]-> EmailSvc
+ConsUserUnblock -[#7B1FA2,dashed]-> Pusher
 ConsOrderPlaced -[#795548]-> DbCtx
 ConsOrderPlaced -[#00838F,dashed]-> RedisAdapt : читает prefs
 ConsOrderPlaced -[#AD1457,dashed]-> EmailSvc
+ConsOrderPlaced -[#7B1FA2,dashed]-> Pusher
 ConsOrderStatus -[#795548]-> DbCtx
 ConsOrderStatus -[#00838F,dashed]-> RedisAdapt : читает prefs
 ConsOrderStatus -[#AD1457,dashed]-> EmailSvc
+ConsOrderStatus -[#7B1FA2,dashed]-> Pusher
 ConsOrderDone  -[#795548]-> DbCtx
 ConsOrderDone  -[#AD1457,dashed]-> EmailSvc
+ConsOrderDone  -[#7B1FA2,dashed]-> Pusher
 ConsDispOpen   -[#795548]-> DbCtx
 ConsDispOpen   -[#AD1457,dashed]-> EmailSvc
+ConsDispOpen   -[#7B1FA2,dashed]-> Pusher
 ConsDispRes    -[#795548]-> DbCtx
 ConsDispRes    -[#AD1457,dashed]-> EmailSvc
+ConsDispRes    -[#7B1FA2,dashed]-> Pusher
 ConsStock      -[#795548]-> DbCtx
 ConsStock      -[#AD1457,dashed]-> EmailSvc
+ConsStock      -[#7B1FA2,dashed]-> Pusher
 ConsRestock    -[#795548]-> DbCtx
 ConsRestock    -[#AD1457,dashed]-> EmailSvc
+ConsRestock    -[#7B1FA2,dashed]-> Pusher
 ConsReview     -[#795548]-> DbCtx
 ConsReview     -[#AD1457,dashed]-> EmailSvc
+ConsReview     -[#7B1FA2,dashed]-> Pusher
+
+Pusher -[#7B1FA2,bold]-> Hub : IHubContext
 
 ' Infrastructure → External
 DbCtx     -[#006064,bold]-> DB
@@ -237,6 +259,8 @@ legend bottom
   |= <color:#795548>━━━━━</color> |= Чтение / запись через EF Core |
   |= <color:#00838F>- - -</color> |= Redis cache (prefs, unread count, пунктир) |
   |= <color:#AD1457>- - -</color> |= SMTP Email через MailKit (пунктир) |
+  |= <color:#7B1FA2>- - -</color> |= SignalR push (INotificationPusher → Hub → Frontend) |
+  |= <color:#2E7D32>━━━━━</color> |= WebSocket соединение Frontend ↔ Hub |
 endlegend
 
 @enduml
