@@ -113,6 +113,36 @@ class UserNotificationPreference {
     ~ CanEmailMandatory : bool
 }
 
+' ─── SignalR push infrastructure ─────────────────────────────────────────────
+
+interface INotificationPusher <<interface>> {
+    + PushAsync(userId, notification, ct) : Task
+}
+
+class NotificationPushDto <<record>> {
+    + Id : Guid
+    + Type : string
+    + Title : string
+    + Body : string
+    + CreatedAt : DateTimeOffset
+    --
+    + {static} From(n : Notification) : NotificationPushDto
+}
+
+class NotificationHub <<SignalR Hub>> {
+    .. [Authorize] ..
+    .. пустой, фронтенд только слушает ..
+}
+
+class SignalRNotificationPusher {
+    - hub : IHubContext<NotificationHub>
+    --
+    + PushAsync(userId, notification, ct) : Task
+}
+
+SignalRNotificationPusher ..|> INotificationPusher
+SignalRNotificationPusher --> NotificationHub : IHubContext<>
+
 ' ─── Email infrastructure ────────────────────────────────────────────────────
 
 interface IEmailService <<interface>> {
@@ -182,7 +212,8 @@ note right of Notification
 
   DeliveryChannel определяет
   способ отправки:
-  InApp → запись в таблицу (polling/SSE)
+  InApp → запись в таблицу
+         + SignalR push (WS)
   Email → SMTP-клиент
   Push  → FCM / APNs (future)
 end note
@@ -254,6 +285,14 @@ legend bottom
   |= Класс C# |= Таблица в БД |= Описание |
   | Notification | Notifications | Уведомление пользователю с Payload (jsonb) для диплинков |
   | UserNotificationPreference | UserNotificationPreferences | Настройки уведомлений + email-преференсы (1:1 с пользователем) |
+
+  <b>Инфраструктура SignalR push</b>
+  |= Класс |= Тип |= Описание |
+  | INotificationPusher | interface | Контракт мгновенного пуша в Domain |
+  | SignalRNotificationPusher | class | Реализация через IHubContext<NotificationHub> |
+  | NotificationHub | SignalR Hub | Пустой [Authorize] хаб, фронтенд только слушает |
+  | NotificationPushDto | record | Payload пуша: Id, Type, Title, Body, CreatedAt |
+  | SubClaimUserIdProvider | class | Читает "sub" claim для Clients.User() |
 
   <b>Инфраструктура email</b>
   |= Класс |= Тип |= Описание |
