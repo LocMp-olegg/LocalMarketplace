@@ -1,11 +1,12 @@
 using System.Text.Json;
 using LocMp.Contracts.Orders;
-using LocMp.Notification.Infrastructure.Services;
+using LocMp.Notification.Domain;
 using LocMp.Notification.Domain.Enums;
 using LocMp.Notification.Infrastructure.Cache;
 using LocMp.Notification.Infrastructure.Email;
 using LocMp.Notification.Infrastructure.Options;
 using LocMp.Notification.Infrastructure.Persistence;
+using LocMp.Notification.Infrastructure.Services;
 using MassTransit;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
@@ -17,7 +18,8 @@ public sealed class OrderCompletedConsumer(
     NotificationDbContext db,
     IDistributedCache cache,
     IEmailService email,
-    IOptions<FrontendOptions> frontend)
+    IOptions<FrontendOptions> frontend,
+    INotificationPusher pusher)
     : IConsumer<OrderCompletedEvent>
 {
     public async Task Consume(ConsumeContext<OrderCompletedEvent> ctx)
@@ -28,7 +30,7 @@ public sealed class OrderCompletedConsumer(
         if (prefs.OrderUpdates)
         {
             var payload = JsonDocument.Parse(JsonSerializer.Serialize(new { orderId = msg.OrderId }));
-            db.Notifications.Add(new NotificationEntity(Guid.NewGuid())
+            var notif = new NotificationEntity(Guid.NewGuid())
             {
                 UserId = msg.BuyerId,
                 Type = NotificationType.OrderCompleted,
@@ -39,9 +41,11 @@ public sealed class OrderCompletedConsumer(
                 Payload = payload,
                 SentAt = msg.OccurredAt,
                 CreatedAt = msg.OccurredAt
-            });
+            };
+            db.Notifications.Add(notif);
             await db.SaveChangesAsync(ctx.CancellationToken);
             await cache.RemoveAsync(NotificationCacheKeys.UnreadCount(msg.BuyerId), ctx.CancellationToken);
+            await pusher.PushAsync(msg.BuyerId, NotificationPushDto.From(notif), ctx.CancellationToken);
         }
 
         if (prefs.CanEmailOrder)

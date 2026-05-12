@@ -1,11 +1,12 @@
 using System.Text.Json;
 using LocMp.Contracts.Orders;
-using LocMp.Notification.Infrastructure.Services;
+using LocMp.Notification.Domain;
 using LocMp.Notification.Domain.Enums;
 using LocMp.Notification.Infrastructure.Cache;
 using LocMp.Notification.Infrastructure.Email;
 using LocMp.Notification.Infrastructure.Options;
 using LocMp.Notification.Infrastructure.Persistence;
+using LocMp.Notification.Infrastructure.Services;
 using MassTransit;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
@@ -15,7 +16,7 @@ namespace LocMp.Notification.Infrastructure.Consumers;
 
 public sealed class DisputeResolvedConsumer(
     NotificationDbContext db, IDistributedCache cache, IEmailService email,
-    IOptions<FrontendOptions> frontend)
+    IOptions<FrontendOptions> frontend, INotificationPusher pusher)
     : IConsumer<DisputeResolvedEvent>
 {
     public async Task Consume(ConsumeContext<DisputeResolvedEvent> ctx)
@@ -36,16 +37,25 @@ public sealed class DisputeResolvedConsumer(
         var buyerPrefs = await PreferenceHelper.GetAsync(msg.BuyerId, cache, db, ctx.CancellationToken);
         var sellerPrefs = await PreferenceHelper.GetAsync(msg.SellerId, cache, db, ctx.CancellationToken);
 
-        if (buyerPrefs.OrderUpdates) db.Notifications.Add(Make(msg.BuyerId, buyerBody, payload, now));
-        if (sellerPrefs.OrderUpdates) db.Notifications.Add(Make(msg.SellerId, sellerBody, payload, now));
+        NotificationEntity? buyerNotif = null;
+        NotificationEntity? sellerNotif = null;
 
-        if (buyerPrefs.OrderUpdates || sellerPrefs.OrderUpdates)
+        if (buyerPrefs.OrderUpdates) { buyerNotif = Make(msg.BuyerId, buyerBody, payload, now); db.Notifications.Add(buyerNotif); }
+        if (sellerPrefs.OrderUpdates) { sellerNotif = Make(msg.SellerId, sellerBody, payload, now); db.Notifications.Add(sellerNotif); }
+
+        if (buyerNotif is not null || sellerNotif is not null)
         {
             await db.SaveChangesAsync(ctx.CancellationToken);
-            if (buyerPrefs.OrderUpdates)
+            if (buyerNotif is not null)
+            {
                 await cache.RemoveAsync(NotificationCacheKeys.UnreadCount(msg.BuyerId), ctx.CancellationToken);
-            if (sellerPrefs.OrderUpdates)
+                await pusher.PushAsync(msg.BuyerId, NotificationPushDto.From(buyerNotif), ctx.CancellationToken);
+            }
+            if (sellerNotif is not null)
+            {
                 await cache.RemoveAsync(NotificationCacheKeys.UnreadCount(msg.SellerId), ctx.CancellationToken);
+                await pusher.PushAsync(msg.SellerId, NotificationPushDto.From(sellerNotif), ctx.CancellationToken);
+            }
         }
 
         var orderUrl = frontend.Value.OrderUrl(msg.OrderId);

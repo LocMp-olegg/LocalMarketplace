@@ -1,5 +1,6 @@
 using LocMp.BuildingBlocks.Infrastructure.Extensions;
 using LocMp.Notification.Api.Extensions;
+using LocMp.Notification.Api.Hubs;
 using LocMp.Notification.Application.Extensions;
 using LocMp.Notification.Infrastructure.Extensions;
 using LocMp.Notification.Infrastructure.Persistence;
@@ -50,10 +51,13 @@ try
 
     app.UseSerilogRequestLogging();
 
+    app.UseCors("frontend");
+
     app.UseAuthentication();
     app.UseAuthorization();
 
     app.UseExceptionHandler();
+    app.MapHub<NotificationHub>("/hubs/notifications");
     app.MapControllers();
 
     Log.Information("NotificationService started successfully");

@@ -1,11 +1,12 @@
 using System.Text.Json;
 using LocMp.Contracts.Review;
-using LocMp.Notification.Infrastructure.Services;
+using LocMp.Notification.Domain;
 using LocMp.Notification.Domain.Enums;
 using LocMp.Notification.Infrastructure.Cache;
 using LocMp.Notification.Infrastructure.Email;
 using LocMp.Notification.Infrastructure.Options;
 using LocMp.Notification.Infrastructure.Persistence;
+using LocMp.Notification.Infrastructure.Services;
 using MassTransit;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
@@ -14,8 +15,11 @@ using NotificationEntity = LocMp.Notification.Domain.Entities.Notification;
 namespace LocMp.Notification.Infrastructure.Consumers;
 
 public sealed class ReviewCreatedConsumer(
-    NotificationDbContext db, IDistributedCache cache, IEmailService email,
-    IOptions<FrontendOptions> frontend)
+    NotificationDbContext db,
+    IDistributedCache cache,
+    IEmailService email,
+    IOptions<FrontendOptions> frontend,
+    INotificationPusher pusher)
     : IConsumer<ReviewCreatedEvent>
 {
     public async Task Consume(ConsumeContext<ReviewCreatedEvent> ctx)
@@ -25,9 +29,10 @@ public sealed class ReviewCreatedConsumer(
 
         if (prefs.ReviewReplies)
         {
-            var payload = JsonDocument.Parse(JsonSerializer.Serialize(new { reviewId = msg.ReviewId, subjectId = msg.SubjectId }));
+            var payload = JsonDocument.Parse(JsonSerializer.Serialize(new
+                { reviewId = msg.ReviewId, subjectId = msg.SubjectId, subjectType = msg.SubjectType }));
             var stars = new string('★', msg.Rating) + new string('☆', 5 - msg.Rating);
-            db.Notifications.Add(new NotificationEntity(Guid.NewGuid())
+            var notif = new NotificationEntity(Guid.NewGuid())
             {
                 UserId = msg.SellerId,
                 Type = NotificationType.ReviewReceived,
@@ -38,9 +43,11 @@ public sealed class ReviewCreatedConsumer(
                 Payload = payload,
                 SentAt = msg.OccurredAt,
                 CreatedAt = msg.OccurredAt
-            });
+            };
+            db.Notifications.Add(notif);
             await db.SaveChangesAsync(ctx.CancellationToken);
             await cache.RemoveAsync(NotificationCacheKeys.UnreadCount(msg.SellerId), ctx.CancellationToken);
+            await pusher.PushAsync(msg.SellerId, NotificationPushDto.From(notif), ctx.CancellationToken);
         }
 
         if (prefs.CanEmailReview)

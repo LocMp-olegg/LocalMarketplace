@@ -1,10 +1,11 @@
 using LocMp.Contracts.Identity;
-using LocMp.Notification.Infrastructure.Services;
+using LocMp.Notification.Domain;
 using LocMp.Notification.Domain.Enums;
 using LocMp.Notification.Infrastructure.Cache;
 using LocMp.Notification.Infrastructure.Email;
 using LocMp.Notification.Infrastructure.Options;
 using LocMp.Notification.Infrastructure.Persistence;
+using LocMp.Notification.Infrastructure.Services;
 using MassTransit;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
@@ -14,7 +15,7 @@ namespace LocMp.Notification.Infrastructure.Consumers;
 
 public sealed class UserBecameSellerConsumer(
     NotificationDbContext db, IDistributedCache cache, IEmailService email,
-    IOptions<FrontendOptions> frontend)
+    IOptions<FrontendOptions> frontend, INotificationPusher pusher)
     : IConsumer<UserBecameSellerEvent>
 {
     public async Task Consume(ConsumeContext<UserBecameSellerEvent> ctx)
@@ -24,7 +25,7 @@ public sealed class UserBecameSellerConsumer(
 
         if (prefs.SystemAlerts)
         {
-            db.Notifications.Add(new NotificationEntity(Guid.NewGuid())
+            var notif = new NotificationEntity(Guid.NewGuid())
             {
                 UserId = msg.UserId,
                 Type = NotificationType.SellerActivated,
@@ -34,9 +35,11 @@ public sealed class UserBecameSellerConsumer(
                 DeliveryStatus = DeliveryStatus.Sent,
                 SentAt = msg.OccurredAt,
                 CreatedAt = msg.OccurredAt
-            });
+            };
+            db.Notifications.Add(notif);
             await db.SaveChangesAsync(ctx.CancellationToken);
             await cache.RemoveAsync(NotificationCacheKeys.UnreadCount(msg.UserId), ctx.CancellationToken);
+            await pusher.PushAsync(msg.UserId, NotificationPushDto.From(notif), ctx.CancellationToken);
         }
 
         if (prefs.CanEmailSystem)

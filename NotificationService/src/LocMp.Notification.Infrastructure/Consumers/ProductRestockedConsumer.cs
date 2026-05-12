@@ -1,11 +1,12 @@
 using System.Text.Json;
 using LocMp.Contracts.Catalog;
-using LocMp.Notification.Infrastructure.Services;
+using LocMp.Notification.Domain;
 using LocMp.Notification.Domain.Enums;
 using LocMp.Notification.Infrastructure.Cache;
 using LocMp.Notification.Infrastructure.Email;
 using LocMp.Notification.Infrastructure.Options;
 using LocMp.Notification.Infrastructure.Persistence;
+using LocMp.Notification.Infrastructure.Services;
 using MassTransit;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
@@ -15,7 +16,7 @@ namespace LocMp.Notification.Infrastructure.Consumers;
 
 public sealed class ProductRestockedConsumer(
     NotificationDbContext db, IDistributedCache cache, IEmailService email,
-    IOptions<FrontendOptions> frontend)
+    IOptions<FrontendOptions> frontend, INotificationPusher pusher)
     : IConsumer<ProductRestockedEvent>
 {
     public async Task Consume(ConsumeContext<ProductRestockedEvent> ctx)
@@ -25,7 +26,7 @@ public sealed class ProductRestockedConsumer(
 
         var payload = JsonDocument.Parse(JsonSerializer.Serialize(new { productId = msg.ProductId }));
         var now = msg.OccurredAt;
-        var notifiedUserIds = new List<Guid>();
+        var toNotify = new List<(Guid UserId, NotificationEntity Notif)>();
 
         foreach (var userId in msg.FavoritedByUserIds)
         {
@@ -33,7 +34,7 @@ public sealed class ProductRestockedConsumer(
 
             if (prefs.SystemAlerts)
             {
-                db.Notifications.Add(new NotificationEntity(Guid.NewGuid())
+                var notif = new NotificationEntity(Guid.NewGuid())
                 {
                     UserId = userId,
                     Type = NotificationType.ProductRestocked,
@@ -44,8 +45,9 @@ public sealed class ProductRestockedConsumer(
                     Payload = payload,
                     SentAt = now,
                     CreatedAt = now
-                });
-                notifiedUserIds.Add(userId);
+                };
+                db.Notifications.Add(notif);
+                toNotify.Add((userId, notif));
             }
 
             if (prefs.CanEmailSystem)
@@ -56,10 +58,13 @@ public sealed class ProductRestockedConsumer(
             }
         }
 
-        if (notifiedUserIds.Count == 0) return;
+        if (toNotify.Count == 0) return;
 
         await db.SaveChangesAsync(ctx.CancellationToken);
-        foreach (var userId in notifiedUserIds)
+        foreach (var (userId, notif) in toNotify)
+        {
             await cache.RemoveAsync(NotificationCacheKeys.UnreadCount(userId), ctx.CancellationToken);
+            await pusher.PushAsync(userId, NotificationPushDto.From(notif), ctx.CancellationToken);
+        }
     }
 }
