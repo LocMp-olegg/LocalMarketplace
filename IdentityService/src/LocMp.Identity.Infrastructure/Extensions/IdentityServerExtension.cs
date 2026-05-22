@@ -33,7 +33,8 @@ public static class IdentityServerExtension
                 AlwaysIncludeUserClaimsInIdToken = true,
                 AccessTokenLifetime = c.AccessTokenLifetime,
                 RefreshTokenUsage = TokenUsage.OneTimeOnly,
-                RefreshTokenExpiration = TokenExpiration.Sliding
+                RefreshTokenExpiration = TokenExpiration.Sliding,
+				UpdateAccessTokenClaimsOnRefresh = true
             }).ToList())
             .AddInMemoryIdentityResources(new List<IdentityResource>
             {
