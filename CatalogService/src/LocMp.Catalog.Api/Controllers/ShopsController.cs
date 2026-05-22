@@ -7,6 +7,7 @@ using LocMp.Catalog.Application.Catalog.Commands.Shops.UploadShopAvatar;
 using LocMp.Catalog.Application.Catalog.Commands.Shops.UploadShopPhoto;
 using LocMp.Catalog.Application.Catalog.Queries.Shops.GetShopById;
 using LocMp.Catalog.Application.Catalog.Queries.Shops.GetShopsBySeller;
+using LocMp.Catalog.Application.Catalog.Queries.Shops.GetShopsForMap;
 using LocMp.Catalog.Application.DTOs;
 using LocMp.BuildingBlocks.Infrastructure.Extensions;
 using MediatR;
@@ -20,6 +21,16 @@ namespace LocMp.Catalog.Api.Controllers;
 [Route("api/[controller]")]
 public sealed class ShopsController(ISender sender) : ControllerBase
 {
+    [HttpGet("map")]
+    [AllowAnonymous]
+    public async Task<ActionResult<IReadOnlyList<ShopMapDto>>> GetForMap(
+        [FromQuery] double swLat,
+        [FromQuery] double swLon,
+        [FromQuery] double neLat,
+        [FromQuery] double neLon,
+        CancellationToken ct)
+        => Ok(await sender.Send(new GetShopsForMapQuery(swLat, swLon, neLat, neLon), ct));
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ShopDto>> GetById(Guid id, CancellationToken ct)
         => Ok(await sender.Send(new GetShopByIdQuery(id), ct));
