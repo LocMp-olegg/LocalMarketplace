@@ -209,6 +209,19 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
         DisputeResolvedEvent ..> DisputeOutcome
     }
 
+    package "Chat Events" #E8F5E9 {
+        class ChatMessageSentEvent {
+            + ChatId : Guid
+            + MessageId : Guid
+            + SenderId : Guid
+            + SenderName : string
+            + RecipientIds : Guid[]
+            + ChatType : string
+            + SubjectName : string
+            + OccurredAt : DateTimeOffset
+        }
+    }
+
     package "Review Events" #FDEDEC {
         class RatingAggregateUpdatedEvent {
             + SubjectId : Guid
@@ -258,6 +271,8 @@ note as PublisherNote
   ─────────────────────────────────────────
   ReviewService    → RatingAggregateUpdatedEvent
                      ReviewCreatedEvent
+  ─────────────────────────────────────────
+  ChatService      → ChatMessageSentEvent
 end note
 
 note as ConsumerNote
@@ -304,6 +319,9 @@ note as ConsumerNote
     • ReviewCreatedEvent          → уведомление продавцу о новом отзыве
     • DisputeOpenedEvent          → уведомление покупателю и продавцу
     • DisputeResolvedEvent        → уведомление о решении покупателю и продавцу
+  ─────────────────────────────────────────
+  ChatService:
+    • OrderPlacedEvent   → создаёт чат-комнату (BuyerId + SellerId)
 end note
 
 @enduml

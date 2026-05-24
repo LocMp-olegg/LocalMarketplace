@@ -1,0 +1,162 @@
+@startuml seq-user-registration
+title <size:16><b>Sequence: Регистрация и активация продавца</b></size>\n<color:#555>UserRegisteredEvent → инициализация preferences; UserBecameSellerEvent → SellerReadModel</color>
+
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 12
+skinparam roundcorner 8
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+
+skinparam participant {
+    BackgroundColor White
+    BorderColor #455A64
+    FontColor #1C2833
+}
+skinparam actor {
+    BackgroundColor #E8F5E9
+    BorderColor #2E7D32
+    FontColor #1B5E20
+}
+skinparam queue {
+    BackgroundColor #F3E5F5
+    BorderColor #6A1B9A
+}
+skinparam database {
+    BackgroundColor #EDE7F6
+    BorderColor #6A1B9A
+}
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #FBC02D
+    FontColor #4E342E
+    BorderThickness 1.2
+    roundcorner 6
+}
+skinparam sequence {
+    ArrowColor #2C3E50
+    ArrowThickness 1.4
+    LifeLineBorderColor #90A4AE
+    LifeLineBackgroundColor #FAFAFA
+    BoxBorderColor #B0BEC5
+    BoxBackgroundColor transparent
+    DividerBackgroundColor #ECEFF1
+    DividerBorderColor #90A4AE
+    GroupBorderColor #78909C
+    GroupBackgroundColor transparent
+    GroupHeaderFontColor #263238
+    GroupHeaderFontSize 12
+}
+
+actor       "Пользователь"            as User
+participant "API Gateway\n:5000"      as GW   #ECEFF1
+participant "IdentityService\n:5001"  as IS   #EBF5FB
+participant "CatalogService\n:5002"   as CS   #E8F5E9
+participant "NotificationService\n:5005" as NS #E0F7FA
+participant "AnalyticsService\n:5006" as AS   #FFF3E0
+queue       "RabbitMQ"                as MQ   #F3E5F5
+database    "PostgreSQL\npublic"      as PGIS #EBF5FB
+database    "PostgreSQL\nnotifs"      as PGNS #E0F7FA
+database    "PostgreSQL\ncatalog"     as PGCS #E8F5E9
+
+' ══════════════════════════════════════════════════════════════
+== Регистрация нового пользователя ==
+' ══════════════════════════════════════════════════════════════
+
+User -> GW : POST /api/users\n{email, password, firstName, lastName,\n birthDate, gender, isSeller, lat?, lon?}
+GW   -> IS : публичный эндпоинт (AllowAnonymous)
+activate IS
+
+IS   -> IS : RegisterUserCommand\nValidationBehavior (FluentValidation)\n→ уникальность email/username
+
+IS   -> PGIS : UserManager.CreateAsync()\nINSERT AspNetUsers{Id, Email, FirstName, ...}\nINSERT AspNetUserRoles{userId, roleId="User"}
+
+alt isSeller = true
+    IS -> PGIS : UserManager.AddToRoleAsync("Seller")\nINSERT AspNetUserRoles{userId, roleId="Seller"}
+end
+
+IS   -> MQ   : <color:#6A1B9A>UserRegisteredEvent</color>\n{userId, email, displayName}
+
+opt isSeller = true
+    IS -> MQ : <color:#6A1B9A>UserBecameSellerEvent</color>\n{userId, displayName}
+end
+
+IS  --> User : 201 Created {userId}
+deactivate IS
+
+note over IS
+  Оба события публикуются в одном
+  handler'е — если isSeller=true,
+  то UserRegisteredEvent + UserBecameSellerEvent
+  публикуются сразу при регистрации,
+  без участия администратора.
+end note
+
+' ══════════════════════════════════════════════════════════════
+== Обработка UserRegisteredEvent ==
+' ══════════════════════════════════════════════════════════════
+
+par Параллельная обработка UserRegisteredEvent
+    MQ -> NS : <color:#B71C1C>consume UserRegisteredEvent</color>
+    activate NS
+    NS -> PGNS : INSERT UserNotificationPreferences\n{userId,\n email = event.Email,\n OrderUpdates = true,\n ReviewReplies = true,\n SystemAlerts = true,\n EmailEnabled = true, ...}
+    deactivate NS
+
+    MQ -> AS : <color:#B71C1C>UserRegisteredEvent</color>\n→ PlatformDailySummary.NewRegistrations++
+end
+
+' ══════════════════════════════════════════════════════════════
+== Обработка UserBecameSellerEvent (если isSeller = true) ==
+' ══════════════════════════════════════════════════════════════
+
+par Параллельная обработка UserBecameSellerEvent
+    MQ -> CS : <color:#B71C1C>consume UserBecameSellerEvent</color>
+    activate CS
+    CS -> PGCS : INSERT SellerReadModels\n{sellerId = userId,\n displayName,\n avatarUrl = null,\n averageRating = 0,\n reviewCount = 0,\n lastSyncedAt = now}
+    note over PGCS
+      CatalogService хранит локальную
+      копию данных продавца, чтобы
+      показывать имя и рейтинг на карточке
+      товара без HTTP-запроса в Identity.
+    end note
+    deactivate CS
+
+    MQ -> NS : <color:#B71C1C>consume UserBecameSellerEvent</color>
+    activate NS
+    NS -> PGNS : INSERT Notification\n{userId, type=SellerActivated,\n title="Аккаунт продавца активирован",\n body="Добро пожаловать! ...",\n channel=InApp}
+    NS -> NS   : email (CanEmailSystem)?\n→ SMTP via MailKit
+    deactivate NS
+end
+
+' ══════════════════════════════════════════════════════════════
+== Аутентификация (OAuth2 ROPC) ==
+' ══════════════════════════════════════════════════════════════
+
+User -> IS : POST /connect/token\n{grant_type=password,\n client_id, client_secret,\n username, password,\n scope="api offline_access"}
+activate IS
+IS   -> IS : Duende IdentityServer\nProfileService → загрузить claims\n(email, username, roles[])
+IS  --> User : {\n  access_token: JWT (TTL 3600s),\n  refresh_token: ...,\n  token_type: Bearer\n}
+deactivate IS
+
+note over IS
+  JWT claims: sub, email, username
+  role[] = ["User"] или ["User","Seller"]
+  Валидируется Gateway и каждым
+  сервисом независимо.
+end note
+
+' ══════════════════════════════════════════════════════════════
+== Обновление профиля продавца ==
+' ══════════════════════════════════════════════════════════════
+
+User -> GW  : PUT /api/identity/user-profiles/me\n{firstName, lastName, avatarUrl?}
+GW   -> IS  : Auth JWT (Seller)
+activate IS
+IS   -> PGIS : UPDATE AspNetUsers{FirstName, LastName}
+IS   -> MQ   : <color:#6A1B9A>UserProfileUpdatedEvent</color>\n{userId, displayName, avatarUrl}
+IS  --> User : 200 UserProfileDto
+deactivate IS
+
+MQ -> CS : <color:#B71C1C>consume UserProfileUpdatedEvent</color>\n→ UPDATE SellerReadModels\n   SET DisplayName = newName,\n       AvatarUrl = newAvatar,\n       LastSyncedAt = now
+
+@enduml

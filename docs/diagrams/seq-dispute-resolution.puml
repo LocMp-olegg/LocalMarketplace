@@ -1,0 +1,187 @@
+@startuml seq-dispute-resolution
+title <size:16><b>Sequence: Открытие и разрешение спора</b></size>\n<color:#555>Dispute Lifecycle: OpenDispute → AdminResolve → автоотзыв (DisputeResolvedEvent)</color>
+
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 12
+skinparam roundcorner 8
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+
+skinparam participant {
+    BackgroundColor White
+    BorderColor #455A64
+    FontColor #1C2833
+}
+skinparam actor {
+    BackgroundColor #E8F5E9
+    BorderColor #2E7D32
+    FontColor #1B5E20
+}
+skinparam queue {
+    BackgroundColor #F3E5F5
+    BorderColor #6A1B9A
+}
+skinparam database {
+    BackgroundColor #EDE7F6
+    BorderColor #6A1B9A
+}
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #FBC02D
+    FontColor #4E342E
+    BorderThickness 1.2
+    roundcorner 6
+}
+skinparam sequence {
+    ArrowColor #2C3E50
+    ArrowThickness 1.4
+    LifeLineBorderColor #90A4AE
+    LifeLineBackgroundColor #FAFAFA
+    BoxBorderColor #B0BEC5
+    BoxBackgroundColor transparent
+    DividerBackgroundColor #ECEFF1
+    DividerBorderColor #90A4AE
+    GroupBorderColor #78909C
+    GroupBackgroundColor transparent
+    GroupHeaderFontColor #263238
+    GroupHeaderFontSize 12
+}
+
+actor       "Покупатель"              as Buyer
+actor       "Продавец"                as Seller
+actor       "Администратор"           as Admin
+participant "API Gateway\n:5000"      as GW   #ECEFF1
+participant "OrderService\n:5003"     as OS   #EDE7F6
+participant "ReviewService\n:5004"    as RS   #FDEDEC
+participant "CatalogService\n:5002"   as CS   #E8F5E9
+participant "NotificationService\n:5005" as NS #E0F7FA
+participant "AnalyticsService\n:5006" as AS   #FFF3E0
+queue       "RabbitMQ"                as MQ   #F3E5F5
+database    "PostgreSQL\norders"      as PGOS #EDE7F6
+database    "PostgreSQL\nreviews"     as PGRS #FDEDEC
+database    "PostgreSQL\ncatalog"     as PGCS #E8F5E9
+
+' ══════════════════════════════════════════════════════════════
+== Предусловие: заказ в статусе Confirmed или выше ==
+' ══════════════════════════════════════════════════════════════
+
+note over Buyer, PGOS
+  Предусловие: заказ существует и имеет статус
+  Confirmed / ReadyForPickup / InDelivery.
+  Инициировать спор может покупатель или продавец.
+end note
+
+' ══════════════════════════════════════════════════════════════
+== Покупатель открывает спор ==
+' ══════════════════════════════════════════════════════════════
+
+Buyer -> GW : POST /api/orders/disputes\n{orderId, disputeType=NotDelivered, description}
+GW    -> OS : Auth JWT (Buyer)
+activate OS
+
+OS -> PGOS : SELECT Order WHERE Id = orderId AND BuyerId = currentUser
+OS -> PGOS : UPDATE Orders SET Status = Disputed\nINSERT Disputes{orderId, type, initiatorId, description}\nINSERT OrderStatusHistory{→Disputed}
+
+OS -> MQ   : <color:#6A1B9A>DisputeOpenedEvent</color>\n{disputeId, orderId, buyerId, sellerId,\n initiatorId, disputeType=NotDelivered}
+OS -> MQ   : <color:#6A1B9A>OrderStatusChangedEvent</color>{→Disputed}
+OS --> Buyer : 201 DisputeDto{disputeId}
+deactivate OS
+
+note over PGOS
+  DisputeType:
+  NotDelivered = 1
+  WrongItem    = 2
+  DefectiveItem = 3
+  CourierIssue  = 4
+  Other         = 5
+end note
+
+' ══════════════════════════════════════════════════════════════
+== Уведомления об открытии спора ==
+' ══════════════════════════════════════════════════════════════
+
+par Параллельная обработка DisputeOpenedEvent
+    MQ -> NS : <color:#B71C1C>DisputeOpenedEvent</color>\n→ уведомление покупателю\n«Спор #X открыт, ожидайте решения»\n+ email (CanEmailMandatory — игнорирует EmailEnabled)
+
+    MQ -> NS : <color:#B71C1C>DisputeOpenedEvent</color>\n→ уведомление продавцу\n«Открыт спор по заказу #{orderId}»\n+ email (CanEmailMandatory)
+
+    MQ -> AS : <color:#B71C1C>DisputeOpenedEvent</color>\n→ DisputeSummary.OpenedCount++\n→ PlatformDailySummary.ActiveDisputes++
+end
+
+note over NS
+  CanEmailMandatory = Email != null
+  Обязательные уведомления (Dispute, Block)
+  игнорируют флаг EmailEnabled — доставляются
+  при наличии адреса электронной почты.
+end note
+
+' ══════════════════════════════════════════════════════════════
+== Администратор рассматривает и решает спор ==
+' ══════════════════════════════════════════════════════════════
+
+Admin -> GW : GET /api/orders/disputes/{disputeId}
+GW    -> OS : Admin JWT
+OS    -> PGOS : SELECT Dispute + Order + OrderItems + OrderStatusHistory
+OS   --> Admin : DisputeDetailsDto
+
+Admin -> GW  : POST /api/orders/disputes/{id}/resolve\n{outcome=BuyerFavored, resolution="Товар не был доставлен"}
+GW    -> OS  : Admin JWT
+activate OS
+
+OS -> PGOS   : UPDATE Disputes SET ResolvedAt = now, Outcome = BuyerFavored\nINSERT OrderStatusHistory
+
+alt outcome = BuyerFavored
+    OS -> PGOS : UPDATE Orders SET Status = Cancelled\n(снятие резерва произойдёт через событие)
+else outcome = SellerFavored
+    OS -> PGOS : UPDATE Orders SET Status = Completed
+end
+
+OS -> MQ     : <color:#6A1B9A>DisputeResolvedEvent</color>\n{disputeId, orderId, outcome=BuyerFavored,\n buyerId, sellerId, productIds[],\n resolutionMinutes}
+OS -> MQ     : <color:#6A1B9A>OrderStatusChangedEvent</color>{→Cancelled | →Completed}
+OS --> Admin : 200 DisputeDto{resolved}
+deactivate OS
+
+' ══════════════════════════════════════════════════════════════
+== Обработка DisputeResolvedEvent ==
+' ══════════════════════════════════════════════════════════════
+
+par Параллельная обработка DisputeResolvedEvent
+    MQ -> RS : <color:#B71C1C>consume DisputeResolvedEvent</color>
+    activate RS
+    note over RS
+      DisputeResolvedEvent → авто-отзыв:
+      • BuyerFavored  → Review{subjectType=Seller, rating=1}
+      • SellerFavored → Review{subjectType=Seller, rating=3}
+      Без комментария, автоматически от системы.
+    end note
+    RS -> PGRS : INSERT Review{автоматически, rating}
+    RS -> PGRS : UPDATE RatingAggregates
+    RS -> MQ   : <color:#6A1B9A>RatingAggregateUpdatedEvent</color>
+    RS -> MQ   : <color:#6A1B9A>ReviewCreatedEvent</color>
+    deactivate RS
+
+    MQ -> NS : <color:#B71C1C>DisputeResolvedEvent</color>\n→ уведомление покупателю\n«Спор решён: решение в вашу пользу»\n+ email (CanEmailMandatory)
+
+    MQ -> NS : <color:#B71C1C>DisputeResolvedEvent</color>\n→ уведомление продавцу\n«Спор решён: {outcome}»\n+ email (CanEmailMandatory)
+
+    MQ -> AS : <color:#B71C1C>DisputeResolvedEvent</color>\n→ DisputeSummary.ResolvedCount++\n→ DisputeSummary.AvgResolutionMinutes\n→ DisputeSummary.BuyerFavoredCount++
+end
+
+' ══════════════════════════════════════════════════════════════
+== BuyerFavored: возврат остатков в каталог ==
+' ══════════════════════════════════════════════════════════════
+
+MQ -> CS : <color:#B71C1C>OrderStatusChangedEvent{→Cancelled}</color>
+activate CS
+CS -> PGCS : UPDATE Products SET StockQuantity += reservedQty\nINSERT StockHistory{OrderReleased, +qty}
+CS -> MQ   : <color:#6A1B9A>StockReleasedEvent</color>\n{productId, orderId, releasedQty}
+deactivate CS
+
+note over CS
+  Остатки возвращаются только
+  при статусе Cancelled, который
+  указывает на неисполненный заказ.
+end note
+
+@enduml

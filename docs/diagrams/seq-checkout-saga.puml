@@ -1,0 +1,163 @@
+@startuml seq-checkout-saga
+title <size:16><b>Sequence: Оформление заказа</b></size>\n<color:#555>Сага резервирования остатков (Checkout → StockReserve → Confirm/Cancel)</color>
+
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 12
+skinparam roundcorner 8
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+
+skinparam participant {
+    BackgroundColor White
+    BorderColor #455A64
+    FontColor #1C2833
+}
+skinparam actor {
+    BackgroundColor #E8F5E9
+    BorderColor #2E7D32
+    FontColor #1B5E20
+}
+skinparam queue {
+    BackgroundColor #F3E5F5
+    BorderColor #6A1B9A
+}
+skinparam database {
+    BackgroundColor #EDE7F6
+    BorderColor #6A1B9A
+}
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #FBC02D
+    FontColor #4E342E
+    BorderThickness 1.2
+    roundcorner 6
+}
+skinparam sequence {
+    ArrowColor #2C3E50
+    ArrowThickness 1.4
+    LifeLineBorderColor #90A4AE
+    LifeLineBackgroundColor #FAFAFA
+    BoxBorderColor #B0BEC5
+    BoxBackgroundColor transparent
+    DividerBackgroundColor #ECEFF1
+    DividerBorderColor #90A4AE
+    GroupBorderColor #78909C
+    GroupBackgroundColor transparent
+    GroupHeaderFontColor #263238
+    GroupHeaderFontSize 12
+}
+
+actor       "Покупатель"         as Buyer
+participant "API Gateway\n:5000" as GW       #ECEFF1
+participant "OrderService\n:5003" as OS      #EDE7F6
+database    "Redis\n:6379"        as Redis   #EAFAF1
+participant "CatalogService\n:5002" as CS    #E8F5E9
+database    "PostgreSQL\norders"  as PGOS    #EDE7F6
+queue       "RabbitMQ"            as MQ      #F3E5F5
+database    "PostgreSQL\ncatalog" as PGCS    #E8F5E9
+participant "NotificationService\n:5005" as NS #E0F7FA
+participant "AnalyticsService\n:5006" as AS  #FFF3E0
+
+' ══════════════════════════════════════════════════════════════
+== Добавление товара в корзину ==
+' ══════════════════════════════════════════════════════════════
+
+Buyer -> GW     : POST /api/orders/carts/items\n{productId, quantity}
+GW    -> OS     : HTTP + JWT
+activate OS
+OS    -> Redis  : HSET cart:{userId} {productId} {qty:price:name}\nTTL 24ч
+Redis --> OS    : OK
+OS   --> Buyer  : 200 CartItemDto
+deactivate OS
+
+note over Redis
+  Структура ключа:
+  cart:{userId} → Hash
+  field: {productId}
+  value: {qty}:{price}:{name}
+end note
+
+' ══════════════════════════════════════════════════════════════
+== Checkout — создание заказа ==
+' ══════════════════════════════════════════════════════════════
+
+Buyer -> GW   : POST /api/orders/checkout\n{cartId, deliveryType, address?}
+GW    -> OS   : HTTP + JWT
+activate OS
+
+OS -> Redis   : HGETALL cart:{userId}
+Redis --> OS  : [{productId, qty, price, name}, ...]
+
+loop для каждого уникального продавца в корзине
+
+    OS -> CS  : GET /api/products/{productId}\n(снепшот: name, price, sellerId)
+    CS --> OS : ProductDto
+
+    OS -> CS  : GET /api/shops/{shopId}
+    CS --> OS : ShopDto
+
+    OS -> PGOS : INSERT Order{Status=Pending}\n+ OrderItems (снепшоты)\n+ OrderStatusHistory{null→Pending}
+end
+
+OS -> Redis   : DEL cart:{userId}
+OS -> MQ      : <color:#6A1B9A>StockReserveRequestEvent</color>\n{productId, orderId, quantity}
+OS -> MQ      : <color:#6A1B9A>OrderPlacedEvent</color>\n{orderId, buyerId, sellerId, total}
+OS --> Buyer  : 201 CheckoutResultDto{[orderId, ...]}
+deactivate OS
+
+' ══════════════════════════════════════════════════════════════
+== Сага: CatalogService обрабатывает резервирование ==
+' ══════════════════════════════════════════════════════════════
+
+MQ -> CS     : <color:#B71C1C>consume StockReserveRequestEvent</color>
+activate CS
+CS -> PGCS   : SELECT StockQuantity WHERE Id = productId
+
+alt [Достаточно_остатков]
+    CS -> PGCS : UPDATE Products SET StockQuantity -= qty\nINSERT StockHistory{OrderReserved, -qty}
+    CS -> MQ   : <color:#6A1B9A>StockReservedEvent</color>\n{productId, orderId, reservedQty}
+
+    note over PGCS
+      StockHistory запись:
+      ChangeType = OrderReserved
+      QuantityDelta = -qty
+      ReferenceId   = orderId
+    end note
+
+else [Недостаточно_остатоков]
+    CS -> MQ   : <color:#6A1B9A>StockReservationFailedEvent</color>\n{productId, orderId, reason="Insufficient stock"}
+end
+deactivate CS
+
+' ══════════════════════════════════════════════════════════════
+== OrderService получает результат резервирования ==
+' ══════════════════════════════════════════════════════════════
+
+group StockReservedEvent (успешный путь)
+    MQ -> OS     : <color:#B71C1C>consume StockReservedEvent</color>
+    activate OS
+    OS -> PGOS   : UPDATE Orders SET Status = Confirmed\nINSERT OrderStatusHistory{Pending→Confirmed}
+    OS -> MQ     : <color:#6A1B9A>OrderStatusChangedEvent</color>\n{Pending→Confirmed}
+    deactivate OS
+end
+
+group StockReservationFailedEvent (отказ)
+    MQ -> OS     : <color:#B71C1C>consume StockReservationFailedEvent</color>
+    activate OS
+    OS -> PGOS   : UPDATE Orders SET Status = Cancelled\nINSERT OrderStatusHistory{Pending→Cancelled}
+    OS -> MQ     : <color:#6A1B9A>OrderStatusChangedEvent</color>\n{Pending→Cancelled}
+    deactivate OS
+end
+
+' ══════════════════════════════════════════════════════════════
+== Уведомления и аналитика ==
+' ══════════════════════════════════════════════════════════════
+
+par Параллельная обработка событий
+    MQ -> NS : <color:#B71C1C>OrderPlacedEvent</color>\n→ уведомление продавцу\n«Новый заказ на сумму X ₽»
+    MQ -> NS : <color:#B71C1C>OrderStatusChangedEvent</color>\n→ уведомление покупателю\n(Confirmed: «Заказ подтверждён»\nCancelled: «Заказ отменён»)
+    MQ -> AS : <color:#B71C1C>OrderPlacedEvent</color>\n→ PlatformDailySummary.OrdersPlaced++\n→ GeographicActivity
+end
+
+@enduml

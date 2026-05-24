@@ -1,0 +1,240 @@
+@startuml chat-service-flow
+title <size:16><b>ChatService</b></size>\n<color:#555>Поток обработки запросов (:5007)</color>
+
+' ─── Стиль ───────────────────────────────────────────────────────────────────
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 12
+skinparam roundcorner 10
+skinparam shadowing false
+
+skinparam component {
+    BackgroundColor White
+    BorderColor #00838F
+    FontColor #2C3E50
+    BorderThickness 1.2
+}
+skinparam rectangle {
+    BorderColor #00838F
+    BorderThickness 1.5
+    FontColor #00695C
+    FontStyle bold
+    BackgroundColor transparent
+}
+skinparam database {
+    BackgroundColor #E0F7FA
+    BorderColor #00838F
+}
+skinparam queue {
+    BackgroundColor #F3E5F5
+    BorderColor #6A1B9A
+}
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #FBC02D
+    FontColor #4E342E
+    BorderThickness 1.2
+    roundcorner 6
+}
+
+' ─── Внешние акторы ──────────────────────────────────────────────────────────
+
+component "API Gateway\n:5000" as Gateway #ECEFF1
+
+rectangle "RabbitMQ  (входящие события — 1)" #F3E5F5 {
+    queue "OrderPlacedEvent\n← OrderService" as EV_Order
+}
+
+' ─── ChatService ─────────────────────────────────────────────────────────────
+
+rectangle "**ChatService  :5007**" #E0F7FA {
+
+  rectangle "**Api Layer**" #B2EBF2 {
+    component "**ChatsController**\nGET  /api/chats  ?type ?status  (Auth)\nGET  /api/chats/support  ?userId ?status ?hasUnread  (Admin)\nGET  /api/chats/unread-count  (Auth)\nGET  /api/chats/{id}  (Auth)\nGET  /api/chats/{id}/messages  (Auth)\nPOST /api/chats  (Auth)\nPOST /api/chats/{id}/messages  (Auth, multipart)\nPUT  /api/chats/{id}/messages/read  (Auth)\nDELETE /api/chats/{id}/messages/{messageId}  (Auth)\nPUT  /api/chats/{id}/close  (Auth)" as ChatsCtrl
+
+    component "**ChatHub  (SignalR)**\n/hubs/chat\n→ JoinChat(chatId)\n→ LeaveChat(chatId)\n→ StartTyping(chatId)  →  «typing»\n→ StopTyping(chatId)   →  «typing»\n\nПуш-события клиенту:\n«message_received»  «message_deleted»\n«chat_closed»  «typing»  «messages_read»" as ChatHubComp
+  }
+
+  rectangle "**Application Layer  (MediatR)**" {
+
+    component "**MediatR Pipeline**\nLoggingBehavior\n→ ValidationBehavior (FluentValidation)" as Pipeline
+
+    rectangle "Commands" #DAFAF8 {
+      component "**CreateChatCommand**\nType, InitiatorId, InitiatorName\nTargetUserId?, TargetUserName?, ReferenceId?\nInitialMessage?\n→ дедупликация: Order/Shop/Direct\n→ авто-добавление начального сообщения\n→ SignalR: message_received получателю" as CmdCreate
+
+      component "**SendMessageCommand**\nChatId, SenderId, SenderName\nBody?, Attachments?, IsAdmin\n→ AES-GCM шифрование тела\n→ MinIO загрузка вложений\n→ SignalR: message_received участникам\n→ публикует ChatMessageSentEvent" as CmdSend
+
+      component "**MarkMessagesReadCommand**\nChatId, UserId, IsAdmin\n→ UPDATE ChatParticipant.LastReadAt\n→ UPDATE Message.IsRead WHERE SenderId ≠ UserId\n→ SignalR: messages_read группе" as CmdRead
+
+      component "**DeleteMessageCommand**\nMessageId, UserId, IsAdmin\n→ IsDeleted = true, DeletedAt = now\n→ SignalR: message_deleted группе\n\n**CloseChatCommand**\nChatId, UserId, IsAdmin\n→ Status = Closed, ClosedAt = now\n→ SignalR: chat_closed группе" as CmdMisc
+    }
+
+    rectangle "Queries" #DAFAF8 {
+      component "**GetMyChatsQuery**  (Auth)\n→ только чаты где UserId = участник\n→ включает UnreadCount\n\n**GetSupportChatsQuery**  (Admin)\n→ все чаты Type=Support\n→ фильтры: userId, status, hasUnread\n→ сортировка: Newest | MostUnread" as QChats
+
+      component "**GetChatByIdQuery**  (Auth / Admin)\nGetChatMessagesQuery  (Auth / Admin, paged)\nGetUnreadCountQuery   (Auth / Admin)" as QMisc
+    }
+
+    rectangle "Consumers  (MassTransit) — 1 консьюмер" #E8F5E9 {
+      component "**OrderPlacedConsumer**\n← OrderPlacedEvent\n→ INSERT Chat{Type=Order, Status=Active}\n   ReferenceId = OrderId\n   EncryptionKey = GenerateChatKey()\n→ INSERT ChatParticipant{BuyerId, Initiator}\n→ INSERT ChatParticipant{SellerId, Responder}" as ConsOrder
+    }
+  }
+
+  rectangle "**Infrastructure Layer**" #B2EBF2 {
+    component "**ChatDbContext**\n(EF Core 10)\nschema: chat\nChats, ChatParticipants,\nMessages, MessageAttachments" as DbCtx
+
+    component "**AesChatEncryptionService**\n(AES-GCM, IChatEncryptionService)\nMasterKey шифрует per-chat ключ\nPer-chat ключ шифрует каждое сообщение\nDecrypt вызывается в маппере (DTOs — plaintext)" as AesEnc
+
+    component "**MassTransitEventBus**\n(IEventBus)\n→ ChatMessageSentEvent\n{ChatId, MessageId, SenderId,\n SenderName, RecipientIds[],\n ChatType, SubjectName?}" as EventBus
+
+    component "**MinIO Adapter**\n(IStorageService)\nbucket: chat-attachments\nПуть: chat-attachments/{chatId}/{messageId}/{guid}.ext" as MinIOAdapt
+
+    component "**SignalRChatNotifier**\n(IChatNotifier)\nПо chatId.ToString() → группа участников\nПо userId → персональный канал\nAdmin group → все Support сообщения\nSupport: admin авто-добавляется как\nParticipantRole.Admin при первом ответе" as SRNotifier
+  }
+}
+
+' ─── Внешние системы ─────────────────────────────────────────────────────────
+
+database "**PostgreSQL** :5430\nschema: chat\n(Chats, ChatParticipants,\nMessages, MessageAttachments)" as DB #E0F7FA
+component "**MinIO** :9000\nbucket: chat-attachments" as MinIO #FFF3E0
+queue "**RabbitMQ** :5672\n(исходящие события)" as MQ_OUT #F3E5F5
+component "**Клиент**\n(браузер / мобильное приложение)\nSignalR WebSocket" as Client #ECEFF1
+component "**NotificationService**\n:5005" as NS #ECEFF1
+
+' ─── Связи ───────────────────────────────────────────────────────────────────
+
+' Gateway → API
+Gateway -[#00838F,bold]-> ChatsCtrl  : HTTP + JWT
+Gateway -[#00838F,bold]-> ChatHubComp : WS + JWT
+
+' API → MediatR
+ChatsCtrl -[#00838F]-> Pipeline : ISender.Send()
+
+' Pipeline → Handlers
+Pipeline -[#00838F]-> CmdCreate
+Pipeline -[#00838F]-> CmdSend
+Pipeline -[#00838F]-> CmdRead
+Pipeline -[#00838F]-> CmdMisc
+Pipeline -[#00838F]-> QChats
+Pipeline -[#00838F]-> QMisc
+
+' Consumer
+EV_Order -[#B71C1C,dashed]-> ConsOrder : consume
+
+' Commands → Infrastructure
+CmdCreate -[#795548]-> DbCtx
+CmdCreate -[#009688,dashed]-> AesEnc   : GenerateChatKey()
+CmdCreate -[#7B1FA2,dashed]-> SRNotifier
+
+CmdSend -[#795548]-> DbCtx
+CmdSend -[#009688,dashed]-> AesEnc     : Encrypt(body, chatKey)
+CmdSend -[#E65100,dashed]-> MinIOAdapt : вложения
+CmdSend -[#7B1FA2,dashed]-> SRNotifier : message_received
+CmdSend -[#6A1B9A,bold]-> EventBus
+
+CmdRead -[#795548]-> DbCtx
+CmdRead -[#7B1FA2,dashed]-> SRNotifier : messages_read
+
+CmdMisc -[#795548]-> DbCtx
+CmdMisc -[#7B1FA2,dashed]-> SRNotifier : message_deleted / chat_closed
+
+ConsOrder -[#795548]-> DbCtx
+ConsOrder -[#009688,dashed]-> AesEnc   : GenerateChatKey()
+
+' Queries → Infrastructure
+QChats -[#795548]-> DbCtx
+QChats -[#009688,dashed]-> AesEnc     : Decrypt(messages)
+QMisc  -[#795548]-> DbCtx
+QMisc  -[#009688,dashed]-> AesEnc
+
+' Infrastructure → External
+DbCtx      -[#006064,bold]-> DB
+MinIOAdapt -[#E65100,dashed]-> MinIO
+EventBus   -[#6A1B9A,bold]-> MQ_OUT
+SRNotifier -[#7B1FA2,dashed]-> Client  : WebSocket push
+
+MQ_OUT -[#6A1B9A,bold]-> NS : ChatMessageSentEvent\n→ in-app + email уведомление
+
+' Hub → Infrastructure
+ChatHubComp -[#7B1FA2,dashed]-> SRNotifier : typing relay
+
+' ─── Заметки ─────────────────────────────────────────────────────────────────
+
+note right of AesEnc
+  Двухуровневое шифрование AES-GCM:
+  1. Master key (из конфига) шифрует
+     уникальный per-chat ключ (32 байта).
+     Хранится в Chat.EncryptionKey.
+  2. Per-chat ключ шифрует каждое
+     сообщение (Message.EncryptedBody).
+  Формат: Base64(Nonce[12] + Tag[16] + Cipher)
+  Дешифрование только в Application-слое
+  (маппер → MessageDto.Body = plaintext).
+end note
+
+note right of EventBus
+  Публикует 1 событие:
+  • ChatMessageSentEvent
+    {ChatId, MessageId, SenderId,
+     SenderName, RecipientIds[],
+     ChatType, SubjectName?}
+
+  SubjectName = Chat.TargetName
+  (имя магазина для Shop-чатов, null иначе).
+  ChatService не потребляет других событий
+  кроме OrderPlacedEvent.
+end note
+
+note right of ConsOrder
+  OrderPlacedConsumer создаёт чат
+  автоматически при оформлении заказа.
+  Тип Order, ReferenceId = OrderId.
+  Покупатель — Initiator,
+  Продавец — Responder.
+  Инициализирующего сообщения нет —
+  пользователи пишут сами.
+end note
+
+note right of CmdCreate
+  Дедупликация при CreateChatCommand:
+  • Order   → один чат на ReferenceId
+  • Shop    → один чат на (Initiator, ShopId)
+  • Direct  → один чат на пару (User1, User2)
+  • Support → новый чат каждый раз
+  Если чат уже существует — возвращается
+  существующий без создания дублей.
+end note
+
+note bottom of SRNotifier
+  Support-чаты — особый маршрут SignalR:
+  При подключении Admin авто-добавляется
+  в группу "Admins".
+  Все сообщения Support-чатов рассылаются
+  одновременно: группе чата + группе Admins.
+  При первом ответе Admin добавляется как
+  участник (ParticipantRole.Admin), чтобы
+  видеть чат в своём списке.
+end note
+
+note right of QChats
+  GetMyChatsQuery возвращает ChatSummaryDto
+  с UnreadCount — количество сообщений,
+  где SentAt > LastReadAt участника.
+  Admin через GetSupportChatsQuery видит
+  все Support-чаты с фильтрами.
+end note
+
+' ─── Легенда ─────────────────────────────────────────────────────────────────
+
+legend bottom
+  <b>Условные обозначения</b>
+  |= Цвет |= Тип связи |
+  |= <color:#00838F>━━━━━</color> |= HTTP запрос / ISender.Send() (MediatR) |
+  |= <color:#6A1B9A>━━━━━</color> |= Публикация / потребление события RabbitMQ |
+  |= <color:#795548>━━━━━</color> |= Чтение / запись через EF Core |
+  |= <color:#009688>- - -</color> |= AES-GCM шифрование / дешифрование (пунктир) |
+  |= <color:#7B1FA2>- - -</color> |= SignalR WebSocket push (пунктир) |
+  |= <color:#E65100>- - -</color> |= MinIO объектное хранилище (пунктир) |
+  |= <color:#006064>━━━━━</color> |= PostgreSQL подключение |
+endlegend
+
+@enduml
