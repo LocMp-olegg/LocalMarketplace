@@ -151,6 +151,32 @@
         "PeriodTimespan": 10,
         "Limit": 5
       }
+    },
+    {
+      "UpstreamPathTemplate": "/api/chats/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Patch", "Delete" ],
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "localhost", "Port": 5007 }
+      ],
+      "SwaggerKey": "chat-service",
+      "RateLimitOptions": {
+        "ClientWhitelist": [],
+        "EnableRateLimiting": true,
+        "Period": "10s",
+        "PeriodTimespan": 10,
+        "Limit": 10
+      }
+    },
+    {
+      "UpstreamPathTemplate": "/hubs/chat/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post" ],
+      "DownstreamPathTemplate": "/hubs/chat/{everything}",
+      "DownstreamScheme": "ws",
+      "DownstreamHostAndPorts": [
+        { "Host": "localhost", "Port": 5007 }
+      ]
     }
   ],
   "SwaggerEndPoints": [
@@ -211,6 +237,16 @@
           "Name": "AnalyticsService API",
           "Version": "v1",
           "Url": "http://localhost:5006/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "chat-service",
+      "Config": [
+        {
+          "Name": "ChatService API",
+          "Version": "v1",
+          "Url": "http://localhost:5007/swagger/v1/swagger.json"
         }
       ]
     }

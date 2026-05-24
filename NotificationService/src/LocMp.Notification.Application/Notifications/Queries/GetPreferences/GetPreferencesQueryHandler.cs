@@ -16,7 +16,7 @@ public sealed class GetPreferencesQueryHandler(NotificationDbContext db)
                     ?? new UserNotificationPreference { UserId = request.UserId };
 
         return new NotificationPreferenceDto(
-            prefs.OrderUpdates, prefs.ReviewReplies, prefs.SystemAlerts,
-            prefs.EmailEnabled, prefs.EmailOrderUpdates, prefs.EmailReviewReplies);
+            prefs.OrderUpdates, prefs.ReviewReplies, prefs.SystemAlerts, prefs.ChatMessages,
+            prefs.EmailEnabled, prefs.EmailOrderUpdates, prefs.EmailReviewReplies, prefs.EmailChatMessages);
     }
 }

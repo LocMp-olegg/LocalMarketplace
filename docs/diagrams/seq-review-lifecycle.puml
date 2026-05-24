@@ -1,0 +1,168 @@
+@startuml seq-review-lifecycle
+title <size:16><b>Sequence: Жизненный цикл отзыва</b></size>\n<color:#555>Завершение заказа → отзыв → обновление рейтинга (Eventual Consistency)</color>
+
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 12
+skinparam roundcorner 8
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+
+skinparam participant {
+    BackgroundColor White
+    BorderColor #455A64
+    FontColor #1C2833
+}
+skinparam actor {
+    BackgroundColor #E8F5E9
+    BorderColor #2E7D32
+    FontColor #1B5E20
+}
+skinparam queue {
+    BackgroundColor #F3E5F5
+    BorderColor #6A1B9A
+}
+skinparam database {
+    BackgroundColor #EDE7F6
+    BorderColor #6A1B9A
+}
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #FBC02D
+    FontColor #4E342E
+    BorderThickness 1.2
+    roundcorner 6
+}
+skinparam sequence {
+    ArrowColor #2C3E50
+    ArrowThickness 1.4
+    LifeLineBorderColor #90A4AE
+    LifeLineBackgroundColor #FAFAFA
+    BoxBorderColor #B0BEC5
+    BoxBackgroundColor transparent
+    DividerBackgroundColor #ECEFF1
+    DividerBorderColor #90A4AE
+    GroupBorderColor #78909C
+    GroupBackgroundColor transparent
+    GroupHeaderFontColor #263238
+    GroupHeaderFontSize 12
+}
+
+actor       "Покупатель"              as Buyer
+actor       "Продавец"                as Seller
+participant "API Gateway\n:5000"      as GW    #ECEFF1
+participant "OrderService\n:5003"     as OS    #EDE7F6
+participant "ReviewService\n:5004"    as RS    #FDEDEC
+participant "CatalogService\n:5002"   as CS    #E8F5E9
+participant "IdentityService\n:5001"  as IS    #EBF5FB
+participant "NotificationService\n:5005" as NS #E0F7FA
+participant "AnalyticsService\n:5006" as AS    #FFF3E0
+queue       "RabbitMQ"                as MQ    #F3E5F5
+database    "PostgreSQL\nreviews"     as PGRS  #FDEDEC
+database    "PostgreSQL\ncatalog"     as PGCS  #E8F5E9
+database    "PostgreSQL\npublic"      as PGIS  #EBF5FB
+
+' ══════════════════════════════════════════════════════════════
+== Продавец: переводит заказ через статусы к Completed ==
+' ══════════════════════════════════════════════════════════════
+
+Seller -> GW  : POST /api/orders/{id}/confirm
+GW     -> OS  : Seller JWT
+OS     -> MQ  : <color:#6A1B9A>OrderStatusChangedEvent</color>{Confirmed}
+MQ     -> NS  : → уведомление покупателю «Заказ подтверждён»
+
+Seller -> GW  : POST /api/orders/{id}/ready
+GW     -> OS  : Seller JWT
+OS     -> MQ  : <color:#6A1B9A>OrderStatusChangedEvent</color>{ReadyForPickup}
+MQ     -> NS  : → уведомление покупателю «Готов к самовывозу»
+
+' ══════════════════════════════════════════════════════════════
+== Покупатель подтверждает получение ==
+' ══════════════════════════════════════════════════════════════
+
+Buyer -> GW  : POST /api/orders/{id}/complete
+GW    -> OS  : Auth JWT
+activate OS
+OS    -> OS  : CompleteOrderCommand\nReadyForPickup → Completed\nINSERT OrderStatusHistory
+
+OS    -> MQ  : <color:#6A1B9A>OrderCompletedEvent</color>\n{orderId, buyerId, sellerId, products[], total}
+OS    -> MQ  : <color:#6A1B9A>OrderStatusChangedEvent</color>{Completed}
+OS   --> Buyer: 200 OrderDto
+deactivate OS
+
+' ══════════════════════════════════════════════════════════════
+== Параллельная обработка OrderCompletedEvent ==
+' ══════════════════════════════════════════════════════════════
+
+par Параллельная обработка OrderCompletedEvent
+    MQ -> RS : <color:#B71C1C>consume OrderCompletedEvent</color>
+    activate RS
+    RS -> PGRS : INSERT OrderReviewPermission\n{orderId, buyerId, isUnlocked=true}
+    note over PGRS
+      Отзыв можно оставить только
+      после завершения заказа.
+      Проверяется в CreateReviewCommand.
+    end note
+    deactivate RS
+
+    MQ -> NS : <color:#B71C1C>OrderCompletedEvent</color>\n→ уведомление покупателю\n«Получен! Оцените заказ»\n+ email (CanEmailOrder)
+
+    MQ -> AS : <color:#B71C1C>OrderCompletedEvent</color>\n→ SellerSalesSummary{Daily,Weekly,Monthly}.TotalRevenue += total\n→ TopProduct.PurchaseCount++\n→ SellerLeaderboard
+end
+
+' ══════════════════════════════════════════════════════════════
+== Покупатель оставляет отзыв ==
+' ══════════════════════════════════════════════════════════════
+
+Buyer -> GW  : POST /api/reviews\n{orderId, subjectType=Seller, rating=5, comment}
+GW    -> RS  : Auth JWT
+activate RS
+RS    -> PGRS : SELECT OrderReviewPermission WHERE orderId = ? AND isUnlocked = true
+PGRS --> RS   : Разрешено
+
+RS -> PGRS   : INSERT Review{orderId, reviewerId, subjectType, subjectId, rating, comment}
+
+RS -> PGRS   : UPDATE RatingAggregates\n(AverageRating, ReviewCount, FiveStars++, ...)
+
+RS -> MQ     : <color:#6A1B9A>ReviewCreatedEvent</color>\n{reviewId, subjectId=sellerId, rating, comment}
+RS -> MQ     : <color:#6A1B9A>RatingAggregateUpdatedEvent</color>\n{subjectId=sellerId, subjectType=Seller, newAverage, reviewCount}
+RS --> Buyer : 201 ReviewDto
+deactivate RS
+
+note over PGRS
+  RatingAggregates — pre-computed:
+  AverageRating = sum(ratings) / count
+  Распределение: OneStar..FiveStar
+  Инкрементальное обновление, без
+  пересчёта всей истории.
+end note
+
+' ══════════════════════════════════════════════════════════════
+== Обновление денормализованных данных (Eventual Consistency) ==
+' ══════════════════════════════════════════════════════════════
+
+par Параллельная обработка RatingAggregateUpdatedEvent
+    MQ -> CS : <color:#B71C1C>RatingAggregateUpdatedEvent</color>
+    activate CS
+    CS -> PGCS : UPDATE SellerReadModels\nSET AverageRating = newAverage,\n    ReviewCount = reviewCount,\n    LastSyncedAt = now
+    deactivate CS
+
+    MQ -> IS : <color:#B71C1C>RatingAggregateUpdatedEvent</color>
+    activate IS
+    IS -> PGIS : UPDATE SellerReadModels\nSET AverageRating = newAverage,\n    ReviewCount = reviewCount
+    deactivate IS
+
+    MQ -> NS : <color:#B71C1C>ReviewCreatedEvent</color>\n→ уведомление продавцу\n«Новый отзыв: {rating}★ — {comment[:50]}»\n+ email (CanEmailReview)
+
+    MQ -> AS : <color:#B71C1C>RatingAggregateUpdatedEvent</color>\n→ SellerRatingHistory\n→ PlatformDailySummary.NewReviews++
+end
+
+note over CS, IS
+  Паттерн Local Read Model:
+  CatalogService и IdentityService держат
+  копию рейтинга у себя, чтобы не обращаться
+  к ReviewService при каждом запросе товара
+  или профиля продавца.
+end note
+
+@enduml

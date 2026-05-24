@@ -42,8 +42,10 @@ skinparam stereotypeEBackgroundColor #D5F5E3
 ' ─── Enums ───────────────────────────────────────────────────────────────────
 
 enum ChatType {
-    Order = 1
+    Order   = 1
     Support = 2
+    Shop    = 3
+    Direct  = 4
 }
 
 enum ChatStatus {
@@ -51,21 +53,42 @@ enum ChatStatus {
     Closed = 2
 }
 
+enum ParticipantRole {
+    Initiator = 1
+    Responder = 2
+    Admin     = 3
+}
+
+enum MessageType {
+    User   = 1
+    System = 2
+}
+
+enum MediaType {
+    Image = 1
+    Video = 2
+}
+
 ' ─── Entities ─────────────────────────────────────────────────────────────────
 
 class Chat <<aggregate root>> {
     + Id : Guid <<PK>>
     + Type : ChatType
-    + ReferenceId : Guid? <<logical ref: OrderId / null>>
     + Status : ChatStatus
+    + ReferenceId : Guid? <<logical ref: OrderId / ShopId>>
+    + EncryptionKey : string <<AES-GCM, encrypted by master key>>
+    + InitiatorName : string?
+    + TargetName : string?
+    + LastMessageAt : DateTimeOffset?
     + CreatedAt : DateTimeOffset
     + ClosedAt : DateTimeOffset?
 }
 
-class ChatParticipant <<junction>> {
+class ChatParticipant {
     + Id : Guid <<PK>>
     + ChatId : Guid <<FK>>
     + UserId : Guid <<logical ref: Identity>>
+    + Role : ParticipantRole
     + JoinedAt : DateTimeOffset
     + LastReadAt : DateTimeOffset?
 }
@@ -74,64 +97,101 @@ class Message {
     + Id : Guid <<PK>>
     + ChatId : Guid <<FK>>
     + SenderId : Guid <<logical ref: Identity>>
-    + Body : string
+    + SenderName : string
+    + Type : MessageType
+    + EncryptedBody : string <<AES-256-GCM>>
     + SentAt : DateTimeOffset
     + IsRead : bool
     + ReadAt : DateTimeOffset?
+    + IsDeleted : bool
+    + DeletedAt : DateTimeOffset?
+}
+
+class MessageAttachment {
+    + Id : Guid <<PK>>
+    + MessageId : Guid <<FK>>
+    + FileName : string
+    + MimeType : string
+    + MediaType : MediaType
+    + FileSize : long
+    + StorageKey : string <<MinIO: chat-attachments/{chatId}/{msgId}/{uuid}>>
+    + UploadedAt : DateTimeOffset
 }
 
 ' ─── Relationships ────────────────────────────────────────────────────────────
 
 Chat "1" *-down- "2..*" ChatParticipant : участники >
-Chat "1" *-down- "0..*" Message : сообщения >
+Chat "1" *-down- "0..*" Message         : сообщения >
+Message "1" *-down- "0..*" MessageAttachment : вложения >
 
-Chat ..> ChatType : использует
-Chat ..> ChatStatus : использует
+Chat ..> ChatType       : использует
+Chat ..> ChatStatus     : использует
+ChatParticipant ..> ParticipantRole : использует
+Message ..> MessageType : использует
+MessageAttachment ..> MediaType : использует
 
 ' ─── Notes ───────────────────────────────────────────────────────────────────
 
 note right of Chat
-  Order-чат создаётся автоматически
-  при получении OrderPlacedEvent:
-  участники = BuyerId + SellerId.
+  <b>Создание чата:</b>
+  Order   → автоматически при OrderPlacedEvent
+            (BuyerId + SellerId как участники)
+  Support → вручную через POST /api/chats
+  Shop    → вручную (ReferenceId = ShopId)
+  Direct  → вручную (между двумя пользователями)
 
-  Support-чат создаётся вручную
-  пользователем: участники =
-  UserId + любой Admin.
+  initialMessage обязателен при создании
+  через API — пустые чаты не создаются.
 
-  Закрывается при OrderCompleted,
-  OrderCancelled или UserBlocked.
+  Закрытие: OrderCompleted / OrderCancelled
+  или вручную через PUT /api/chats/{id}/close.
 end note
 
 note right of Message
-  Real-time доставка через SignalR.
-  Персистируется в PostgreSQL
-  для истории.
+  <b>Шифрование (двухуровневое):</b>
+  1. Master key (из конфига) шифрует per-chat key
+  2. Per-chat key шифрует каждое сообщение
+  Алгоритм: AES-256-GCM
+  Формат: Base64(Nonce[12] + Tag[16] + Cipher)
 
-  Офлайн-уведомление:
-  ChatMessageSentEvent → MQ
-  → NotificationService (запланировано).
+  Клиент получает расшифрованный text в body.
+  Real-time доставка через SignalR (event: message_received).
+  Офлайн-уведомление: ChatMessageSentEvent → MQ.
 end note
 
 note bottom of ChatParticipant
-  LastReadAt — для отображения
-  счётчика непрочитанных сообщений.
+  LastReadAt — основа счётчика непрочитанных.
+  Admin авто-присоединяется к Support-чату
+  при первом ответе (Role = Admin).
   Нет FK в БД на Identity.
+end note
+
+note right of MessageAttachment
+  Файлы хранятся в MinIO.
+  Bucket: locmp-chat
+  Клиенту возвращается presigned URL.
+  Допустимые типы: изображения + видео.
 end note
 
 ' ─── SignalR Hub ──────────────────────────────────────────────────────────────
 
 note as HubNote
-  <b>ChatHub (SignalR)</b>
-  ────────────────────────────
-  JoinChat(chatId)
-  LeaveChat(chatId)
-  SendMessage(chatId, body)
-  MarkAsRead(chatId, messageId)
-  ────────────────────────────
-  Авторизация: JWT Bearer
-  Backplane: Redis pub/sub
-  (для нескольких инстанций)
+  <b>ChatHub (SignalR) — /hubs/chat</b>
+  ──────────────────────────────────────────
+  <b>Вызовы от клиента:</b>
+  JoinChat(chatId)      — войти в группу
+  LeaveChat(chatId)     — выйти из группы
+  StartTyping(chatId)   — начал вводить
+  StopTyping(chatId)    — прекратил вводить
+  ──────────────────────────────────────────
+  <b>События от сервера:</b>
+  message_received(MessageDto)
+  message_deleted({chatId, messageId})
+  chat_closed({chatId})
+  typing({chatId, userId, userName, isTyping})
+  ──────────────────────────────────────────
+  JWT: передаётся через ?access_token=
+  Backplane: Redis pub/sub (locmp-chat)
 end note
 
 ' ─── Сводная таблица сущностей ───────────────────────────────────────────────
@@ -139,9 +199,10 @@ end note
 legend bottom
   <b>Таблицы сервиса (schema: chat)</b>
   |= Класс C# |= Таблица в БД |= Описание |
-  | Chat | Chats | Чат-комната (Order или Support), агрегат |
-  | ChatParticipant | ChatParticipants | Участники чата (2+ на комнату) |
-  | Message | Messages | Сообщения — персистируются в PostgreSQL |
+  | Chat | Chats | Чат-комната, агрегат |
+  | ChatParticipant | ChatParticipants | Участники (2+ на комнату) |
+  | Message | Messages | Сообщения (зашифрованы AES-GCM) |
+  | MessageAttachment | MessageAttachments | Вложения (файлы в MinIO) |
 endlegend
 
 @enduml

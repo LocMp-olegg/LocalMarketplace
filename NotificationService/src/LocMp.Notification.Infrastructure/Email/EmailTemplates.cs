@@ -76,6 +76,18 @@ internal static class EmailTemplates
              ["actionButton"] = Button(reviewUrl, "Смотреть отзыв"),
          }));
 
+    // ── Chat ──────────────────────────────────────────────────────────────────
+
+    public static (string Subject, string Body) ChatMessage(
+        string senderName, string preview, string? actionUrl = null) =>
+        ($"Новое сообщение от {senderName}",
+         Render("ChatMessage", new()
+         {
+             ["senderName"]   = senderName,
+             ["preview"]      = preview.Length > 120 ? preview[..120] + "…" : preview,
+             ["actionButton"] = Button(actionUrl, "Открыть чат"),
+         }));
+
     // ── Stock ─────────────────────────────────────────────────────────────────
 
     public static (string Subject, string Body) StockDepleted(string productName, string? actionUrl = null) =>

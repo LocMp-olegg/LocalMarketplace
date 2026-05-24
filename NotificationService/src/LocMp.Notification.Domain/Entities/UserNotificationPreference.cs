@@ -8,10 +8,13 @@ public class UserNotificationPreference
     public bool ReviewReplies { get; set; } = true;
     public bool SystemAlerts { get; set; } = true;
 
+    public bool ChatMessages { get; set; } = true;
+
     public string? Email { get; set; }
     public bool EmailEnabled { get; set; } = true;
     public bool EmailOrderUpdates { get; set; } = true;
     public bool EmailReviewReplies { get; set; } = true;
+    public bool EmailChatMessages { get; set; } = true;
 
     public DateTimeOffset? UpdatedAt { get; set; }
 }

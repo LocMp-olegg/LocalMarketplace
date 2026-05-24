@@ -14,5 +14,7 @@ public class UserNotificationPreferenceConfiguration : IEntityTypeConfiguration<
         builder.Property(p => p.OrderUpdates).HasDefaultValue(true);
         builder.Property(p => p.ReviewReplies).HasDefaultValue(true);
         builder.Property(p => p.SystemAlerts).HasDefaultValue(true);
+        builder.Property(p => p.ChatMessages).HasDefaultValue(true);
+        builder.Property(p => p.EmailChatMessages).HasDefaultValue(true);
     }
 }
