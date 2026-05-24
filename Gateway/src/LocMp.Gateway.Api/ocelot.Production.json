@@ -71,6 +71,25 @@
         { "Host": "locmp-analytics", "Port": 8080 }
       ],
       "SwaggerKey": "analytics-service"
+    },
+    {
+      "UpstreamPathTemplate": "/api/chats/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Patch", "Delete" ],
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "locmp-chat", "Port": 8080 }
+      ],
+      "SwaggerKey": "chat-service"
+    },
+    {
+      "UpstreamPathTemplate": "/hubs/chat/{everything}",
+      "UpstreamHttpMethod": [ "Get", "Post" ],
+      "DownstreamPathTemplate": "/hubs/chat/{everything}",
+      "DownstreamScheme": "ws",
+      "DownstreamHostAndPorts": [
+        { "Host": "locmp-chat", "Port": 8080 }
+      ]
     }
   ],
   "SwaggerEndPoints": [
@@ -131,6 +150,16 @@
           "Name": "AnalyticsService API",
           "Version": "v1",
           "Url": "http://locmp-analytics:8080/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "chat-service",
+      "Config": [
+        {
+          "Name": "ChatService API",
+          "Version": "v1",
+          "Url": "http://locmp-chat:8080/swagger/v1/swagger.json"
         }
       ]
     }
