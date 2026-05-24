@@ -7,4 +7,5 @@ public sealed record ChatMessageSentEvent(
     string SenderName,
     Guid[] RecipientIds,
     string ChatType,
+    string? SubjectName,
     DateTimeOffset OccurredAt) : IIntegrationEvent;

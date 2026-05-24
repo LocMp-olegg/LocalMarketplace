@@ -84,6 +84,7 @@ public sealed class SendMessageCommandHandler(
             request.SenderName,
             recipientIds,
             chat.Type.ToString(),
+            chat.TargetName,
             message.SentAt), ct);
 
         return dto;

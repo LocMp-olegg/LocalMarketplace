@@ -8,6 +8,8 @@ public sealed record UpdatePreferencesCommand(
     bool OrderUpdates,
     bool ReviewReplies,
     bool SystemAlerts,
+    bool ChatMessages,
     bool EmailEnabled,
     bool EmailOrderUpdates,
-    bool EmailReviewReplies) : IRequest<NotificationPreferenceDto>;
+    bool EmailReviewReplies,
+    bool EmailChatMessages) : IRequest<NotificationPreferenceDto>;

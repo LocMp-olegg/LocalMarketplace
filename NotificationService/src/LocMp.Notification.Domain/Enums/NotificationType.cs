@@ -18,5 +18,6 @@ public enum NotificationType
     AccountUnblocked = 14,
     DisputeOpened = 15,
     DisputeResolved = 16,
-    ProductRestocked = 17
+    ProductRestocked = 17,
+    NewMessage = 18
 }

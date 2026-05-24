@@ -11,4 +11,5 @@ public sealed class FrontendOptions
     public string ProductEditUrl(Guid productId) => $"{BaseUrl}/seller/products/{productId}/edit";
     public string ReviewUrl(Guid reviewId) => $"{BaseUrl}/reviews/{reviewId}";
     public string SellerShopsUrl() => $"{BaseUrl}/seller/shops";
+    public string ChatUrl(Guid chatId) => $"{BaseUrl}/chats/{chatId}";
 }
