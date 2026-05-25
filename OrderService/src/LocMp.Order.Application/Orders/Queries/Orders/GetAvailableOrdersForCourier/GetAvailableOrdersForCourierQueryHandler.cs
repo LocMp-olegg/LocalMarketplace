@@ -22,7 +22,7 @@ public sealed class GetAvailableOrdersForCourierQueryHandler(OrderDbContext db)
             .Include(o => o.DeliveryAddress)
             .Include(o => o.CourierAssignment)
             .Where(o =>
-                o.DeliveryType == DeliveryType.NeighborCourier &&
+                o.DeliveryType == DeliveryType.Delivery &&
                 o.Status == OrderStatus.Confirmed &&
                 o.CourierAssignment == null &&
                 o.DeliveryAddress != null &&

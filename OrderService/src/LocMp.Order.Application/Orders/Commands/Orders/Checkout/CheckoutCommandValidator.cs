@@ -14,7 +14,7 @@ public sealed class CheckoutCommandValidator : AbstractValidator<CheckoutCommand
         {
             group.RuleFor(g => g.SellerId).NotEmpty();
 
-            group.When(g => g.DeliveryType == DeliveryType.NeighborCourier, () =>
+            group.When(g => g.DeliveryType == DeliveryType.Delivery, () =>
             {
                 group.RuleFor(g => g.DeliveryAddress).NotNull()
                     .WithMessage("Delivery address is required for courier delivery.");

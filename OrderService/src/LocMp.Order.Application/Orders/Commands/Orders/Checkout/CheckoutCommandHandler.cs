@@ -123,7 +123,7 @@ public sealed class CheckoutCommandHandler(
     private async Task ValidateCourierDeliveryAsync(IReadOnlyList<GroupDeliverySettings> groups, CancellationToken ct)
     {
         var courierGroups = groups
-            .Where(g => g.DeliveryType == DeliveryType.NeighborCourier && g.ShopId.HasValue)
+            .Where(g => g.DeliveryType == DeliveryType.Delivery && g.ShopId.HasValue)
             .ToList();
 
         if (courierGroups.Count == 0) return;
@@ -272,7 +272,7 @@ public sealed class CheckoutCommandHandler(
             ChangedAt = now
         };
 
-        if (group.DeliveryType == DeliveryType.NeighborCourier && group.DeliveryAddress is { } addr)
+        if (group.DeliveryType == DeliveryType.Delivery && group.DeliveryAddress is { } addr)
             order.DeliveryAddress = BuildDeliveryAddress(orderId, addr);
 
         return (order, orderItems, statusEntry);

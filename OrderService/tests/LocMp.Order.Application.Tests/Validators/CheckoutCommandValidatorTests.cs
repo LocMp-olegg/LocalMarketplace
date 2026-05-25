@@ -18,7 +18,7 @@ public sealed class CheckoutCommandValidatorTests
     private static GroupDeliverySettings CourierGroup(DeliveryAddressData? address = null) => new(
         SellerId: Guid.NewGuid(),
         ShopId: Guid.NewGuid(),
-        DeliveryType: DeliveryType.NeighborCourier,
+        DeliveryType: DeliveryType.Delivery,
         DeliveryAddress: address ?? ValidAddress());
 
     private static DeliveryAddressData ValidAddress() => new(
@@ -91,7 +91,7 @@ public sealed class CheckoutCommandValidatorTests
         var group = new GroupDeliverySettings(
             SellerId: Guid.NewGuid(),
             ShopId: Guid.NewGuid(),
-            DeliveryType: DeliveryType.NeighborCourier,
+            DeliveryType: DeliveryType.Delivery,
             DeliveryAddress: null);
 
         var cmd = new CheckoutCommand(

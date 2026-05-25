@@ -19,8 +19,8 @@ public sealed class AssignCourierCommandHandler(OrderDbContext db, IEventBus eve
                         .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct)
                     ?? throw new NotFoundException($"Order '{request.OrderId}' not found.");
 
-        if (order.Status != OrderStatus.Confirmed || order.DeliveryType != DeliveryType.NeighborCourier)
-            throw new ConflictException("Order must be Confirmed with NeighborCourier delivery type.");
+        if (order.Status != OrderStatus.Confirmed || order.DeliveryType != DeliveryType.Delivery)
+            throw new ConflictException("Order must be Confirmed with Delivery type.");
 
         if (order.CourierAssignment is not null)
             throw new ConflictException("Courier is already assigned to this order.");
