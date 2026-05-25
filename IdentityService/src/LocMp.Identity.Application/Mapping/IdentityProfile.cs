@@ -1,4 +1,5 @@
 using AutoMapper;
+using LocMp.Identity.Application.DTOs.Courier;
 using LocMp.Identity.Application.DTOs.Role;
 using LocMp.Identity.Application.DTOs.User;
 using LocMp.Identity.Application.DTOs.UserAddress;
@@ -26,5 +27,9 @@ public sealed class IdentityProfile : Profile
         CreateMap<UserAddress, UserAddressDto>()
             .ForMember(d => d.Latitude, o => o.MapFrom(s => s.Location != null ? (double?)s.Location.Y : null))
             .ForMember(d => d.Longitude, o => o.MapFrom(s => s.Location != null ? (double?)s.Location.X : null));
+
+        CreateMap<CourierProfile, CourierProfileDto>()
+            .ForMember(d => d.BaseLatitude, o => o.MapFrom(s => s.BaseLocation != null ? (double?)s.BaseLocation.Y : null))
+            .ForMember(d => d.BaseLongitude, o => o.MapFrom(s => s.BaseLocation != null ? (double?)s.BaseLocation.X : null));
     }
 }
