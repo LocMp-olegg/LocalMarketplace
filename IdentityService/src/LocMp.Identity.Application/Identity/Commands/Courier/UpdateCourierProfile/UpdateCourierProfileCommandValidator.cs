@@ -7,7 +7,7 @@ public sealed class UpdateCourierProfileCommandValidator : AbstractValidator<Upd
     public UpdateCourierProfileCommandValidator()
     {
         RuleFor(x => x.ServiceRadiusMeters)
-            .GreaterThanOrEqualTo(500).WithMessage("Service radius must be at least 500 meters.")
+            .GreaterThanOrEqualTo(50).WithMessage("Service radius must be at least 50 meters.")
             .LessThanOrEqualTo(10_000).WithMessage("Service radius must not exceed 10 km.");
 
         RuleFor(x => x.Latitude)
