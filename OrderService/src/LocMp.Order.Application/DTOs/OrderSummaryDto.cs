@@ -16,4 +16,5 @@ public sealed record OrderSummaryDto(
     decimal TotalAmount,
     IReadOnlyList<OrderItemDto> Items,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? CompletedAt);
+    DateTimeOffset? CompletedAt,
+    double? DistanceToShopMeters = null);

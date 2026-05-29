@@ -22,7 +22,12 @@ public sealed class GetOrderByIdQueryHandler(OrderDbContext db, IMapper mapper)
                         .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct)
                     ?? throw new NotFoundException($"Order '{request.OrderId}' not found.");
 
-        if (!request.IsAdmin && order.BuyerId != request.RequesterId && order.SellerId != request.RequesterId)
+        var isAssignedCourier = order.CourierAssignment?.CourierId == request.RequesterId;
+
+        if (!request.IsAdmin
+            && order.BuyerId != request.RequesterId
+            && order.SellerId != request.RequesterId
+            && !isAssignedCourier)
             throw new ForbiddenException("You are not a participant in this order.");
 
         return mapper.Map<OrderDto>(order);

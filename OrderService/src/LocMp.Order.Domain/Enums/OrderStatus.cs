@@ -8,5 +8,6 @@ public enum OrderStatus
     InDelivery = 4,
     Completed = 5,
     Cancelled = 6,
-    Disputed = 7
+    Disputed = 7,
+    ReadyForCourier = 8
 }

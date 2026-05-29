@@ -16,6 +16,8 @@ public sealed class CatalogServiceClient(HttpClient http) : ICatalogClient
             ? null
             : new ShopDeliverySettingsDto(
                 shop.AllowCourierDelivery,
+                shop.AllowSellerDelivery,
+                shop.ServiceRadiusMeters,
                 shop.MaxCourierDistanceMeters,
                 shop.Latitude,
                 shop.Longitude);
@@ -23,6 +25,8 @@ public sealed class CatalogServiceClient(HttpClient http) : ICatalogClient
 
     private sealed record ShopSettingsResponse(
         bool AllowCourierDelivery,
+        bool AllowSellerDelivery,
+        int? ServiceRadiusMeters,
         int? MaxCourierDistanceMeters,
         double? Latitude,
         double? Longitude);

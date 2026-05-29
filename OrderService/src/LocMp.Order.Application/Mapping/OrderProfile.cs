@@ -23,6 +23,8 @@ public sealed class OrderProfile : Profile
 
         CreateMap<CourierAssignment, CourierAssignmentDto>();
 
+        CreateMap<CourierApplication, CourierApplicationDto>();
+
         CreateMap<DisputePhoto, DisputePhotoDto>();
 
         CreateMap<Dispute, DisputeDto>()

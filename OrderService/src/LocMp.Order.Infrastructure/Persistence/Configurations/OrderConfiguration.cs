@@ -14,11 +14,17 @@ public class OrderConfiguration : IEntityTypeConfiguration<OrderEntity>
 
         builder.Property(o => o.TotalAmount).HasPrecision(18, 2).IsRequired();
         builder.Property(o => o.BuyerComment).HasMaxLength(1000);
+        builder.Property(o => o.ShopLocation).HasColumnType("geography");
         builder.Property(o => o.CreatedAt).IsRequired();
 
         builder.HasMany(o => o.Items)
             .WithOne(i => i.Order)
             .HasForeignKey(i => i.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(o => o.CourierApplications)
+            .WithOne(ca => ca.Order)
+            .HasForeignKey(ca => ca.OrderId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(o => o.Photos)
