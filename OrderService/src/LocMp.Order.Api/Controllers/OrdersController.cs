@@ -37,7 +37,8 @@ public sealed class OrdersController(ISender sender) : ControllerBase
     public async Task<ActionResult<OrderDto>> GetById(Guid id, CancellationToken ct)
     {
         var isAdmin = HttpContext.IsInRole("Admin");
-        var result = await sender.Send(new GetOrderByIdQuery(id, HttpContext.GetUserId(), isAdmin), ct);
+        var isCourier = HttpContext.IsInRole("Courier");
+        var result = await sender.Send(new GetOrderByIdQuery(id, HttpContext.GetUserId(), isAdmin, isCourier), ct);
         return Ok(result);
     }
 
