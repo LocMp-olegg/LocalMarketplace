@@ -13,6 +13,7 @@ public class OrderDbContext(DbContextOptions<OrderDbContext> options) : DbContex
     public DbSet<OrderStatusHistory> OrderStatusHistory => Set<OrderStatusHistory>();
     public DbSet<DeliveryAddress> DeliveryAddresses => Set<DeliveryAddress>();
     public DbSet<CourierAssignment> CourierAssignments => Set<CourierAssignment>();
+    public DbSet<CourierApplication> CourierApplications => Set<CourierApplication>();
     public DbSet<Dispute> Disputes => Set<Dispute>();
     public DbSet<OrderPhoto> OrderPhotos => Set<OrderPhoto>();
     public DbSet<DisputePhoto> DisputePhotos => Set<DisputePhoto>();

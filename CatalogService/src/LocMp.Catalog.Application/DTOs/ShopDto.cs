@@ -19,6 +19,7 @@ public sealed record ShopDto
     public ShopAddressDto? Address { get; init; }
     public string? AvatarUrl { get; init; }
     public bool AllowCourierDelivery { get; init; }
+    public bool AllowSellerDelivery { get; init; }
     public int? MaxCourierDistanceMeters { get; init; }
     public decimal AverageRating { get; init; }
     public int ReviewCount { get; init; }

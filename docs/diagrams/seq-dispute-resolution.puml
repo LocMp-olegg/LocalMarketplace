@@ -2,7 +2,7 @@
 title <size:16><b>Sequence: Открытие и разрешение спора</b></size>\n<color:#555>Dispute Lifecycle: OpenDispute → AdminResolve → автоотзыв (DisputeResolvedEvent)</color>
 
 skinparam defaultFontName "Segoe UI", Arial, sans-serif
-skinparam defaultFontSize 12
+skinparam defaultFontSize 14
 skinparam roundcorner 8
 skinparam shadowing false
 skinparam sequenceMessageAlign center
@@ -36,8 +36,8 @@ skinparam note {
 skinparam sequence {
     ArrowColor #2C3E50
     ArrowThickness 1.4
-    LifeLineBorderColor #90A4AE
-    LifeLineBackgroundColor #FAFAFA
+    LifeLineBorderColor #607D8B
+    LifeLineBackgroundColor #CFD8DC
     BoxBorderColor #B0BEC5
     BoxBackgroundColor transparent
     DividerBackgroundColor #ECEFF1
@@ -77,7 +77,9 @@ end note
 ' ══════════════════════════════════════════════════════════════
 
 Buyer -> GW : POST /api/orders/disputes\n{orderId, disputeType=NotDelivered, description}
-GW    -> OS : Auth JWT (Buyer)
+activate GW
+GW    -> OS : Авторизация покупателя (JWT)
+deactivate GW
 activate OS
 
 OS -> PGOS : SELECT Order WHERE Id = orderId AND BuyerId = currentUser
@@ -121,12 +123,18 @@ end note
 ' ══════════════════════════════════════════════════════════════
 
 Admin -> GW : GET /api/orders/disputes/{disputeId}
-GW    -> OS : Admin JWT
+activate GW
+GW    -> OS : Авторизация администратора (JWT)
+deactivate GW
+activate OS
 OS    -> PGOS : SELECT Dispute + Order + OrderItems + OrderStatusHistory
 OS   --> Admin : DisputeDetailsDto
+deactivate OS
 
 Admin -> GW  : POST /api/orders/disputes/{id}/resolve\n{outcome=BuyerFavored, resolution="Товар не был доставлен"}
-GW    -> OS  : Admin JWT
+activate GW
+GW    -> OS  : Авторизация администратора (JWT)
+deactivate GW
 activate OS
 
 OS -> PGOS   : UPDATE Disputes SET ResolvedAt = now, Outcome = BuyerFavored\nINSERT OrderStatusHistory

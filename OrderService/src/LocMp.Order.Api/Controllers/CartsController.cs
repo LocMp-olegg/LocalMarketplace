@@ -69,11 +69,11 @@ public sealed class CartsController(ISender sender) : ControllerBase
                     da.City, da.Street, da.HouseNumber, da.Apartment,
                     da.Entrance, da.Floor, da.Latitude, da.Longitude,
                     da.RecipientName, da.RecipientPhone);
-            return new GroupDeliverySettings(g.SellerId, g.ShopId, g.DeliveryType, addr, g.SelectedItemIds);
+            return new GroupDeliverySettings(g.SellerId, g.ShopId, g.DeliveryType, addr, g.BuyerComment, g.SelectedItemIds);
         }).ToList();
 
         var result = await sender.Send(
-            new CheckoutCommand(HttpContext.GetUserId(), request.BuyerComment, groups), ct);
+            new CheckoutCommand(HttpContext.GetUserId(), groups), ct);
         return Ok(result);
     }
 }

@@ -101,6 +101,55 @@ namespace LocMp.Order.Infrastructure.Migrations
                     b.ToTable("CartItems", "orders");
                 });
 
+            modelBuilder.Entity("LocMp.Order.Domain.Entities.CourierApplication", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("AppliedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CourierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Point>("CourierLocation")
+                        .HasColumnType("geography");
+
+                    b.Property<string>("CourierName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("CourierPhone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<double?>("DistanceToShopMeters")
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourierId");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("OrderId", "CourierId")
+                        .IsUnique();
+
+                    b.ToTable("CourierApplications", "orders");
+                });
+
             modelBuilder.Entity("LocMp.Order.Domain.Entities.CourierAssignment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -314,6 +363,9 @@ namespace LocMp.Order.Infrastructure.Migrations
                     b.Property<int>("DeliveryType")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("IsSellerDelivery")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("PaymentStatus")
                         .HasColumnType("integer");
 
@@ -327,8 +379,14 @@ namespace LocMp.Order.Infrastructure.Migrations
                     b.Property<Guid?>("ShopId")
                         .HasColumnType("uuid");
 
+                    b.Property<Point>("ShopLocation")
+                        .HasColumnType("geography");
+
                     b.Property<string>("ShopName")
                         .HasColumnType("text");
+
+                    b.Property<int?>("ShopServiceRadiusMeters")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -489,6 +547,17 @@ namespace LocMp.Order.Infrastructure.Migrations
                     b.Navigation("Cart");
                 });
 
+            modelBuilder.Entity("LocMp.Order.Domain.Entities.CourierApplication", b =>
+                {
+                    b.HasOne("LocMp.Order.Domain.Entities.Order", "Order")
+                        .WithMany("CourierApplications")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("LocMp.Order.Domain.Entities.CourierAssignment", b =>
                 {
                     b.HasOne("LocMp.Order.Domain.Entities.Order", "Order")
@@ -578,6 +647,8 @@ namespace LocMp.Order.Infrastructure.Migrations
 
             modelBuilder.Entity("LocMp.Order.Domain.Entities.Order", b =>
                 {
+                    b.Navigation("CourierApplications");
+
                     b.Navigation("CourierAssignment");
 
                     b.Navigation("DeliveryAddress");

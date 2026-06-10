@@ -14,34 +14,39 @@ public sealed class GetAvailableOrdersForCourierQueryHandler(OrderDbContext db)
     public async Task<PagedResult<OrderSummaryDto>> Handle(
         GetAvailableOrdersForCourierQuery request, CancellationToken ct)
     {
+        const double locationToleranceMeters = 100; // slack for GPS imprecision
+
         var courierLocation = new Point(request.Longitude, request.Latitude) { SRID = 4326 };
         var radiusMeters = request.RadiusKm * 1000;
 
         var query = db.Orders
-            .Include(o => o.Items)
-            .Include(o => o.DeliveryAddress)
-            .Include(o => o.CourierAssignment)
             .Where(o =>
-                o.DeliveryType == DeliveryType.NeighborCourier &&
+                o.DeliveryType == DeliveryType.Delivery &&
                 o.Status == OrderStatus.Confirmed &&
                 o.CourierAssignment == null &&
-                o.DeliveryAddress != null &&
-                o.DeliveryAddress.Location != null &&
-                o.DeliveryAddress.Location.IsWithinDistance(courierLocation, radiusMeters));
+                o.ShopLocation != null &&
+                o.ShopLocation.IsWithinDistance(courierLocation, radiusMeters) &&
+                (o.ShopServiceRadiusMeters == null ||
+                 o.ShopLocation.IsWithinDistance(courierLocation,
+                     (double)o.ShopServiceRadiusMeters + locationToleranceMeters)));
 
         var total = await query.CountAsync(ct);
 
-        var orders = await query
-            .OrderBy(o => o.DeliveryAddress!.Location!.Distance(courierLocation))
+        // Distance is projected inside the SQL query so EF Core translates it to
+        // ST_Distance(geography, geography) which returns meters, not C# Euclidean degrees.
+        var items = await query
+            .OrderBy(o => o.ShopLocation!.Distance(courierLocation))
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
+            .Select(o => new OrderSummaryDto(
+                o.Id, o.CheckoutId, o.BuyerId, o.SellerId, o.SellerName, o.ShopId, o.ShopName,
+                o.Status, o.DeliveryType, o.PaymentStatus, o.TotalAmount,
+                o.Items.Select(i => new OrderItemDto(
+                    i.Id, i.ProductId, i.ProductName, i.ProductDescription,
+                    i.MainPhotoUrl, i.ShopId, i.ShopName, i.UnitPrice, i.Quantity, i.Subtotal)).ToList(),
+                o.CreatedAt, o.CompletedAt,
+                o.ShopLocation != null ? o.ShopLocation.Distance(courierLocation) : (double?)null))
             .ToListAsync(ct);
-
-        var items = orders.Select(o => new OrderSummaryDto(
-            o.Id, o.CheckoutId, o.BuyerId, o.SellerId, o.SellerName, o.ShopId, o.ShopName,            o.Status, o.DeliveryType, o.PaymentStatus,            o.TotalAmount,
-            o.Items.Select(i => new OrderItemDto(
-                i.Id, i.ProductId, i.ProductName, i.ProductDescription,                i.MainPhotoUrl, i.ShopId, i.ShopName, i.UnitPrice, i.Quantity, i.Subtotal)).ToList(),
-            o.CreatedAt, o.CompletedAt)).ToList();
 
         return new PagedResult<OrderSummaryDto>(items, total, request.PageNumber, request.PageSize);
     }

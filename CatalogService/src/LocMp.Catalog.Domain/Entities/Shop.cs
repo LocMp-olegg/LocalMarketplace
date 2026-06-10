@@ -24,6 +24,7 @@ public class Shop(Guid id)
     public string? AvatarObjectKey { get; set; }
 
     public bool AllowCourierDelivery { get; set; } = true;
+    public bool AllowSellerDelivery { get; set; } = false;
     public int? MaxCourierDistanceMeters { get; set; }
 
     public bool IsVerified { get; set; } = true;

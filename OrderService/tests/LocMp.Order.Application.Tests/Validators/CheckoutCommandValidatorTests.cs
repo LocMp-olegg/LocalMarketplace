@@ -18,7 +18,7 @@ public sealed class CheckoutCommandValidatorTests
     private static GroupDeliverySettings CourierGroup(DeliveryAddressData? address = null) => new(
         SellerId: Guid.NewGuid(),
         ShopId: Guid.NewGuid(),
-        DeliveryType: DeliveryType.NeighborCourier,
+        DeliveryType: DeliveryType.Delivery,
         DeliveryAddress: address ?? ValidAddress());
 
     private static DeliveryAddressData ValidAddress() => new(
@@ -38,7 +38,7 @@ public sealed class CheckoutCommandValidatorTests
     {
         var cmd = new CheckoutCommand(
             UserId: Guid.NewGuid(),
-            BuyerComment: null,
+
             Groups: [PickupGroup()]);
 
         var result = _validator.TestValidate(cmd);
@@ -51,7 +51,7 @@ public sealed class CheckoutCommandValidatorTests
     {
         var cmd = new CheckoutCommand(
             UserId: Guid.NewGuid(),
-            BuyerComment: null,
+
             Groups: [CourierGroup()]);
 
         var result = _validator.TestValidate(cmd);
@@ -64,7 +64,7 @@ public sealed class CheckoutCommandValidatorTests
     {
         var cmd = new CheckoutCommand(
             UserId: Guid.Empty,
-            BuyerComment: null,
+
             Groups: [PickupGroup()]);
 
         var result = _validator.TestValidate(cmd);
@@ -77,7 +77,7 @@ public sealed class CheckoutCommandValidatorTests
     {
         var cmd = new CheckoutCommand(
             UserId: Guid.NewGuid(),
-            BuyerComment: null,
+
             Groups: []);
 
         var result = _validator.TestValidate(cmd);
@@ -91,12 +91,12 @@ public sealed class CheckoutCommandValidatorTests
         var group = new GroupDeliverySettings(
             SellerId: Guid.NewGuid(),
             ShopId: Guid.NewGuid(),
-            DeliveryType: DeliveryType.NeighborCourier,
+            DeliveryType: DeliveryType.Delivery,
             DeliveryAddress: null);
 
         var cmd = new CheckoutCommand(
             UserId: Guid.NewGuid(),
-            BuyerComment: null,
+
             Groups: [group]);
 
         var result = _validator.TestValidate(cmd);
@@ -110,7 +110,7 @@ public sealed class CheckoutCommandValidatorTests
         var address = ValidAddress() with { City = "" };
         var cmd = new CheckoutCommand(
             UserId: Guid.NewGuid(),
-            BuyerComment: null,
+
             Groups: [CourierGroup(address)]);
 
         var result = _validator.TestValidate(cmd);
@@ -124,7 +124,7 @@ public sealed class CheckoutCommandValidatorTests
         var address = ValidAddress() with { RecipientName = "" };
         var cmd = new CheckoutCommand(
             UserId: Guid.NewGuid(),
-            BuyerComment: null,
+
             Groups: [CourierGroup(address)]);
 
         var result = _validator.TestValidate(cmd);
@@ -137,7 +137,7 @@ public sealed class CheckoutCommandValidatorTests
     {
         var cmd = new CheckoutCommand(
             UserId: Guid.NewGuid(),
-            BuyerComment: null,
+
             Groups: [PickupGroup(Guid.Empty)]);
 
         var result = _validator.TestValidate(cmd);
@@ -150,7 +150,7 @@ public sealed class CheckoutCommandValidatorTests
     {
         var cmd = new CheckoutCommand(
             UserId: Guid.NewGuid(),
-            BuyerComment: null,
+
             Groups: [PickupGroup()]);
 
         var result = _validator.TestValidate(cmd);

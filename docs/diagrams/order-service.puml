@@ -42,18 +42,26 @@ skinparam stereotypeEBackgroundColor #D5F5E3
 ' ─── Enums ───────────────────────────────────────────────────────────────────
 
 enum OrderStatus {
-    Pending
-    Confirmed
-    ReadyForPickup
-    InDelivery
-    Completed
-    Cancelled
-    Disputed
+    Pending        = 1
+    Confirmed      = 2
+    ReadyForPickup = 3
+    InDelivery     = 4
+    Completed      = 5
+    Cancelled      = 6
+    Disputed       = 7
+    ReadyForCourier = 8
 }
 
 enum DeliveryType {
-    Pickup
-    NeighborCourier
+    Pickup   = 1
+    Delivery = 2
+}
+
+enum CourierApplicationStatus {
+    Pending   = 1
+    Approved  = 2
+    Rejected  = 3
+    Withdrawn = 4
 }
 
 enum PaymentStatus {
@@ -120,10 +128,14 @@ class Order <<aggregate root>> {
     ..статус и тип..
     + Status : OrderStatus
     + DeliveryType : DeliveryType
+    + IsSellerDelivery : bool
     + PaymentStatus : PaymentStatus
     ..финансы..
     + TotalAmount : decimal
     + BuyerComment : string?
+    ..геолокация магазина (снепшот)..
+    + ShopLocation : Point? <<geography(Point,4326)>>
+    + ShopServiceRadiusMeters : int?
     ..временные метки..
     + CreatedAt : DateTimeOffset
     + UpdatedAt : DateTimeOffset?
@@ -165,10 +177,24 @@ class DeliveryAddress {
     + Apartment : string?
     + Entrance : string?
     + Floor : int?
-    + Location : Point? <<geometry(Point,4326)>>
+    + Location : Point? <<geography(Point,4326)>>
     ..контакты..
     + RecipientName : string <<snapshot>>
     + RecipientPhone : string <<snapshot>>
+}
+
+class CourierApplication {
+    + Id : Guid <<PK>>
+    + OrderId : Guid <<FK>>
+    + CourierId : Guid <<logical ref: Identity>>
+    + CourierName : string <<snapshot>>
+    + CourierPhone : string <<snapshot>>
+    + CourierLocation : Point? <<geography(Point,4326)>>
+    + DistanceToShopMeters : double?
+    + Status : CourierApplicationStatus
+    + AppliedAt : DateTimeOffset
+    + UpdatedAt : DateTimeOffset?
+    ' UNIQUE INDEX (OrderId, CourierId)
 }
 
 class CourierAssignment {
@@ -226,7 +252,8 @@ Cart "1" *-down- "0..*" CartItem : содержит >
 Order "1" *-down- "1..*" OrderItem : состоит из >
 Order "1" *-right- "1..*" OrderStatusHistory : история >
 Order "1" *-down- "0..1" DeliveryAddress : адрес >
-Order "1" *-left- "0..1" CourierAssignment : курьер >
+Order "1" *-left- "0..*" CourierApplication : заявки курьеров >
+Order "1" *-left- "0..1" CourierAssignment : назначенный курьер >
 Order "1" *-right- "0..1" Dispute : спор >
 Order "1" *-down- "0..*" OrderPhoto : фото к заказу >
 Dispute "1" *-down- "0..*" DisputePhoto : фото к спору >
@@ -234,6 +261,7 @@ Dispute "1" *-down- "0..*" DisputePhoto : фото к спору >
 Order ..> OrderStatus
 Order ..> DeliveryType
 Order ..> PaymentStatus
+CourierApplication ..> CourierApplicationStatus
 Dispute ..> DisputeStatus
 Dispute ..> DisputeOutcome
 Dispute ..> DisputeType
@@ -259,13 +287,16 @@ note right of Order
   Конечный автомат статусов:
 
   Pending ──► Confirmed
-           ──► Cancelled (продавец отклонил)
-  Confirmed ──► ReadyForPickup  (Pickup)
-            ──► InDelivery      (NeighborCourier)
+           ──► Cancelled
+  Confirmed ──► ReadyForPickup   (Pickup)
+            ──► ReadyForCourier  (Delivery, ждём курьера)
+            ──► InDelivery       (продавец сам везёт)
             ──► Cancelled
-  ReadyForPickup ──► Completed
-  InDelivery ──► Completed
-  Confirmed+ ──► Disputed
+  ReadyForCourier ──► InDelivery (курьер забрал)
+                  ──► Cancelled
+  ReadyForPickup  ──► Completed
+  InDelivery      ──► Completed
+  Confirmed+      ──► Disputed
   Disputed ──► Cancelled  (BuyerFavored: возврат стока)
            ──► Completed  (SellerFavored: сделка засчитана)
 
@@ -282,11 +313,24 @@ note right of DeliveryAddress
   т.к. пользователь может сменить данные.
 end note
 
+note right of CourierApplication
+  Курьер подаёт заявку с геолокацией.
+  DistanceToShopMeters вычисляется через
+  ST_Distance(geography, geography) в SQL.
+  UNIQUE INDEX (OrderId, CourierId):
+  повторная заявка после Withdrawn/Rejected
+  обновляет существующую строку.
+  При одобрении одной заявки все остальные
+  Pending автоматически → Rejected.
+  Таймаут: 15 мин без PickedUpAt →
+  назначение удаляется, заявка → Pending.
+end note
+
 note bottom of CourierAssignment
-  Курьер — пользователь
-  с ролью Courier в IdentityService.
-  Ищется по геолокации относительно
-  DeliveryAddress.Location.
+  Создаётся при одобрении CourierApplication.
+  UNIQUE по OrderId — один курьер на заказ.
+  PickedUpAt: курьер забрал у продавца.
+  DeliveredAt: курьер доставил покупателю.
 end note
 
 
@@ -301,7 +345,8 @@ legend bottom
   | OrderItem | OrderItems | Позиция заказа — неизменяемый снепшот товара на момент покупки |
   | OrderStatusHistory | OrderStatusHistory | Полный аудит переходов статусов заказа |
   | DeliveryAddress | DeliveryAddresses | Снепшот адреса и контактов получателя (только для курьерской доставки) |
-  | CourierAssignment | CourierAssignments | Назначение курьера-соседа на заказ (1:1) |
+  | CourierApplication | CourierApplications | Заявка курьера на доставку (UNIQUE OrderId+CourierId, с геолокацией) |
+  | CourierAssignment | CourierAssignments | Назначение курьера на заказ (1:1, создаётся при одобрении заявки) |
   | Dispute | Disputes | Спор по заказу с историей разрешения (1:1) |
   | OrderPhoto | OrderPhotos | Фото к заказу (StorageUrl → MinIO bucket: order-media) |
   | DisputePhoto | DisputePhotos | Фото к спору (StorageUrl → MinIO bucket: order-media) |

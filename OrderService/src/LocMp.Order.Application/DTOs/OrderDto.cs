@@ -23,4 +23,5 @@ public sealed record OrderDto(
     IReadOnlyList<OrderPhotoDto> Photos,
     DeliveryAddressDto? DeliveryAddress,
     CourierAssignmentDto? CourierAssignment,
+    bool IsSellerDelivery,
     DisputeDto? Dispute);

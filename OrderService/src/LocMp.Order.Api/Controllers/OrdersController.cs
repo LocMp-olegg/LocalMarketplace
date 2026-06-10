@@ -2,14 +2,21 @@ using LocMp.BuildingBlocks.Application.Common;
 using LocMp.BuildingBlocks.Infrastructure.Extensions;
 using LocMp.Order.Api.Requests;
 using LocMp.Order.Application.DTOs;
+using LocMp.Order.Application.Orders.Commands.Orders.ApproveCourierApplication;
 using LocMp.Order.Application.Orders.Commands.Orders.AssignCourier;
 using LocMp.Order.Application.Orders.Commands.Orders.CancelOrder;
 using LocMp.Order.Application.Orders.Commands.Orders.CompleteOrder;
 using LocMp.Order.Application.Orders.Commands.Orders.ConfirmOrder;
+using LocMp.Order.Application.Orders.Commands.Orders.MarkReadyForCourier;
 using LocMp.Order.Application.Orders.Commands.Orders.MarkReadyForPickup;
 using LocMp.Order.Application.Orders.Commands.Orders.DeleteOrderPhoto;
+using LocMp.Order.Application.Orders.Commands.Orders.MarkSellerDelivered;
+using LocMp.Order.Application.Orders.Commands.Orders.MarkSellerPickedUp;
+using LocMp.Order.Application.Orders.Commands.Orders.RejectCourierApplication;
+using LocMp.Order.Application.Orders.Commands.Orders.StartSellerDelivery;
 using LocMp.Order.Application.Orders.Commands.Orders.UploadOrderPhotos;
 using LocMp.Order.Application.Orders.Queries.Orders.GetAllOrders;
+using LocMp.Order.Application.Orders.Queries.Orders.GetCourierApplications;
 using LocMp.Order.Application.Orders.Queries.Orders.GetOrderById;
 using LocMp.Order.Application.Orders.Queries.Orders.GetOrdersByBuyer;
 using LocMp.Order.Application.Orders.Queries.Orders.GetOrdersBySeller;
@@ -32,7 +39,8 @@ public sealed class OrdersController(ISender sender) : ControllerBase
     public async Task<ActionResult<OrderDto>> GetById(Guid id, CancellationToken ct)
     {
         var isAdmin = HttpContext.IsInRole("Admin");
-        var result = await sender.Send(new GetOrderByIdQuery(id, HttpContext.GetUserId(), isAdmin), ct);
+        var isCourier = HttpContext.IsInRole("Courier");
+        var result = await sender.Send(new GetOrderByIdQuery(id, HttpContext.GetUserId(), isAdmin, isCourier), ct);
         return Ok(result);
     }
 
@@ -126,6 +134,14 @@ public sealed class OrdersController(ISender sender) : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{id:guid}/ready-for-courier")]
+    [Authorize(Roles = "Seller,Admin")]
+    public async Task<IActionResult> MarkReadyForCourier(Guid id, CancellationToken ct)
+    {
+        await sender.Send(new MarkReadyForCourierCommand(id, HttpContext.GetUserId()), ct);
+        return NoContent();
+    }
+
     [HttpPost("{id:guid}/assign-courier")]
     [Authorize(Roles = "Seller,Admin")]
     public async Task<IActionResult> AssignCourier(Guid id, [FromBody] AssignCourierRequest request,
@@ -148,6 +164,58 @@ public sealed class OrdersController(ISender sender) : ControllerBase
     {
         var isAdmin = HttpContext.IsInRole("Admin");
         await sender.Send(new CancelOrderCommand(id, HttpContext.GetUserId(), isAdmin, request.Comment), ct);
+        return NoContent();
+    }
+
+    // ── Courier applications ───────────────────────────────────────────────
+
+    [HttpGet("{id:guid}/courier-applications")]
+    [Authorize(Roles = "Seller,Admin")]
+    public async Task<ActionResult<IReadOnlyList<CourierApplicationDto>>> GetCourierApplications(
+        Guid id, CancellationToken ct)
+    {
+        var result = await sender.Send(
+            new GetCourierApplicationsQuery(HttpContext.GetUserId(), id), ct);
+        return Ok(result);
+    }
+
+    [HttpPost("courier-applications/{applicationId:guid}/approve")]
+    [Authorize(Roles = "Seller,Admin")]
+    public async Task<IActionResult> ApproveCourierApplication(Guid applicationId, CancellationToken ct)
+    {
+        await sender.Send(new ApproveCourierApplicationCommand(HttpContext.GetUserId(), applicationId), ct);
+        return NoContent();
+    }
+
+    [HttpPost("courier-applications/{applicationId:guid}/reject")]
+    [Authorize(Roles = "Seller,Admin")]
+    public async Task<IActionResult> RejectCourierApplication(Guid applicationId, CancellationToken ct)
+    {
+        await sender.Send(new RejectCourierApplicationCommand(HttpContext.GetUserId(), applicationId), ct);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/start-seller-delivery")]
+    [Authorize(Roles = "Seller,Admin")]
+    public async Task<IActionResult> StartSellerDelivery(Guid id, CancellationToken ct)
+    {
+        await sender.Send(new StartSellerDeliveryCommand(HttpContext.GetUserId(), id), ct);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/seller-picked-up")]
+    [Authorize(Roles = "Seller,Admin")]
+    public async Task<IActionResult> SellerPickedUp(Guid id, CancellationToken ct)
+    {
+        await sender.Send(new MarkSellerPickedUpCommand(id, HttpContext.GetUserId()), ct);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/seller-delivered")]
+    [Authorize(Roles = "Seller,Admin")]
+    public async Task<IActionResult> SellerDelivered(Guid id, CancellationToken ct)
+    {
+        await sender.Send(new MarkSellerDeliveredCommand(id, HttpContext.GetUserId()), ct);
         return NoContent();
     }
 

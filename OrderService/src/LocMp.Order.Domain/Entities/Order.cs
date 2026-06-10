@@ -1,5 +1,6 @@
 using LocMp.BuildingBlocks;
 using LocMp.Order.Domain.Enums;
+using NetTopologySuite.Geometries;
 
 namespace LocMp.Order.Domain.Entities;
 
@@ -9,8 +10,9 @@ public class Order(Guid id) : AggregateRoot<Guid>(id)
     {
         [OrderStatus.Pending] = [OrderStatus.Confirmed, OrderStatus.Cancelled],
         [OrderStatus.Confirmed] =
-            [OrderStatus.ReadyForPickup, OrderStatus.InDelivery, OrderStatus.Cancelled, OrderStatus.Disputed],
+            [OrderStatus.ReadyForPickup, OrderStatus.ReadyForCourier, OrderStatus.InDelivery, OrderStatus.Cancelled, OrderStatus.Disputed],
         [OrderStatus.ReadyForPickup] = [OrderStatus.Completed, OrderStatus.Disputed],
+        [OrderStatus.ReadyForCourier] = [OrderStatus.InDelivery, OrderStatus.Cancelled, OrderStatus.Disputed],
         [OrderStatus.InDelivery] = [OrderStatus.Completed, OrderStatus.Disputed],
         [OrderStatus.Disputed] = [OrderStatus.Cancelled, OrderStatus.Completed],
     };
@@ -22,9 +24,12 @@ public class Order(Guid id) : AggregateRoot<Guid>(id)
     public string SellerName { get; set; } = string.Empty;
     public Guid? ShopId { get; set; }
     public string? ShopName { get; set; }
+    public Point? ShopLocation { get; set; }
+    public int? ShopServiceRadiusMeters { get; set; }
 
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
     public DeliveryType DeliveryType { get; set; }
+    public bool IsSellerDelivery { get; set; }
     public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
 
     public decimal TotalAmount { get; set; }
@@ -37,6 +42,7 @@ public class Order(Guid id) : AggregateRoot<Guid>(id)
     public virtual ICollection<OrderItem> Items { get; set; } = [];
     public virtual ICollection<OrderStatusHistory> StatusHistory { get; set; } = [];
     public virtual ICollection<OrderPhoto> Photos { get; set; } = [];
+    public virtual ICollection<CourierApplication> CourierApplications { get; set; } = [];
     public virtual DeliveryAddress? DeliveryAddress { get; set; }
     public virtual CourierAssignment? CourierAssignment { get; set; }
     public virtual Dispute? Dispute { get; set; }

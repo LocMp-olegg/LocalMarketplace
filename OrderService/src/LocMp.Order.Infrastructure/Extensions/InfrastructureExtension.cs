@@ -83,5 +83,6 @@ public static class InfrastructureExtension
 
         services.AddHostedService<CartCleanupBackgroundService>();
         services.AddHostedService<DisputeAutoResolveBackgroundService>();
+        services.AddHostedService<CourierAssignmentTimeoutService>();
     }
 }

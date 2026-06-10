@@ -6,5 +6,4 @@ public sealed record SetCourierDeliveryCommand(
     Guid ShopId,
     Guid RequesterId,
     bool IsAdmin,
-    bool Allow,
-    int? MaxDistanceMeters) : IRequest;
+    bool Allow) : IRequest;

@@ -2,7 +2,7 @@
 title <size:16><b>Sequence: Жизненный цикл отзыва</b></size>\n<color:#555>Завершение заказа → отзыв → обновление рейтинга (Eventual Consistency)</color>
 
 skinparam defaultFontName "Segoe UI", Arial, sans-serif
-skinparam defaultFontSize 12
+skinparam defaultFontSize 14
 skinparam roundcorner 8
 skinparam shadowing false
 skinparam sequenceMessageAlign center
@@ -36,8 +36,8 @@ skinparam note {
 skinparam sequence {
     ArrowColor #2C3E50
     ArrowThickness 1.4
-    LifeLineBorderColor #90A4AE
-    LifeLineBackgroundColor #FAFAFA
+    LifeLineBorderColor #607D8B
+    LifeLineBackgroundColor #CFD8DC
     BoxBorderColor #B0BEC5
     BoxBackgroundColor transparent
     DividerBackgroundColor #ECEFF1
@@ -67,13 +67,23 @@ database    "PostgreSQL\npublic"      as PGIS  #EBF5FB
 ' ══════════════════════════════════════════════════════════════
 
 Seller -> GW  : POST /api/orders/{id}/confirm
-GW     -> OS  : Seller JWT
+activate GW
+GW     -> OS  : Авторизация продавца (JWT)
+deactivate GW
+activate OS
 OS     -> MQ  : <color:#6A1B9A>OrderStatusChangedEvent</color>{Confirmed}
+OS    --> Seller : 200 OK
+deactivate OS
 MQ     -> NS  : → уведомление покупателю «Заказ подтверждён»
 
 Seller -> GW  : POST /api/orders/{id}/ready
-GW     -> OS  : Seller JWT
+activate GW
+GW     -> OS  : Авторизация продавца (JWT)
+deactivate GW
+activate OS
 OS     -> MQ  : <color:#6A1B9A>OrderStatusChangedEvent</color>{ReadyForPickup}
+OS    --> Seller : 200 OK
+deactivate OS
 MQ     -> NS  : → уведомление покупателю «Готов к самовывозу»
 
 ' ══════════════════════════════════════════════════════════════
@@ -81,7 +91,9 @@ MQ     -> NS  : → уведомление покупателю «Готов к 
 ' ══════════════════════════════════════════════════════════════
 
 Buyer -> GW  : POST /api/orders/{id}/complete
-GW    -> OS  : Auth JWT
+activate GW
+GW    -> OS  : Авторизация (JWT)
+deactivate GW
 activate OS
 OS    -> OS  : CompleteOrderCommand\nReadyForPickup → Completed\nINSERT OrderStatusHistory
 
@@ -115,7 +127,9 @@ end
 ' ══════════════════════════════════════════════════════════════
 
 Buyer -> GW  : POST /api/reviews\n{orderId, subjectType=Seller, rating=5, comment}
-GW    -> RS  : Auth JWT
+activate GW
+GW    -> RS  : Авторизация (JWT)
+deactivate GW
 activate RS
 RS    -> PGRS : SELECT OrderReviewPermission WHERE orderId = ? AND isUnlocked = true
 PGRS --> RS   : Разрешено

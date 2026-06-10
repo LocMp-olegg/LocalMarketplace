@@ -6,7 +6,6 @@ namespace LocMp.Order.Application.Orders.Commands.Orders.Checkout;
 
 public sealed record CheckoutCommand(
     Guid UserId,
-    string? BuyerComment,
     IReadOnlyList<GroupDeliverySettings> Groups) : IRequest<IReadOnlyList<OrderDto>>;
 
 public sealed record GroupDeliverySettings(
@@ -14,6 +13,7 @@ public sealed record GroupDeliverySettings(
     Guid? ShopId,
     DeliveryType DeliveryType,
     DeliveryAddressData? DeliveryAddress,
+    string? BuyerComment = null,
     IReadOnlyList<Guid>? SelectedItemIds = null);
 
 public sealed record DeliveryAddressData(

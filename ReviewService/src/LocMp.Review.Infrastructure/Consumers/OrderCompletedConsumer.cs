@@ -21,7 +21,7 @@ public sealed class OrderCompletedConsumer(ReviewDbContext db) : IConsumer<Order
             BuyerId      = msg.BuyerId,
             SellerId     = msg.SellerId,
             SellerName   = msg.SellerName,
-            CourierId    = msg.CourierId,
+            CourierId    = msg.IsSellerDelivery ? null : msg.CourierId,
             ProductIds   = msg.Products.Select(p => p.ProductId).ToList(),
             ProductNames = msg.Products.ToDictionary(p => p.ProductId, p => p.ProductName),
             AllowedAt    = msg.OccurredAt

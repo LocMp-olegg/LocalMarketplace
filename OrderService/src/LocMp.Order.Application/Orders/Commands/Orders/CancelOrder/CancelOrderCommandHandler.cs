@@ -18,7 +18,8 @@ public sealed class CancelOrderCommandHandler(
     private static readonly HashSet<OrderStatus> CancellableStatuses =
     [
         OrderStatus.Pending,
-        OrderStatus.Confirmed
+        OrderStatus.Confirmed,
+        OrderStatus.ReadyForCourier
     ];
 
     public async Task Handle(CancelOrderCommand request, CancellationToken ct)

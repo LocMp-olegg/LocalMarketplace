@@ -7,6 +7,7 @@ using LocMp.Order.Domain.Entities;
 using LocMp.Order.Domain.Enums;
 using LocMp.Order.Infrastructure.DTOs;
 using LocMp.Order.Infrastructure.Interfaces;
+using LocMp.Order.Application.Extensions;
 using LocMp.Order.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -30,10 +31,11 @@ public sealed class CheckoutCommandHandler(
         ValidateNoDuplicateGroups(request.Groups);
 
         var snapshots = await FetchAndValidateSnapshotsAsync(selectedItems, ct);
-        await ValidateCourierDeliveryAsync(request.Groups, ct);
+        var shopSettings = await FetchShopSettingsAsync(request.Groups, ct);
+        ValidateCourierDelivery(request.Groups, shopSettings);
 
         var createdOrders = await CreateOrdersInTransactionAsync(
-            request, cart, selectedItems, snapshots, ct);
+            request, cart, selectedItems, snapshots, shopSettings, ct);
 
         await PublishOrderEventsAsync(createdOrders, request.UserId, ct);
 
@@ -120,29 +122,41 @@ public sealed class CheckoutCommandHandler(
         return snapshots;
     }
 
-    private async Task ValidateCourierDeliveryAsync(IReadOnlyList<GroupDeliverySettings> groups, CancellationToken ct)
+    private async Task<Dictionary<Guid, ShopDeliverySettingsDto>> FetchShopSettingsAsync(
+        IReadOnlyList<GroupDeliverySettings> groups, CancellationToken ct)
     {
-        var courierGroups = groups
-            .Where(g => g.DeliveryType == DeliveryType.NeighborCourier && g.ShopId.HasValue)
+        var shopIds = groups
+            .Where(g => g.ShopId.HasValue)
+            .Select(g => g.ShopId!.Value)
+            .Distinct()
             .ToList();
 
-        if (courierGroups.Count == 0) return;
-
-        var shopSettings = await Task.WhenAll(
-            courierGroups.Select(g => catalogClient.GetShopDeliverySettingsAsync(g.ShopId!.Value, ct)));
-
-        for (var i = 0; i < courierGroups.Count; i++)
+        var result = new Dictionary<Guid, ShopDeliverySettingsDto>(shopIds.Count);
+        await Task.WhenAll(shopIds.Select(async id =>
         {
-            var group = courierGroups[i];
-            var settings = shopSettings[i];
+            var settings = await catalogClient.GetShopDeliverySettingsAsync(id, ct);
+            if (settings is not null)
+                result[id] = settings;
+        }));
+        return result;
+    }
 
-            if (settings is { AllowCourierDelivery: false })
-                throw new ConflictException($"Shop '{group.ShopId}' does not allow courier delivery.");
+    private static void ValidateCourierDelivery(
+        IReadOnlyList<GroupDeliverySettings> groups,
+        Dictionary<Guid, ShopDeliverySettingsDto> shopSettings)
+    {
+        foreach (var group in groups.Where(g => g.DeliveryType == DeliveryType.Delivery && g.ShopId.HasValue))
+        {
+            if (!shopSettings.TryGetValue(group.ShopId!.Value, out var settings)) continue;
 
-            if (settings is { MaxCourierDistanceMeters: not null, Latitude: not null, Longitude: not null }
+            if (!settings.AllowCourierDelivery && !settings.AllowSellerDelivery)
+                throw new ConflictException($"Shop '{group.ShopId}' does not allow any delivery.");
+
+            if (settings.MaxCourierDistanceMeters is not null
+                && settings.Latitude is not null && settings.Longitude is not null
                 && group.DeliveryAddress is { Latitude: not null, Longitude: not null })
             {
-                var distanceMeters = CalculateDistanceMeters(
+                var distanceMeters = GeoUtils.CalculateDistanceMeters(
                     settings.Latitude.Value, settings.Longitude.Value,
                     group.DeliveryAddress.Latitude.Value, group.DeliveryAddress.Longitude.Value);
 
@@ -154,25 +168,12 @@ public sealed class CheckoutCommandHandler(
         }
     }
 
-    private static double CalculateDistanceMeters(
-        double lat1, double lon1, double lat2, double lon2)
-    {
-        const double earthRadiusMeters = 6_371_000;
-        var dLat = ToRad(lat2 - lat1);
-        var dLon = ToRad(lon2 - lon1);
-        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2)
-              + Math.Cos(ToRad(lat1)) * Math.Cos(ToRad(lat2))
-              * Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
-        return earthRadiusMeters * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-    }
-
-    private static double ToRad(double degrees) => degrees * Math.PI / 180;
-
     private async Task<List<OrderEntity>> CreateOrdersInTransactionAsync(
         CheckoutCommand request,
         CartEntity cart,
         List<CartItem> selectedItems,
         Dictionary<Guid, ProductSnapshotDto> snapshots,
+        Dictionary<Guid, ShopDeliverySettingsDto> shopSettings,
         CancellationToken ct)
     {
         var cartGroups = selectedItems
@@ -191,8 +192,9 @@ public sealed class CheckoutCommandHandler(
         foreach (var group in request.Groups)
         {
             var groupCartItems = cartGroups[(group.SellerId, group.ShopId)];
+            shopSettings.TryGetValue(group.ShopId ?? Guid.Empty, out var groupShopSettings);
             var (order, orderItems, statusEntry) =
-                BuildOrder(group, groupCartItems, snapshots, checkoutId, request, now);
+                BuildOrder(group, groupCartItems, snapshots, checkoutId, request, now, groupShopSettings);
 
             db.Orders.Add(order);
             db.OrderItems.AddRange(orderItems);
@@ -225,10 +227,15 @@ public sealed class CheckoutCommandHandler(
         Dictionary<Guid, ProductSnapshotDto> snapshots,
         Guid checkoutId,
         CheckoutCommand request,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        ShopDeliverySettingsDto? shopSettings)
     {
         var orderId = Guid.NewGuid();
         var firstItem = cartItems[0];
+
+        Point? shopLocation = null;
+        if (shopSettings is { Latitude: not null, Longitude: not null })
+            shopLocation = new Point(shopSettings.Longitude.Value, shopSettings.Latitude.Value) { SRID = 4326 };
 
         var order = new OrderEntity(orderId)
         {
@@ -238,8 +245,10 @@ public sealed class CheckoutCommandHandler(
             SellerName = firstItem.SellerName,
             ShopId = group.ShopId,
             ShopName = firstItem.ShopName,
+            ShopLocation = shopLocation,
+            ShopServiceRadiusMeters = shopSettings?.ServiceRadiusMeters,
             DeliveryType = group.DeliveryType,
-            BuyerComment = request.BuyerComment,
+            BuyerComment = group.BuyerComment,
             CreatedAt = now
         };
 
@@ -272,7 +281,7 @@ public sealed class CheckoutCommandHandler(
             ChangedAt = now
         };
 
-        if (group.DeliveryType == DeliveryType.NeighborCourier && group.DeliveryAddress is { } addr)
+        if (group.DeliveryType == DeliveryType.Delivery && group.DeliveryAddress is { } addr)
             order.DeliveryAddress = BuildDeliveryAddress(orderId, addr);
 
         return (order, orderItems, statusEntry);

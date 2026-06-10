@@ -42,23 +42,24 @@ skinparam stereotypeEBackgroundColor #D5F5E3
 ' ─── Enums ───────────────────────────────────────────────────────────────────
 
 enum NotificationType {
-    OrderPlaced
-    OrderConfirmed
-    OrderReadyForPickup
-    OrderInDelivery
-    OrderCompleted
-    OrderCancelled
-    OrderDisputed
-    StockDepleted
-    ReviewReceived
-    ReviewReplied
-    SystemAlert
-    SellerActivated
-    AccountBlocked
-    AccountUnblocked
-    DisputeOpened
-    DisputeResolved
-    ProductRestocked
+    OrderPlaced       = 1
+    OrderConfirmed    = 2
+    OrderReadyForPickup = 3
+    OrderInDelivery   = 4
+    OrderCompleted    = 5
+    OrderCancelled    = 6
+    OrderDisputed     = 7
+    StockDepleted     = 8
+    ReviewReceived    = 9
+    ReviewReplied     = 10
+    SystemAlert       = 11
+    SellerActivated   = 12
+    AccountBlocked    = 13
+    AccountUnblocked  = 14
+    DisputeOpened     = 15
+    DisputeResolved   = 16
+    ProductRestocked  = 17
+    NewMessage        = 18
 }
 
 enum DeliveryChannel {
@@ -99,11 +100,13 @@ class UserNotificationPreference {
     + OrderUpdates : bool
     + ReviewReplies : bool
     + SystemAlerts : bool
+    + ChatMessages : bool
     ..email..
     + Email : string?
     + EmailEnabled : bool
     + EmailOrderUpdates : bool
     + EmailReviewReplies : bool
+    + EmailChatMessages : bool
     ..
     + UpdatedAt : DateTimeOffset?
     --helpers (not persisted)--
@@ -111,6 +114,7 @@ class UserNotificationPreference {
     ~ CanEmailReview : bool
     ~ CanEmailSystem : bool
     ~ CanEmailMandatory : bool
+    ~ CanEmailChat : bool
 }
 
 ' ─── SignalR push infrastructure ─────────────────────────────────────────────
@@ -275,6 +279,8 @@ note bottom of NotificationType
   из других сервисов.
   NotificationService подписан
   на все события через MassTransit.
+  NewMessage (18) — из ChatMessageSentEvent
+  для уведомлений о входящих сообщениях.
 end note
 
 

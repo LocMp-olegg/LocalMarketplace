@@ -8,4 +8,5 @@ public sealed record OrderCompletedEvent(
     Guid? CourierId,
     IReadOnlyList<OrderedProductItem> Products,
     decimal TotalAmount,
+    bool IsSellerDelivery,
     DateTimeOffset OccurredAt) : IIntegrationEvent;

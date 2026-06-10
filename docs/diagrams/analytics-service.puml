@@ -148,6 +148,8 @@ class SellerLeaderboard <<read model>> {
     + Id : Guid <<PK>>
     + SellerId : Guid <<logical ref: Identity>>
     + SellerName : string <<snapshot>>
+    + ShopId : Guid? <<logical ref: Catalog>>
+    + ShopName : string? <<snapshot>>
     + PeriodType : PeriodType
     + PeriodStart : DateOnly
     ..метрики (из событий)..
@@ -169,6 +171,18 @@ class DisputeSummary <<read model>> {
     + BuyerFavoredCount : int
     + SellerFavoredCount : int
     + AverageResolutionMinutes : decimal
+    + UpdatedAt : DateTimeOffset
+}
+
+class ProductRatingSummary <<read model>> {
+    + Id : Guid <<PK>>
+    + ProductId : Guid <<logical ref: Catalog>>
+    + SellerId : Guid <<logical ref: Identity>>
+    + ProductName : string <<snapshot>>
+    + ShopId : Guid? <<logical ref: Catalog>>
+    + ShopName : string? <<snapshot>>
+    + AverageRating : decimal
+    + ReviewCount : int
     + UpdatedAt : DateTimeOffset
 }
 
@@ -205,12 +219,23 @@ note right of SellerSalesSummary
 end note
 
 note right of SellerLeaderboard
-  Метрики накапливаются инкрементально
-  через OrderCompletedEvent.
+  ShopId = null → строка агрегирует
+  все магазины продавца суммарно.
+  ShopId != null → строка для конкретного магазина.
+  Оба типа создаются в OrderCompletedConsumer.
   Ранги пересчитываются фоновым сервисом
-  LeaderboardComputeBackgroundService (каждые 6ч)
-  — нельзя считать инкрементально.
-  UNIQUE INDEX: (SellerId, PeriodType, PeriodStart).
+  LeaderboardComputeBackgroundService (каждые 6ч).
+  UNIQUE INDEX: (SellerId, ShopId, PeriodType, PeriodStart).
+end note
+
+note right of ProductRatingSummary
+  Инициализируется из OrderCompletedEvent
+  (при первом заказе с этим товаром).
+  Рейтинг обновляется через
+  RatingAggregateUpdatedEvent
+  (SubjectType == "Product").
+  Кросс-сервисный агрегат: объединяет
+  данные из Catalog + Review в одном месте.
 end note
 
 note right of ProductViewCounter
@@ -254,9 +279,10 @@ legend bottom
   | StockAlert | StockAlerts | Продавец | StockDepletedEvent |
   | ProductViewCounter | ProductViewCounters | Продавец + Admin | ProductViewedEvent |
   | PlatformDailySummary | PlatformDailySummaries | Только Admin | OrderPlacedEvent, UserRegisteredEvent, UserBlockedEvent, ProductCreatedEvent*, ReviewCreatedEvent* |
-  | SellerLeaderboard | SellerLeaderboards | Только Admin | OrderCompletedEvent + batch |
+  | SellerLeaderboard | SellerLeaderboards | Только Admin | OrderCompletedEvent + batch (ShopId=null: суммарно, ShopId!=null: по магазину) |
   | DisputeSummary | DisputeSummaries | Только Admin | DisputeOpenedEvent, DisputeResolvedEvent |
   | GeographicActivity | GeographicActivities | Только Admin | OrderPlacedEvent (requires ComplexId*) |
+  | ProductRatingSummary | ProductRatingSummaries | Продавец + Admin | OrderCompletedEvent (init), RatingAggregateUpdatedEvent (rating) |
   \n  * — planned events
 endlegend
 

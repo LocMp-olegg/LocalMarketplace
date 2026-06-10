@@ -3,4 +3,4 @@ using MediatR;
 
 namespace LocMp.Order.Application.Orders.Queries.Orders.GetOrderById;
 
-public sealed record GetOrderByIdQuery(Guid OrderId, Guid RequesterId, bool IsAdmin) : IRequest<OrderDto>;
+public sealed record GetOrderByIdQuery(Guid OrderId, Guid RequesterId, bool IsAdmin, bool IsCourier = false) : IRequest<OrderDto>;

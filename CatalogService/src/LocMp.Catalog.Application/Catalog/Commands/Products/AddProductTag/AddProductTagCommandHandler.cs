@@ -23,7 +23,8 @@ public sealed class AddProductTagCommandHandler(CatalogDbContext db, IDistribute
         var normalizedName = request.TagName.Trim().ToLowerInvariant();
         var slug = normalizedName.Replace(" ", "-");
 
-        var tag = await db.Tags.FirstOrDefaultAsync(t => t.Slug == slug, ct);
+        var tag = await db.Tags.FirstOrDefaultAsync(
+            t => t.Name == normalizedName || t.Slug == slug, ct);
         if (tag is null)
         {
             tag = new Tag(Guid.NewGuid()) { Name = normalizedName, Slug = slug };

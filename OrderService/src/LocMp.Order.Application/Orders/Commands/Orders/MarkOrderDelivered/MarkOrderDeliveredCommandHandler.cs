@@ -50,6 +50,7 @@ public sealed class MarkOrderDeliveredCommandHandler(OrderDbContext db, IEventBu
             order.Id, order.BuyerId, order.SellerId, order.SellerName, request.CourierId,
             order.Items.Select(i => new OrderedProductItem(i.ProductId, i.ProductName, i.Quantity, i.Subtotal, i.ShopId, i.ShopName)).ToList(),
             order.TotalAmount,
+            IsSellerDelivery: false,
             now), ct);
 
         await eventBus.PublishAsync(new OrderStatusChangedEvent(

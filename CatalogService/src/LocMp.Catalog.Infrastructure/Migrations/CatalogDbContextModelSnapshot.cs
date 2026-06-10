@@ -300,6 +300,9 @@ namespace LocMp.Catalog.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
 
+                    b.Property<bool>("AllowSellerDelivery")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("AvatarObjectKey")
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");

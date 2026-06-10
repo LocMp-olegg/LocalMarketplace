@@ -16,7 +16,6 @@ public sealed class SetCourierDeliveryCommandHandler(CatalogDbContext db)
             throw new ForbiddenException("You can only modify your own shops.");
 
         shop.AllowCourierDelivery = request.Allow;
-        shop.MaxCourierDistanceMeters = request.MaxDistanceMeters;
         shop.UpdatedAt = DateTimeOffset.UtcNow;
 
         await db.SaveChangesAsync(ct);

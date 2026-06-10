@@ -19,7 +19,8 @@ services:
       test: ["CMD-SHELL", "pg_isready -U postgres -p 5430"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 120s
 
   rabbitmq:
     image: rabbitmq:4-management

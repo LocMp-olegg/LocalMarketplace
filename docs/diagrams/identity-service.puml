@@ -52,8 +52,8 @@ enum Gender {
 
 enum UserRole {
     Admin
+    User
     Seller
-    Buyer
     Courier
 }
 
@@ -102,7 +102,7 @@ class UserAddress {
     + Entrance : string?
     + Floor : string?
     ..геолокация..
-    + Location : Point? <<geometry(Point,4326)>>
+    + Location : Point? <<geography(Point,4326)>>
     + IsDefault : bool
     + CreatedAt : DateTimeOffset
 }
@@ -117,21 +117,22 @@ class UserPhoto <<schema: media>> {
     + UploadedAt : DateTimeOffset
 }
 
-' ─── Read Models ──────────────────────────────────────────────────────────────
+' ─── CourierProfile ───────────────────────────────────────────────────────────
 
-class SellerReadModel <<read model>> {
-    + SellerId : Guid <<PK>>
-    + DisplayName : string
-    + AvatarUrl : string?
-    + AverageRating : decimal
-    + ReviewCount : int
-    + LastSyncedAt : DateTimeOffset
+class CourierProfile {
+    + CourierId : Guid <<PK, = UserId>>
+    + IsActive : bool
+    + ServiceRadiusMeters : int
+    + BaseLocation : Point? <<geography(Point,4326)>>
+    + CreatedAt : DateTimeOffset
+    + UpdatedAt : DateTimeOffset?
 }
 
 ' ─── Relationships ────────────────────────────────────────────────────────────
 
 ApplicationUser "1" *-down- "0..*" UserAddress : имеет >
 ApplicationUser "1" *-down- "0..1" UserPhoto : имеет фото >
+ApplicationUser "1" *-right- "0..1" CourierProfile : профиль курьера >
 ApplicationUser "1" -right- "0..*" AspNetUserRoles
 ApplicationRole "1" -left- "0..*" AspNetUserRoles
 
@@ -140,19 +141,21 @@ ApplicationUser ..> UserRole : роли через AspNetUserRoles
 
 ' ─── Notes ───────────────────────────────────────────────────────────────────
 
-note bottom of SellerReadModel
-  Обновляется реактивно через
-  <<RatingAggregateUpdatedEvent>>
-  из ReviewService (MassTransit).
-  Нет FK на ApplicationUser —
-  принадлежит другому сервису.
+note right of CourierProfile
+  PK = CourierId совпадает с UserId.
+  Создаётся командой BecomeACourier
+  одновременно с назначением роли Courier
+  через ASP.NET Identity.
+  BaseLocation — стартовая точка курьера
+  для геопоиска доступных заказов.
 end note
 
 note right of UserAddress
   Location хранится как
-  PostGIS geometry(Point, 4326).
+  PostGIS geography(Point, 4326).
+  Метрические запросы без конвертации.
   Используется для геофенсинга:
-  ST_Contains(complex.boundary, location)
+  ST_DWithin(location, center, radius_m)
 end note
 
 note bottom of AspNetUserRoles
@@ -168,11 +171,11 @@ legend bottom
   <b>Таблицы сервиса (schema: public, media)</b>
   |= Класс C# |= Таблица в БД |= Описание |
   | ApplicationUser | AspNetUsers | Учётные записи пользователей |
-  | ApplicationRole | AspNetRoles | Роли системы (Admin, Seller, Buyer, Courier) |
+  | ApplicationRole | AspNetRoles | Роли системы (Admin, User, Seller, Courier) |
   | AspNetUserRoles | AspNetUserRoles | Связующая M:M пользователь ↔ роль |
-  | UserAddress | UserAddresses | Адреса пользователя с геолокацией (PostGIS) |
+  | UserAddress | UserAddresses | Адреса пользователя с геолокацией (PostGIS geography) |
   | UserPhoto | media.UserPhotos | Аватар пользователя (StorageUrl → MinIO bucket: identity-media, 1:1) |
-  | SellerReadModel | SellerReadModels | Денормализованный профиль продавца для каталога |
+  | CourierProfile | CourierProfiles | Профиль курьера (PK = UserId, geography Point для базовой локации) |
 endlegend
 
 @enduml

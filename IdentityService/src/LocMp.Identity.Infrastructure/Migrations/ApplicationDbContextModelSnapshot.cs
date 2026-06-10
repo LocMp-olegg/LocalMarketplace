@@ -145,6 +145,31 @@ namespace LocMp.Identity.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("LocMp.Identity.Domain.Entities.CourierProfile", b =>
+                {
+                    b.Property<Guid>("CourierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Point>("BaseLocation")
+                        .HasColumnType("geography");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("ServiceRadiusMeters")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("CourierId");
+
+                    b.ToTable("CourierProfiles", (string)null);
+                });
+
             modelBuilder.Entity("LocMp.Identity.Domain.Entities.UserAddress", b =>
                 {
                     b.Property<Guid>("Id")
@@ -341,6 +366,17 @@ namespace LocMp.Identity.Infrastructure.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("LocMp.Identity.Domain.Entities.CourierProfile", b =>
+                {
+                    b.HasOne("LocMp.Identity.Domain.Entities.ApplicationUser", "Courier")
+                        .WithOne()
+                        .HasForeignKey("LocMp.Identity.Domain.Entities.CourierProfile", "CourierId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Courier");
                 });
 
             modelBuilder.Entity("LocMp.Identity.Domain.Entities.UserAddress", b =>
