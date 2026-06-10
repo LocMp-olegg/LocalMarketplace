@@ -2,6 +2,7 @@ using LocMp.Catalog.Api.Requests.Shops;
 using LocMp.Catalog.Application.Catalog.Commands.Shops.CreateShop;
 using LocMp.Catalog.Application.Catalog.Commands.Shops.DeleteShopPhoto;
 using LocMp.Catalog.Application.Catalog.Commands.Shops.SetCourierDelivery;
+using LocMp.Catalog.Application.Catalog.Commands.Shops.SetSellerDelivery;
 using LocMp.Catalog.Application.Catalog.Commands.Shops.UpdateShop;
 using LocMp.Catalog.Application.Catalog.Commands.Shops.UploadShopAvatar;
 using LocMp.Catalog.Application.Catalog.Commands.Shops.UploadShopPhoto;
@@ -128,6 +129,17 @@ public sealed class ShopsController(ISender sender) : ControllerBase
         await sender.Send(new SetCourierDeliveryCommand(
             id, HttpContext.GetUserId(), HttpContext.User.IsInRole("Admin"),
             request.Allow, request.MaxDistanceMeters), ct);
+        return NoContent();
+    }
+
+    [HttpPatch("{id:guid}/seller-delivery")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Seller,Admin")]
+    public async Task<IActionResult> SetSellerDelivery(
+        Guid id, [FromBody] SetSellerDeliveryRequest request, CancellationToken ct)
+    {
+        await sender.Send(new SetSellerDeliveryCommand(
+            id, HttpContext.GetUserId(), HttpContext.User.IsInRole("Admin"),
+            request.Allow), ct);
         return NoContent();
     }
 

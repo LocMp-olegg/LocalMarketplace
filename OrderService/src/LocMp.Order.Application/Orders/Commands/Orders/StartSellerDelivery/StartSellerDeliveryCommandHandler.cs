@@ -19,6 +19,7 @@ public sealed class StartSellerDeliveryCommandHandler(
     {
         var order = await db.Orders
                         .Include(o => o.CourierAssignment)
+                        .Include(o => o.CourierApplications)
                         .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct)
                     ?? throw new NotFoundException($"Order '{request.OrderId}' not found.");
 
@@ -42,14 +43,29 @@ public sealed class StartSellerDeliveryCommandHandler(
         }
 
         var now = DateTimeOffset.UtcNow;
+
+        var pendingApplications = order.CourierApplications
+            .Where(a => a.Status == CourierApplicationStatus.Pending)
+            .ToList();
+
+        foreach (var app in pendingApplications)
+        {
+            app.Status = CourierApplicationStatus.Rejected;
+            app.UpdatedAt = now;
+        }
+
         var (prev, history) = order.TransitionTo(OrderStatus.InDelivery, request.SellerId, now,
             "Seller started delivery");
-
         db.OrderStatusHistory.Add(history);
+
         await db.SaveChangesAsync(ct);
 
         await eventBus.PublishAsync(new OrderStatusChangedEvent(
             order.Id, order.BuyerId, order.SellerId,
             prev.ToString(), nameof(OrderStatus.InDelivery), now), ct);
+
+        foreach (var app in pendingApplications)
+            await eventBus.PublishAsync(new CourierApplicationRejectedEvent(
+                app.Id, order.Id, app.CourierId, now), ct);
     }
 }
