@@ -7,6 +7,7 @@ using LocMp.Order.Domain.Entities;
 using LocMp.Order.Domain.Enums;
 using LocMp.Order.Infrastructure.DTOs;
 using LocMp.Order.Infrastructure.Interfaces;
+using LocMp.Order.Application.Extensions;
 using LocMp.Order.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -155,7 +156,7 @@ public sealed class CheckoutCommandHandler(
                 && settings.Latitude is not null && settings.Longitude is not null
                 && group.DeliveryAddress is { Latitude: not null, Longitude: not null })
             {
-                var distanceMeters = CalculateDistanceMeters(
+                var distanceMeters = GeoUtils.CalculateDistanceMeters(
                     settings.Latitude.Value, settings.Longitude.Value,
                     group.DeliveryAddress.Latitude.Value, group.DeliveryAddress.Longitude.Value);
 
@@ -166,20 +167,6 @@ public sealed class CheckoutCommandHandler(
             }
         }
     }
-
-    private static double CalculateDistanceMeters(
-        double lat1, double lon1, double lat2, double lon2)
-    {
-        const double earthRadiusMeters = 6_371_000;
-        var dLat = ToRad(lat2 - lat1);
-        var dLon = ToRad(lon2 - lon1);
-        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2)
-              + Math.Cos(ToRad(lat1)) * Math.Cos(ToRad(lat2))
-              * Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
-        return earthRadiusMeters * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-    }
-
-    private static double ToRad(double degrees) => degrees * Math.PI / 180;
 
     private async Task<List<OrderEntity>> CreateOrdersInTransactionAsync(
         CheckoutCommand request,
