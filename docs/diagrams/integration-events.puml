@@ -72,6 +72,15 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
             + UserId : Guid
             + OccurredAt : DateTimeOffset
         }
+        class UserBecameCourierEvent {
+            + UserId : Guid
+            + DisplayName : string
+            + OccurredAt : DateTimeOffset
+        }
+        class UserLostCourierStatusEvent {
+            + UserId : Guid
+            + OccurredAt : DateTimeOffset
+        }
     }
 
     package "Catalog Events" #E9F7EF {
@@ -163,12 +172,39 @@ package "LocMp.Contracts\n(общая библиотека событий)" #F5F
             + CourierId : Guid?
             + Products : IReadOnlyList<OrderedProductItem>
             + TotalAmount : decimal
+            + IsSellerDelivery : bool
             + OccurredAt : DateTimeOffset
         }
         class StockReserveRequestEvent {
             + ProductId : Guid
             + OrderId : Guid
             + Quantity : int
+            + OccurredAt : DateTimeOffset
+        }
+        class CourierApplicationSubmittedEvent {
+            + ApplicationId : Guid
+            + OrderId : Guid
+            + CourierId : Guid
+            + CourierName : string
+            + OccurredAt : DateTimeOffset
+        }
+        class CourierApplicationApprovedEvent {
+            + ApplicationId : Guid
+            + OrderId : Guid
+            + CourierId : Guid
+            + SellerId : Guid
+            + OccurredAt : DateTimeOffset
+        }
+        class CourierApplicationRejectedEvent {
+            + ApplicationId : Guid
+            + OrderId : Guid
+            + CourierId : Guid
+            + OccurredAt : DateTimeOffset
+        }
+        class CourierAssignmentExpiredEvent {
+            + OrderId : Guid
+            + CourierId : Guid
+            + SellerId : Guid
             + OccurredAt : DateTimeOffset
         }
         class DisputeOpenedEvent {
@@ -253,6 +289,8 @@ note as PublisherNote
                      UserProfileUpdatedEvent
                      UserBecameSellerEvent
                      UserLostSellerStatusEvent
+                     UserBecameCourierEvent
+                     UserLostCourierStatusEvent
   ─────────────────────────────────────────
   CatalogService   → StockReservedEvent
                      StockReservationFailedEvent
@@ -268,6 +306,10 @@ note as PublisherNote
                      OrderCompletedEvent
                      DisputeOpenedEvent
                      DisputeResolvedEvent
+                     CourierApplicationSubmittedEvent
+                     CourierApplicationApprovedEvent
+                     CourierApplicationRejectedEvent
+                     CourierAssignmentExpiredEvent
   ─────────────────────────────────────────
   ReviewService    → RatingAggregateUpdatedEvent
                      ReviewCreatedEvent
@@ -307,18 +349,23 @@ note as ConsumerNote
     • ReviewCreatedEvent          → PlatformDailySummary.NewReviews 
   ─────────────────────────────────────────
   NotificationService:
-    • UserRegisteredEvent         → создаёт UserNotificationPreferences
-    • UserBecameSellerEvent       → приветственное уведомление новому продавцу
-    • UserBlockedEvent            → уведомление пользователю о блокировке
-    • UserUnblockedEvent          → уведомление пользователю о разблокировке
-    • OrderPlacedEvent            → уведомление продавцу
-    • OrderStatusChangedEvent     → уведомление покупателю/продавцу
-    • OrderCompletedEvent         → предложение написать отзыв покупателю
-    • StockDepletedEvent          → уведомление продавцу
-    • ProductRestockedEvent       → уведомление пользователям у которых товар в избранном
-    • ReviewCreatedEvent          → уведомление продавцу о новом отзыве
-    • DisputeOpenedEvent          → уведомление покупателю и продавцу
-    • DisputeResolvedEvent        → уведомление о решении покупателю и продавцу
+    • UserRegisteredEvent               → создаёт UserNotificationPreferences
+    • UserBecameSellerEvent             → приветственное уведомление новому продавцу
+    • UserBlockedEvent                  → уведомление пользователю о блокировке
+    • UserUnblockedEvent                → уведомление пользователю о разблокировке
+    • OrderPlacedEvent                  → уведомление продавцу
+    • OrderStatusChangedEvent           → уведомление покупателю/продавцу
+    • OrderCompletedEvent               → предложение написать отзыв покупателю
+    • StockDepletedEvent                → уведомление продавцу
+    • ProductRestockedEvent             → уведомление пользователям из избранного
+    • ReviewCreatedEvent                → уведомление продавцу о новом отзыве
+    • DisputeOpenedEvent                → mandatory email + in-app покупателю и продавцу
+    • DisputeResolvedEvent              → mandatory email + in-app о решении
+    • ChatMessageSentEvent              → in-app уведомление получателю (NewMessage)
+    • CourierApplicationSubmittedEvent  → уведомление продавцу о новой заявке
+    • CourierApplicationApprovedEvent   → уведомление курьеру об одобрении
+    • CourierApplicationRejectedEvent   → уведомление курьеру об отклонении
+    • CourierAssignmentExpiredEvent     → уведомление продавцу о таймауте курьера
   ─────────────────────────────────────────
   ChatService:
     • OrderPlacedEvent   → создаёт чат-комнату (BuyerId + SellerId)

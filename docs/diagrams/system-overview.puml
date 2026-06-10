@@ -104,12 +104,11 @@ Gateway -[#2E7D32,bold]down-> Analytics : <color:#2E7D32>/api/analytics/**</colo
 Gateway -[#2E7D32,bold]down-> Chat      : <color:#2E7D32>/api/chats/**</color>\n<color:#2E7D32>/hubs/chat (WS)</color>
 
 ' ── Синхронный HTTP между сервисами (оранжевый, пунктир) ──
-Orders -[#E65100,dashed]left-> Catalog  : <color:#E65100>GET /products/{id}/stock</color>\n<color:#E65100>POST /products/{id}/reserve</color>
-Orders -[#E65100,dashed]left-> Identity : <color:#E65100>GET /users/{id}</color>\n<color:#E65100>(снепшот имени)</color>
+Orders -[#E65100,dashed]left-> Catalog  : <color:#E65100>GET /products/{id}</color>\n<color:#E65100>GET /shops/{id}</color>\n<color:#E65100>POST /products/{id}/reserve</color>\n<color:#E65100>POST /products/{id}/release</color>
 
 ' ── Redis cache (бирюзовый, пунктир) ──
 Catalog -[#00838F,dashed]up-> Redis : <color:#00838F>products, categories</color>\n<color:#00838F>profiles</color>
-Orders  -[#00838F,dashed]up-> Redis : <color:#00838F>cart:{userId}</color>
+Orders  -[#00838F,dashed]up-> Redis : <color:#00838F>query cache</color>
 Notifs  -[#00838F,dashed]up-> Redis : <color:#00838F>notif:prefs, notif:unread</color>
 Chat    -[#00838F,dashed]up-> Redis : <color:#00838F>SignalR backplane</color>
 
@@ -117,9 +116,9 @@ Chat    -[#00838F,dashed]up-> Redis : <color:#00838F>SignalR backplane</color>
 Notifs -[#AD1457,dashed]right-> MailHog : <color:#AD1457>SMTP :1025</color>
 
 ' ── Публикация событий в MQ (фиолетовый) ──
-Identity -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>UserRegisteredEvent</color>\n<color:#6A1B9A>UserBecameSellerEvent</color>\n<color:#6A1B9A>UserBlockedEvent</color>\n<color:#6A1B9A>UserUnblockedEvent</color>\n<color:#6A1B9A>UserProfileUpdatedEvent</color>
+Identity -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>UserRegisteredEvent</color>\n<color:#6A1B9A>UserBecameSellerEvent</color>\n<color:#6A1B9A>UserBecameCourierEvent</color>\n<color:#6A1B9A>UserLostCourierStatusEvent</color>\n<color:#6A1B9A>UserBlockedEvent</color>\n<color:#6A1B9A>UserUnblockedEvent</color>\n<color:#6A1B9A>UserProfileUpdatedEvent</color>
 Catalog  -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>StockReservedEvent</color>\n<color:#6A1B9A>StockReleasedEvent</color>\n<color:#6A1B9A>StockDepletedEvent</color>\n<color:#6A1B9A>StockReservationFailedEvent</color>\n<color:#6A1B9A>ProductCreatedEvent</color>\n<color:#6A1B9A>ProductViewedEvent</color>\n<color:#6A1B9A>ProductRestockedEvent</color>\n<color:#6A1B9A>FavoriteChangedEvent</color>
-Orders   -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>StockReserveRequestEvent</color>\n<color:#6A1B9A>OrderPlacedEvent</color>\n<color:#6A1B9A>OrderStatusChangedEvent</color>\n<color:#6A1B9A>OrderCompletedEvent</color>\n<color:#6A1B9A>DisputeOpenedEvent</color>\n<color:#6A1B9A>DisputeResolvedEvent</color>
+Orders   -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>OrderPlacedEvent</color>\n<color:#6A1B9A>OrderStatusChangedEvent</color>\n<color:#6A1B9A>OrderCompletedEvent</color>\n<color:#6A1B9A>DisputeOpenedEvent</color>\n<color:#6A1B9A>DisputeResolvedEvent</color>\n<color:#6A1B9A>CourierApplicationSubmittedEvent</color>\n<color:#6A1B9A>CourierApplicationApprovedEvent</color>\n<color:#6A1B9A>CourierApplicationRejectedEvent</color>\n<color:#6A1B9A>CourierAssignmentExpiredEvent</color>
 Reviews  -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>RatingAggregateUpdatedEvent</color>\n<color:#6A1B9A>ReviewCreatedEvent</color>
 Chat     -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>ChatMessageSentEvent</color>
 
@@ -127,7 +126,7 @@ Chat     -[#6A1B9A,bold]down-> MQ : <color:#6A1B9A>ChatMessageSentEvent</color>
 MQ -[#B71C1C,dashed]up-> Catalog   : <color:#B71C1C>StockReserveRequestEvent</color>\n<color:#B71C1C>→ зарезервировать остаток</color>\n<color:#B71C1C>UserProfileUpdatedEvent</color>\n<color:#B71C1C>→ SellerReadModel (имя)</color>\n<color:#B71C1C>RatingAggregateUpdatedEvent</color>\n<color:#B71C1C>→ Product (рейтинг товара)</color>\n<color:#B71C1C>→ SellerReadModel (рейтинг)</color>
 MQ -[#B71C1C,dashed]up-> Orders    : <color:#B71C1C>StockReservedEvent → подтвердить</color>\n<color:#B71C1C>StockReservationFailedEvent → отменить</color>\n<color:#B71C1C>UserBlockedEvent → отменить заказы</color>
 MQ -[#B71C1C,dashed]up-> Reviews   : <color:#B71C1C>OrderCompletedEvent</color>\n<color:#B71C1C>→ разблокировать отзыв</color>\n<color:#B71C1C>DisputeResolvedEvent</color>\n<color:#B71C1C>→ авто-отзыв</color>
-MQ -[#B71C1C,dashed]up-> Notifs    : <color:#B71C1C>UserRegisteredEvent</color>\n<color:#B71C1C>UserBecameSellerEvent</color>\n<color:#B71C1C>UserBlocked/Unblocked</color>\n<color:#B71C1C>OrderPlaced/Status/Completed</color>\n<color:#B71C1C>DisputeOpened/Resolved</color>\n<color:#B71C1C>StockDepletedEvent</color>\n<color:#B71C1C>ProductRestockedEvent</color>\n<color:#B71C1C>RatingAggregateUpdatedEvent</color>\n<color:#B71C1C>ReviewCreatedEvent</color>
+MQ -[#B71C1C,dashed]up-> Notifs    : <color:#B71C1C>UserRegisteredEvent</color>\n<color:#B71C1C>UserBecameSellerEvent</color>\n<color:#B71C1C>UserBlocked/Unblocked</color>\n<color:#B71C1C>OrderPlaced/Status/Completed</color>\n<color:#B71C1C>DisputeOpened/Resolved</color>\n<color:#B71C1C>StockDepletedEvent</color>\n<color:#B71C1C>ProductRestockedEvent</color>\n<color:#B71C1C>ReviewCreatedEvent</color>\n<color:#B71C1C>ChatMessageSentEvent</color>\n<color:#B71C1C>CourierApplication*Event</color>
 MQ -[#B71C1C,dashed]up-> Analytics : <color:#B71C1C>OrderPlaced/Status/Completed</color>\n<color:#B71C1C>DisputeOpened/Resolved</color>\n<color:#B71C1C>StockDepletedEvent</color>\n<color:#B71C1C>ProductViewed/Created</color>\n<color:#B71C1C>FavoriteChangedEvent</color>\n<color:#B71C1C>RatingAggregateUpdatedEvent</color>\n<color:#B71C1C>ReviewCreatedEvent</color>
 MQ -[#B71C1C,dashed]up-> Chat      : <color:#B71C1C>OrderPlacedEvent → создать чат</color>\n<color:#B71C1C>OrderStatusChangedEvent → закрыть</color>\n<color:#B71C1C>UserBlockedEvent → закрыть чаты</color>
 

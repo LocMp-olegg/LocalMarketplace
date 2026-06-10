@@ -2,7 +2,7 @@
 title <size:16><b>Sequence: Оформление заказа</b></size>\n<color:#555>Сага резервирования остатков (Checkout → StockReserve → Confirm/Cancel)</color>
 
 skinparam defaultFontName "Segoe UI", Arial, sans-serif
-skinparam defaultFontSize 12
+skinparam defaultFontSize 14
 skinparam roundcorner 8
 skinparam shadowing false
 skinparam sequenceMessageAlign center
@@ -36,8 +36,8 @@ skinparam note {
 skinparam sequence {
     ArrowColor #2C3E50
     ArrowThickness 1.4
-    LifeLineBorderColor #90A4AE
-    LifeLineBackgroundColor #FAFAFA
+    LifeLineBorderColor #607D8B
+    LifeLineBackgroundColor #CFD8DC
     BoxBorderColor #B0BEC5
     BoxBackgroundColor transparent
     DividerBackgroundColor #ECEFF1
@@ -51,7 +51,6 @@ skinparam sequence {
 actor       "Покупатель"         as Buyer
 participant "API Gateway\n:5000" as GW       #ECEFF1
 participant "OrderService\n:5003" as OS      #EDE7F6
-database    "Redis\n:6379"        as Redis   #EAFAF1
 participant "CatalogService\n:5002" as CS    #E8F5E9
 database    "PostgreSQL\norders"  as PGOS    #EDE7F6
 queue       "RabbitMQ"            as MQ      #F3E5F5
@@ -64,18 +63,26 @@ participant "AnalyticsService\n:5006" as AS  #FFF3E0
 ' ══════════════════════════════════════════════════════════════
 
 Buyer -> GW     : POST /api/orders/carts/items\n{productId, quantity}
-GW    -> OS     : HTTP + JWT
+activate GW
+GW    -> OS     : Маршрутизация (HTTP + JWT)
+deactivate GW
 activate OS
-OS    -> Redis  : HSET cart:{userId} {productId} {qty:price:name}\nTTL 24ч
-Redis --> OS    : OK
-OS   --> Buyer  : 200 CartItemDto
+OS    -> CS     : GET /api/products/{productId}\n(проверка наличия и остатка)
+activate CS
+CS   --> OS     : ProductDto
+deactivate CS
+OS    -> PGOS   : SELECT Carts WHERE UserId = ... AND ExpiresAt > now\nINSERT Cart (если нет) ExpiresAt = now + 24ч\nINSERT/UPDATE CartItem (снепшот: name, price, sellerId)
+PGOS --> OS     : Cart + CartItems
+OS   --> Buyer  : 200 CartDto
 deactivate OS
 
-note over Redis
-  Структура ключа:
-  cart:{userId} → Hash
-  field: {productId}
-  value: {qty}:{price}:{name}
+note over PGOS
+  Корзина хранится в PostgreSQL (schema: orders):
+  Таблица Carts: UserId, ExpiresAt (TTL 24ч)
+  Таблица CartItems: снепшот ProductName, Price,
+  SellerId, SellerName, ShopId, ShopName
+  Фоновый сервис CartCleanupBackgroundService
+  удаляет истёкшие корзины каждый час.
 end note
 
 ' ══════════════════════════════════════════════════════════════
@@ -83,52 +90,51 @@ end note
 ' ══════════════════════════════════════════════════════════════
 
 Buyer -> GW   : POST /api/orders/checkout\n{cartId, deliveryType, address?}
-GW    -> OS   : HTTP + JWT
+activate GW
+GW    -> OS   : Маршрутизация (HTTP + JWT)
+deactivate GW
 activate OS
 
-OS -> Redis   : HGETALL cart:{userId}
-Redis --> OS  : [{productId, qty, price, name}, ...]
+OS -> PGOS    : SELECT Carts + CartItems WHERE UserId = ...
+PGOS --> OS   : Cart + CartItems (снепшоты)
 
 loop для каждого уникального продавца в корзине
 
-    OS -> CS  : GET /api/products/{productId}\n(снепшот: name, price, sellerId)
+    OS -> CS  : GET /api/products/{productId}\n(актуальный снепшот: name, price, sellerId)
+    activate CS
     CS --> OS : ProductDto
+    deactivate CS
 
     OS -> CS  : GET /api/shops/{shopId}
+    activate CS
     CS --> OS : ShopDto
+    deactivate CS
 
     OS -> PGOS : INSERT Order{Status=Pending}\n+ OrderItems (снепшоты)\n+ OrderStatusHistory{null→Pending}
 end
 
-OS -> Redis   : DEL cart:{userId}
-OS -> MQ      : <color:#6A1B9A>StockReserveRequestEvent</color>\n{productId, orderId, quantity}
+OS -> PGOS    : DELETE CartItems (выбранные позиции)
+
+loop для каждого товара (синхронное HTTP-резервирование)
+    OS -> CS  : POST /api/products/{productId}/reserve\n{quantity, orderId}  [X-Internal-Key]
+    activate CS
+    CS -> PGCS : SELECT StockQuantity WHERE Id = productId
+
+    alt [Достаточно_остатков]
+        CS -> PGCS : UPDATE Products SET StockQuantity -= qty\nINSERT StockHistory{OrderReserved, -qty}
+        CS -> MQ   : <color:#6A1B9A>StockReservedEvent</color>\n{productId, orderId, reservedQty}
+        CS --> OS  : 200 OK
+    else [Недостаточно_остатков]
+        CS -> MQ   : <color:#6A1B9A>StockReservationFailedEvent</color>\n{productId, orderId, reason="Insufficient stock"}
+        CS --> OS  : 409 Conflict
+        OS -> OS   : ReleaseStockAsync для уже зарезервированных (компенсация)
+    end
+    deactivate CS
+end
+
 OS -> MQ      : <color:#6A1B9A>OrderPlacedEvent</color>\n{orderId, buyerId, sellerId, total}
 OS --> Buyer  : 201 CheckoutResultDto{[orderId, ...]}
 deactivate OS
-
-' ══════════════════════════════════════════════════════════════
-== Сага: CatalogService обрабатывает резервирование ==
-' ══════════════════════════════════════════════════════════════
-
-MQ -> CS     : <color:#B71C1C>consume StockReserveRequestEvent</color>
-activate CS
-CS -> PGCS   : SELECT StockQuantity WHERE Id = productId
-
-alt [Достаточно_остатков]
-    CS -> PGCS : UPDATE Products SET StockQuantity -= qty\nINSERT StockHistory{OrderReserved, -qty}
-    CS -> MQ   : <color:#6A1B9A>StockReservedEvent</color>\n{productId, orderId, reservedQty}
-
-    note over PGCS
-      StockHistory запись:
-      ChangeType = OrderReserved
-      QuantityDelta = -qty
-      ReferenceId   = orderId
-    end note
-
-else [Недостаточно_остатоков]
-    CS -> MQ   : <color:#6A1B9A>StockReservationFailedEvent</color>\n{productId, orderId, reason="Insufficient stock"}
-end
-deactivate CS
 
 ' ══════════════════════════════════════════════════════════════
 == OrderService получает результат резервирования ==

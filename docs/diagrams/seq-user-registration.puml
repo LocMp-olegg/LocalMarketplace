@@ -2,7 +2,7 @@
 title <size:16><b>Sequence: Регистрация и активация продавца</b></size>\n<color:#555>UserRegisteredEvent → инициализация preferences; UserBecameSellerEvent → SellerReadModel</color>
 
 skinparam defaultFontName "Segoe UI", Arial, sans-serif
-skinparam defaultFontSize 12
+skinparam defaultFontSize 14
 skinparam roundcorner 8
 skinparam shadowing false
 skinparam sequenceMessageAlign center
@@ -36,8 +36,8 @@ skinparam note {
 skinparam sequence {
     ArrowColor #2C3E50
     ArrowThickness 1.4
-    LifeLineBorderColor #90A4AE
-    LifeLineBackgroundColor #FAFAFA
+    LifeLineBorderColor #607D8B
+    LifeLineBackgroundColor #CFD8DC
     BoxBorderColor #B0BEC5
     BoxBackgroundColor transparent
     DividerBackgroundColor #ECEFF1
@@ -64,7 +64,9 @@ database    "PostgreSQL\ncatalog"     as PGCS #E8F5E9
 ' ══════════════════════════════════════════════════════════════
 
 User -> GW : POST /api/users\n{email, password, firstName, lastName,\n birthDate, gender, isSeller, lat?, lon?}
-GW   -> IS : публичный эндпоинт (AllowAnonymous)
+activate GW
+GW   -> IS : Маршрутизация (публичный эндпоинт)
+deactivate GW
 activate IS
 
 IS   -> IS : RegisterUserCommand\nValidationBehavior (FluentValidation)\n→ уникальность email/username
@@ -150,13 +152,18 @@ end note
 ' ══════════════════════════════════════════════════════════════
 
 User -> GW  : PUT /api/identity/user-profiles/me\n{firstName, lastName, avatarUrl?}
-GW   -> IS  : Auth JWT (Seller)
+activate GW
+GW   -> IS  : Авторизация продавца (JWT)
+deactivate GW
 activate IS
 IS   -> PGIS : UPDATE AspNetUsers{FirstName, LastName}
 IS   -> MQ   : <color:#6A1B9A>UserProfileUpdatedEvent</color>\n{userId, displayName, avatarUrl}
 IS  --> User : 200 UserProfileDto
 deactivate IS
 
-MQ -> CS : <color:#B71C1C>consume UserProfileUpdatedEvent</color>\n→ UPDATE SellerReadModels\n   SET DisplayName = newName,\n       AvatarUrl = newAvatar,\n       LastSyncedAt = now
+MQ -> CS : <color:#B71C1C>consume UserProfileUpdatedEvent</color>
+activate CS
+CS -> PGCS : UPDATE SellerReadModels\n   SET DisplayName = newName,\n       AvatarUrl = newAvatar,\n       LastSyncedAt = now
+deactivate CS
 
 @enduml

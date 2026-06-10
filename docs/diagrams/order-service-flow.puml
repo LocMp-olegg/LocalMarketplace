@@ -75,7 +75,7 @@ rectangle "**OrderService  :5003**" #EDE7F6 {
     }
 
     rectangle "Queries" #FEF9E7 {
-      component "GetOrderByIdQuery\nGetMyPurchasesQuery  /  GetMySalesQuery\nGetOrdersBySellerQuery  /  GetAllOrdersQuery\nGetCartQuery  (ICacheableQuery → Redis)" as QOrders
+      component "GetOrderByIdQuery\nGetMyPurchasesQuery  /  GetMySalesQuery\nGetOrdersBySellerQuery  /  GetAllOrdersQuery\nGetCartByUserQuery" as QOrders
     }
 
     rectangle "Consumers  (MassTransit)" #F0E6FF {
@@ -90,7 +90,7 @@ rectangle "**OrderService  :5003**" #EDE7F6 {
     component "**MassTransitEventBus**\n(IEventBus)" as EventBus
     component "**CatalogServiceClient**\n(HttpClient)\nGET  api/products/{id}\nGET  api/shops/{id}\nPOST api/products/{id}/reserve\nPOST api/products/{id}/release" as CatalogClient
     component "**MinIO Adapter**\n(IStorageService)\nbucket: order-media" as MinIOAdapt
-    component "**Redis Adapter**\n(IDistributedCache)\ncart:{userId} — TTL 24ч" as RedisAdapt
+    component "**Redis Adapter**\n(IDistributedCache)\nquery cache (ICacheableQuery)" as RedisAdapt
     component "**CartExpiryBackgroundService**\n(BackgroundService)\n— чистит истёкшие корзины" as BgCart
   }
 }
@@ -131,7 +131,6 @@ Pipeline -[#7B1FA2]-> QOrders
 
 ' Commands → Infrastructure
 CmdCart     -[#795548]-> DbCtx
-CmdCart     -[#00838F,dashed]-> RedisAdapt : cart:{userId} HSET/HGET
 CmdCheckout -[#795548]-> DbCtx
 CmdCheckout -[#6A1B9A,bold]-> EventBus
 CmdCheckout -[#E65100,bold]-> CatalogClient : GET product snapshot\nPOST reserve stock
@@ -200,12 +199,11 @@ note right of CmdStatus
 end note
 
 note bottom of RedisAdapt
-  Корзина в Redis (Hashes):
-  Ключ: cart:{userId}
-  Field: {productId}
-  Value: {quantity}:{price}:{name}
-  TTL: 24 часа
-  При Checkout → корзина очищается.
+  Redis зарегистрирован как IDistributedCache
+  и используется CachingBehavior для запросов,
+  реализующих ICacheableQuery.
+  Корзина хранится в PostgreSQL (Carts/CartItems),
+  TTL управляется полем ExpiresAt.
 end note
 
 ' ─── Легенда ─────────────────────────────────────────────────────────────────

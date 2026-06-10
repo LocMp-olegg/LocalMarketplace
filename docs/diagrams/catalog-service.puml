@@ -67,10 +67,11 @@ class Shop {
     + BusinessType : BusinessType
     + WorkingHours : string?
     + ServiceRadiusMeters : int?
-    + Location : Point? <<geometry(Point,4326)>>
+    + Location : Point? <<geography(Point,4326)>>
     + AvatarUrl : string?
     + AvatarObjectKey : string?
     + AllowCourierDelivery : bool
+    + AllowSellerDelivery : bool
     + MaxCourierDistanceMeters : int?
     + IsVerified : bool
     + VerifiedAt : DateTimeOffset?
@@ -136,7 +137,7 @@ class Product <<aggregate root>> {
     + IsMadeToOrder : bool
     + LeadTimeDays : int?
     ..геолокация точки продажи..
-    + Location : Point <<geometry(Point,4326)>>
+    + Location : Point <<geography(Point,4326)>>
     ..произвольные метаданные..
     + Attributes : JsonDocument? <<jsonb>>
     ..рейтинг (денормализация из Review)..
@@ -229,6 +230,11 @@ Product ..> StockChangeType : использует
 ' ─── Notes ───────────────────────────────────────────────────────────────────
 
 note right of Shop
+  AllowSellerDelivery (default false):
+  продавец сам доставляет заказ.
+  AllowCourierDelivery (default true):
+  разрешена доставка курьером-соседом.
+
   AverageRating / ReviewCount:
   средневзвешенный рейтинг по всем
   товарам магазина (без прямых отзывов).
@@ -251,7 +257,8 @@ note right of Product
   {"материал":"дерево","размер":"30x20"}
   {"объём_л":1.5,"крепость_":4.5}
 
-  Геофильтрация покупателем:
+  Location — geography(Point,4326):
+  метрические запросы без конвертации.
   ST_DWithin(product.location,
     buyer.location, radius_m)
 
@@ -291,7 +298,7 @@ end note
 legend bottom
   <b>Таблицы сервиса (schema: catalog)</b>
   |= Класс C# |= Таблица в БД |= Описание |
-  | Shop | Shops | Магазин продавца с геолокацией, бизнес-типом, настройками доставки и агрегированным рейтингом по товарам |
+  | Shop | Shops | Магазин продавца с геолокацией (geography), бизнес-типом, настройками AllowCourierDelivery/AllowSellerDelivery и агрегированным рейтингом по товарам |
   | ShopAddress | — (owned, в Shops) | Адрес магазина: City, Street, HouseNumber, Apartment, Entrance, Floor |
   | ShopPhoto | ShopPhotos | Фото магазина (StorageUrl → MinIO bucket: catalog-media) |
   | Category | Categories | Дерево категорий товаров (self-referencing) |
