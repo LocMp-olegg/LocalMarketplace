@@ -348,3 +348,7 @@ volumes:
   rabbitmq-data:
   minio-data:
   redis-data:
+
+networks:
+  default:
+    name: marketplace_net
