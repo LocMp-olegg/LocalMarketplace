@@ -25,7 +25,8 @@ public sealed class ReviewCreatedConsumer(
     public async Task Consume(ConsumeContext<ReviewCreatedEvent> ctx)
     {
         var msg = ctx.Message;
-        var prefs = await PreferenceHelper.GetAsync(msg.SellerId, cache, db, ctx.CancellationToken);
+        var recipientId = msg.SubjectType == "Courier" ? msg.SubjectId : msg.SellerId;
+        var prefs = await PreferenceHelper.GetAsync(recipientId, cache, db, ctx.CancellationToken);
 
         if (prefs.ReviewReplies)
         {
@@ -34,7 +35,7 @@ public sealed class ReviewCreatedConsumer(
             var stars = new string('★', msg.Rating) + new string('☆', 5 - msg.Rating);
             var notif = new NotificationEntity(Guid.NewGuid())
             {
-                UserId = msg.SellerId,
+                UserId = recipientId,
                 Type = NotificationType.ReviewReceived,
                 Title = "Новый отзыв",
                 Body = $"Вы получили новый отзыв: {stars} ({msg.Rating}/5).",
@@ -46,8 +47,8 @@ public sealed class ReviewCreatedConsumer(
             };
             db.Notifications.Add(notif);
             await db.SaveChangesAsync(ctx.CancellationToken);
-            await cache.RemoveAsync(NotificationCacheKeys.UnreadCount(msg.SellerId), ctx.CancellationToken);
-            await pusher.PushAsync(msg.SellerId, NotificationPushDto.From(notif), ctx.CancellationToken);
+            await cache.RemoveAsync(NotificationCacheKeys.UnreadCount(recipientId), ctx.CancellationToken);
+            await pusher.PushAsync(recipientId, NotificationPushDto.From(notif), ctx.CancellationToken);
         }
 
         if (prefs.CanEmailReview)
