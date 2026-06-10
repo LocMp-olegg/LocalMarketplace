@@ -54,15 +54,17 @@ public sealed class StartSellerDeliveryCommandHandler(
             app.UpdatedAt = now;
         }
 
-        var (prev, history) = order.TransitionTo(OrderStatus.InDelivery, request.SellerId, now,
-            "Seller started delivery");
+        order.IsSellerDelivery = true;
+
+        var (prev, history) = order.TransitionTo(OrderStatus.ReadyForCourier, request.SellerId, now,
+            "Seller will deliver the order");
         db.OrderStatusHistory.Add(history);
 
         await db.SaveChangesAsync(ct);
 
         await eventBus.PublishAsync(new OrderStatusChangedEvent(
             order.Id, order.BuyerId, order.SellerId,
-            prev.ToString(), nameof(OrderStatus.InDelivery), now), ct);
+            prev.ToString(), nameof(OrderStatus.ReadyForCourier), now), ct);
 
         foreach (var app in pendingApplications)
             await eventBus.PublishAsync(new CourierApplicationRejectedEvent(

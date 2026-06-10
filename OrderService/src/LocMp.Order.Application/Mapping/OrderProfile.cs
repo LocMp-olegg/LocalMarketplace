@@ -38,6 +38,7 @@ public sealed class OrderProfile : Profile
             .ForCtorParam(nameof(OrderDto.SellerName), o => o.MapFrom(s => s.SellerName))
             .ForCtorParam(nameof(OrderDto.CheckoutId), o => o.MapFrom(s => s.CheckoutId))
             .ForCtorParam(nameof(OrderDto.ShopId), o => o.MapFrom(s => s.ShopId))
-            .ForCtorParam(nameof(OrderDto.ShopName), o => o.MapFrom(s => s.ShopName));
+            .ForCtorParam(nameof(OrderDto.ShopName), o => o.MapFrom(s => s.ShopName))
+            .ForCtorParam(nameof(OrderDto.IsSellerDelivery), o => o.MapFrom(s => s.IsSellerDelivery));
     }
 }

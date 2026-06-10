@@ -7,21 +7,23 @@ using LocMp.Order.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace LocMp.Order.Application.Orders.Commands.Orders.MarkOrderDelivered;
+namespace LocMp.Order.Application.Orders.Commands.Orders.MarkSellerDelivered;
 
-public sealed class MarkOrderDeliveredCommandHandler(OrderDbContext db, IEventBus eventBus)
-    : IRequestHandler<MarkOrderDeliveredCommand>
+public sealed class MarkSellerDeliveredCommandHandler(OrderDbContext db, IEventBus eventBus)
+    : IRequestHandler<MarkSellerDeliveredCommand>
 {
-    public async Task Handle(MarkOrderDeliveredCommand request, CancellationToken ct)
+    public async Task Handle(MarkSellerDeliveredCommand request, CancellationToken ct)
     {
         var order = await db.Orders
-            .Include(o => o.CourierAssignment)
-            .Include(o => o.Items)
-            .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct)
-            ?? throw new NotFoundException($"Order '{request.OrderId}' not found.");
+                        .Include(o => o.Items)
+                        .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct)
+                    ?? throw new NotFoundException($"Order '{request.OrderId}' not found.");
 
-        if (order.CourierAssignment is null || order.CourierAssignment.CourierId != request.CourierId)
-            throw new ForbiddenException("You are not the assigned courier for this order.");
+        if (order.SellerId != request.SellerId)
+            throw new ForbiddenException("You are not the seller for this order.");
+
+        if (!order.IsSellerDelivery)
+            throw new ConflictException("This order is not set up for seller delivery.");
 
         if (order.Status != OrderStatus.InDelivery)
             throw new ConflictException($"Order must be InDelivery to mark as delivered (current: {order.Status}).");
@@ -32,25 +34,26 @@ public sealed class MarkOrderDeliveredCommandHandler(OrderDbContext db, IEventBu
         order.Status = OrderStatus.Completed;
         order.CompletedAt = now;
         order.UpdatedAt = now;
-        order.CourierAssignment.DeliveredAt = now;
 
         db.OrderStatusHistory.Add(new OrderStatusHistory(Guid.NewGuid())
         {
             OrderId = order.Id,
             FromStatus = prev,
             ToStatus = OrderStatus.Completed,
-            Comment = "Delivered by courier",
-            ChangedById = request.CourierId,
+            ChangedById = request.SellerId,
             ChangedAt = now
         });
 
         await db.SaveChangesAsync(ct);
 
         await eventBus.PublishAsync(new OrderCompletedEvent(
-            order.Id, order.BuyerId, order.SellerId, order.SellerName, request.CourierId,
-            order.Items.Select(i => new OrderedProductItem(i.ProductId, i.ProductName, i.Quantity, i.Subtotal, i.ShopId, i.ShopName)).ToList(),
+            order.Id, order.BuyerId, order.SellerId, order.SellerName,
+            CourierId: null,
+            order.Items.Select(i =>
+                    new OrderedProductItem(i.ProductId, i.ProductName, i.Quantity, i.Subtotal, i.ShopId, i.ShopName))
+                .ToList(),
             order.TotalAmount,
-            IsSellerDelivery: false,
+            IsSellerDelivery: true,
             now), ct);
 
         await eventBus.PublishAsync(new OrderStatusChangedEvent(

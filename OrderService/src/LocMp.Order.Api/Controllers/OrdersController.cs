@@ -10,6 +10,8 @@ using LocMp.Order.Application.Orders.Commands.Orders.ConfirmOrder;
 using LocMp.Order.Application.Orders.Commands.Orders.MarkReadyForCourier;
 using LocMp.Order.Application.Orders.Commands.Orders.MarkReadyForPickup;
 using LocMp.Order.Application.Orders.Commands.Orders.DeleteOrderPhoto;
+using LocMp.Order.Application.Orders.Commands.Orders.MarkSellerDelivered;
+using LocMp.Order.Application.Orders.Commands.Orders.MarkSellerPickedUp;
 using LocMp.Order.Application.Orders.Commands.Orders.RejectCourierApplication;
 using LocMp.Order.Application.Orders.Commands.Orders.StartSellerDelivery;
 using LocMp.Order.Application.Orders.Commands.Orders.UploadOrderPhotos;
@@ -198,6 +200,22 @@ public sealed class OrdersController(ISender sender) : ControllerBase
     public async Task<IActionResult> StartSellerDelivery(Guid id, CancellationToken ct)
     {
         await sender.Send(new StartSellerDeliveryCommand(HttpContext.GetUserId(), id), ct);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/seller-picked-up")]
+    [Authorize(Roles = "Seller,Admin")]
+    public async Task<IActionResult> SellerPickedUp(Guid id, CancellationToken ct)
+    {
+        await sender.Send(new MarkSellerPickedUpCommand(id, HttpContext.GetUserId()), ct);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/seller-delivered")]
+    [Authorize(Roles = "Seller,Admin")]
+    public async Task<IActionResult> SellerDelivered(Guid id, CancellationToken ct)
+    {
+        await sender.Send(new MarkSellerDeliveredCommand(id, HttpContext.GetUserId()), ct);
         return NoContent();
     }
 

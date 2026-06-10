@@ -29,6 +29,7 @@ public class Order(Guid id) : AggregateRoot<Guid>(id)
 
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
     public DeliveryType DeliveryType { get; set; }
+    public bool IsSellerDelivery { get; set; }
     public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
 
     public decimal TotalAmount { get; set; }
