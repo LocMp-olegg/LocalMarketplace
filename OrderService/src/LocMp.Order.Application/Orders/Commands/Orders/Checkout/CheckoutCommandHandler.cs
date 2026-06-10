@@ -248,7 +248,7 @@ public sealed class CheckoutCommandHandler(
             ShopLocation = shopLocation,
             ShopServiceRadiusMeters = shopSettings?.ServiceRadiusMeters,
             DeliveryType = group.DeliveryType,
-            BuyerComment = request.BuyerComment,
+            BuyerComment = group.BuyerComment,
             CreatedAt = now
         };
 

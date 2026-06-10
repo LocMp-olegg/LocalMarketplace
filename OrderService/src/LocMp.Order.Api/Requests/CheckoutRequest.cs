@@ -3,7 +3,6 @@ using LocMp.Order.Domain.Enums;
 namespace LocMp.Order.Api.Requests;
 
 public sealed record CheckoutRequest(
-    string? BuyerComment,
     IReadOnlyList<GroupDeliveryRequest> Groups);
 
 public sealed record GroupDeliveryRequest(
@@ -11,6 +10,7 @@ public sealed record GroupDeliveryRequest(
     Guid? ShopId,
     DeliveryType DeliveryType,
     DeliveryAddressRequest? DeliveryAddress,
+    string? BuyerComment = null,
     IReadOnlyList<Guid>? SelectedItemIds = null);
 
 public sealed record DeliveryAddressRequest(
