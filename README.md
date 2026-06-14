@@ -4,6 +4,8 @@
 
 Дипломная работа (ВКР). Стек: .NET 10 / ASP.NET Core / PostgreSQL / RabbitMQ / Redis.
 
+Фронтенд: [LocMp-olegg/loc-mp-ui](https://github.com/LocMp-olegg/loc-mp-ui)
+
 ---
 
 ## Архитектура
@@ -20,6 +22,7 @@
 - [ReviewService](docs/diagrams/review-service.puml)
 - [NotificationService](docs/diagrams/notification-service.puml)
 - [AnalyticsService](docs/diagrams/analytics-service.puml)
+- [ChatService](docs/diagrams/chat-service.puml)
 
 ---
 
@@ -34,6 +37,7 @@
 | ReviewService | 5004 | Отзывы, рейтинги, модерация |
 | NotificationService | 5005 | In-App и email-уведомления (MailKit) |
 | AnalyticsService | 5006 | Дашборды продавца и администратора, pre-computed агрегаты |
+| ChatService | 5007 | Real-time чат (SignalR): покупатель↔продавец, поддержка, чат по заказу. Сообщения шифруются AES |
 
 Документация API (Swagger): `http://localhost:{port}/swagger` для каждого сервиса в режиме `Development`.
 
@@ -56,6 +60,7 @@
 | Объектное хранилище | MinIO (S3-совместимое) |
 | Email (dev) | MailHog (перехват SMTP) |
 | Email (prod) | MailKit (SMTP) |
+| Real-time | SignalR (ASP.NET Core) |
 | Геопространство | NetTopologySuite |
 | Логирование | Serilog |
 | Контейнеризация | Docker / Docker Compose |
@@ -94,6 +99,7 @@ docker compose ps
 | http://localhost:5004/swagger | ReviewService |
 | http://localhost:5005/swagger | NotificationService |
 | http://localhost:5006/swagger | AnalyticsService |
+| http://localhost:5007/swagger | ChatService |
 | http://localhost:15672 | RabbitMQ Management (guest / guest) |
 | http://localhost:9001 | MinIO Console (minioadmin / minioadmin) |
 | http://localhost:8025 | MailHog — перехват исходящей почты |
@@ -187,6 +193,7 @@ LocalMarketplace/
 ├── ReviewService/           # Отзывы (порт 5004)
 ├── NotificationService/     # Уведомления (порт 5005)
 ├── AnalyticsService/        # Аналитика (порт 5006)
+├── ChatService/             # Real-time чат (порт 5007)
 ├── docs/
 │   └── diagrams/            # PlantUML-диаграммы
 ├── postman/                 # Коллекции Postman
@@ -222,13 +229,19 @@ LocalMarketplace/
 ## Жизненный цикл заказа
 
 ```
-Pending → Confirmed → ReadyForPickup → Completed
-                    → InDelivery     → Completed
+Pending → Confirmed → ReadyForPickup  → Completed
+                    → ReadyForCourier → InDelivery → Completed
+                    → InDelivery      → Completed
         → Cancelled
-        → Disputed
+        → Disputed  → Completed
+                    → Cancelled
 ```
 
-Переход `Completed` разблокирует возможность оставить отзыв в ReviewService.
+- `ReadyForPickup` — самовывоз, покупатель забирает сам
+- `ReadyForCourier` — заказ готов, ожидает курьера (соседа или продавца)
+- `InDelivery` — курьер или продавец везёт заказ
+
+Переход в `Completed` разблокирует возможность оставить отзыв в ReviewService.
 Отмена заказа публикует `StockReleasedEvent` — CatalogService возвращает зарезервированный остаток.
 
 ---
